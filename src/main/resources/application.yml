@@ -1,0 +1,34 @@
+spring:
+  datasource:
+    url: jdbc:mariadb://${MARIA_IP}:${MARIA_PORT}/${MARIA_DATABASE}?useSSL=false&serverTimezone=UTC
+    driver-class-name: org.mariadb.jdbc.Driver
+    username: ${MARIA_USERNAME}
+    password: ${MARIA_PASSWORD}
+  data:
+    redis:
+      host: ${REDIS_IP}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MariaDBDialect
+  level:
+    org:
+      springframework=trace:
+        info
+
+springdoc:
+  swagger-ui:
+    enabled: true # swagger ui ???? (?? ???? ??? default? true)
+  version: 'v1' # API ?? ??
+  default-consumes-media-type: application/json # ?? consume media type
+  default-produces-media-type: application/json # ?? produce media type
+  model-and-view-allowed: true # ModelAndView ??
+
+server:
+  servlet:
+    context-path: /api
