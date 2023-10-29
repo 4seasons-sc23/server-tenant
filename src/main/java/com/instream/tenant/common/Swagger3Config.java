@@ -27,6 +27,6 @@ public class Swagger3Config {
     public OpenAPI openAPI() {
         Info info = new Info().title("TENANT API").description("TENANT API 명세서입니다.");
 
-        return new OpenAPI().addServersItem(new Server().url(env.getProperty("server.servlet.context-path"))).info(info);
+        return new OpenAPI().addServersItem(new Server().url(env.getProperty("spring.webflux.base-path"))).info(info);
     }
 }
