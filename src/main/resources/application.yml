@@ -16,19 +16,22 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MariaDBDialect
-  level:
-    org:
-      springframework=trace:
-        info
 
 springdoc:
   swagger-ui:
-    enabled: true # swagger ui ???? (?? ???? ??? default? true)
-  version: 'v1' # API ?? ??
-  default-consumes-media-type: application/json # ?? consume media type
-  default-produces-media-type: application/json # ?? produce media type
-  model-and-view-allowed: true # ModelAndView ??
+    path: /api/swagger-ui.html
+    enabled: true
+  api-docs:
+    path: /v3/api-docs
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+  model-and-view-allowed: true
 
 server:
   servlet:
     context-path: /api
+
+logging:
+  level:
+    org.springframework.web: DEBUG
+    org.springdoc: DEBUG
