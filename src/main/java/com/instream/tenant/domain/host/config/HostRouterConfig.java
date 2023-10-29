@@ -1,6 +1,6 @@
 package com.instream.tenant.domain.host.config;
 
-import com.instream.tenant.domain.host.router.HostRouterHandler;
+import com.instream.tenant.domain.host.handler.HostHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.server.RequestPredicates;
@@ -15,24 +15,24 @@ import static org.springdoc.webflux.core.fn.SpringdocRouteBuilder.route;
 @Configuration
 public class HostRouterConfig {
     @Bean
-    public RouterFunction<ServerResponse> v1Routes(HostRouterHandler hostRouterHandler) {
+    public RouterFunction<ServerResponse> v1Routes(HostHandler hostHandler) {
         return route().nest(RequestPredicates.path("/v1"),
-                helloFunctionSupplier(hostRouterHandler),
+                helloFunctionSupplier(hostHandler),
                 ops -> ops.operationId("123")
         ).build();
     }
 
     @Bean
-    public RouterFunction<ServerResponse> v2Routes(HostRouterHandler hostRouterHandler) {
+    public RouterFunction<ServerResponse> v2Routes(HostHandler hostHandler) {
         return route().nest(RequestPredicates.path("/v2"),
-                helloFunctionSupplier(hostRouterHandler),
+                helloFunctionSupplier(hostHandler),
                 ops -> ops.operationId("123")
         ).build();
     }
 
-    private Supplier<RouterFunction<ServerResponse>> helloFunctionSupplier(HostRouterHandler hostRouterHandler) {
+    private Supplier<RouterFunction<ServerResponse>> helloFunctionSupplier(HostHandler hostHandler) {
         return () -> route()
-                .GET("/hello", hostRouterHandler::hello, ops -> ops.operationId("123"))
+                .GET("/hello", hostHandler::hello, ops -> ops.operationId("123"))
                 .build();
     }
 }
