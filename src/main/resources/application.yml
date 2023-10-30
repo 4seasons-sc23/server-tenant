@@ -1,7 +1,6 @@
 spring:
-  datasource:
-    url: jdbc:mariadb://${MARIA_IP}:${MARIA_PORT}/${MARIA_DATABASE}?useSSL=false&serverTimezone=UTC
-    driver-class-name: org.mariadb.jdbc.Driver
+  r2dbc:
+    url: r2dbc:mariadb://${MARIA_IP}:${MARIA_PORT}/${MARIA_DATABASE}?useSSL=false&serverTimezone=UTC
     username: ${MARIA_USERNAME}
     password: ${MARIA_PASSWORD}
   data:
