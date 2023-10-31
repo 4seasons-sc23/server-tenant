@@ -5,6 +5,7 @@ import com.instream.tenant.domain.host.domain.dto.TenantDto;
 import com.instream.tenant.domain.host.domain.entity.TenantEntity;
 import com.instream.tenant.domain.host.domain.request.TenantCreateRequest;
 import com.instream.tenant.domain.host.repository.TenantRepository;
+import com.instream.tenant.domain.redis.factory.ReactiveRedisTemplateFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -18,8 +19,8 @@ public class TenantService {
     private TenantRepository tenantRepository;
 
     @Autowired
-    public TenantService(ReactiveRedisTemplate<String, TenantEntity> redisTemplate, TenantRepository tenantRepository) {
-        this.redisTemplate = redisTemplate;
+    public TenantService(ReactiveRedisTemplateFactory redisTemplateFactory, TenantRepository tenantRepository) {
+        this.redisTemplate = redisTemplateFactory.getTemplate(TenantEntity.class);
         this.tenantRepository = tenantRepository;
     }
 

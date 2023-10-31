@@ -16,23 +16,24 @@ import static org.springdoc.webflux.core.fn.SpringdocRouteBuilder.route;
 public class HostRouterConfig {
     @Bean
     public RouterFunction<ServerResponse> v1Routes(HostHandler hostHandler) {
-        return route().nest(RequestPredicates.path("/v1"),
-                helloFunctionSupplier(hostHandler),
+        return route().nest(RequestPredicates.path("/v1/hosts"),
+                builder -> {
+                    builder.add(signUpFunctionSupplier(hostHandler));
+                    builder.add(getUserInfoFunctionSupplier(hostHandler));
+                },
                 ops -> ops.operationId("123")
         ).build();
     }
 
-    @Bean
-    public RouterFunction<ServerResponse> v2Routes(HostHandler hostHandler) {
-        return route().nest(RequestPredicates.path("/v2"),
-                helloFunctionSupplier(hostHandler),
-                ops -> ops.operationId("123")
-        ).build();
+    private RouterFunction<ServerResponse> signUpFunctionSupplier(HostHandler hostHandler) {
+        return route()
+                .POST("/sign-up", hostHandler::createTenant, ops -> ops.operationId("123"))
+                .build();
     }
 
-    private Supplier<RouterFunction<ServerResponse>> helloFunctionSupplier(HostHandler hostHandler) {
-        return () -> route()
-                .GET("/hello", hostHandler::hello, ops -> ops.operationId("123"))
+    private RouterFunction<ServerResponse> getUserInfoFunctionSupplier(HostHandler hostHandler) {
+        return route()
+                .GET("/{hostId}/info", hostHandler::getTenantByAccount, ops -> ops.operationId("123"))
                 .build();
     }
 }
