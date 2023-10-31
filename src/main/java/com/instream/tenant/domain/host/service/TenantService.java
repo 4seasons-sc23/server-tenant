@@ -10,7 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
+
+import java.util.UUID;
 
 @Service
 public class TenantService {
@@ -24,13 +25,19 @@ public class TenantService {
         this.tenantRepository = tenantRepository;
     }
 
-    public Mono<TenantDto> getTenantByAccount(String account) {
+    public Mono<TenantDto> getTenantById(UUID tenantId) {
         return redisTemplate.opsForValue()
-                .get(account)
-                .switchIfEmpty(Mono.defer(() -> tenantRepository.findByAccount(account)
-                        .flatMap(tenant -> redisTemplate.opsForValue()
-                                .set(account, tenant)
-                                .thenReturn(tenant))))
+                .get(tenantId.toString())
+                .switchIfEmpty(Mono.defer(() -> {
+                            System.out.println("hello123123");
+                            return tenantRepository.findById(tenantId).flatMap(tenant -> {
+                                System.out.println("hello123");
+                                return redisTemplate.opsForValue()
+                                        .set(String.valueOf(tenantId), tenant)
+                                        .thenReturn(tenant);
+                            });
+                        }
+                ))
                 // TODO: Tenant mapper
                 .map(tenant -> TenantDto.builder()
                         .name(tenant.getName())

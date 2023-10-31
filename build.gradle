@@ -41,6 +41,10 @@ dependencies {
 
 	// swagger
 	implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.2.0'
+
+	// jackson
+	// support java 8 time api
+	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 }
 
 tasks.named('test') {

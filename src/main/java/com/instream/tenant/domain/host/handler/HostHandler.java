@@ -8,6 +8,8 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
+import java.util.UUID;
+
 import static org.springframework.web.reactive.function.server.ServerResponse.ok;
 
 @Component
@@ -23,9 +25,9 @@ public class HostHandler {
         return ok().body(Mono.just("Hello World!"), String.class);
     }
 
-    public Mono<ServerResponse> getTenantByAccount(ServerRequest request) {
-        String account = request.pathVariable("account");
-        return tenantService.getTenantByAccount(account)
+    public Mono<ServerResponse> getTenantById(ServerRequest request) {
+        String hostId = request.pathVariable("hostId");
+        return tenantService.getTenantById(UUID.fromString(hostId))
                 .flatMap(tenantDto -> ServerResponse.ok().bodyValue(tenantDto))
                 .switchIfEmpty(ServerResponse.notFound().build());
     }
