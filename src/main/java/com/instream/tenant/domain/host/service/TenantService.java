@@ -28,18 +28,14 @@ public class TenantService {
     public Mono<TenantDto> getTenantById(UUID tenantId) {
         return redisTemplate.opsForValue()
                 .get(tenantId.toString())
-                .switchIfEmpty(Mono.defer(() -> {
-                            System.out.println("hello123123");
-                            return tenantRepository.findById(tenantId).flatMap(tenant -> {
-                                System.out.println("hello123");
-                                return redisTemplate.opsForValue()
-                                        .set(String.valueOf(tenantId), tenant)
-                                        .thenReturn(tenant);
-                            });
-                        }
-                ))
+                .switchIfEmpty(Mono.defer(() -> tenantRepository.findById(tenantId)
+                        .flatMap(tenant -> redisTemplate.opsForValue()
+                                .set(String.valueOf(tenantId), tenant)
+                                .thenReturn(tenant))))
                 // TODO: Tenant mapper
                 .map(tenant -> TenantDto.builder()
+                        .id(tenant.getId())
+                        .account(tenant.getAccount())
                         .name(tenant.getName())
                         .status(tenant.getStatus())
                         // TODO: 세션

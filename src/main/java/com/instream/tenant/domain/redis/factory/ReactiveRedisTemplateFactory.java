@@ -1,5 +1,7 @@
 package com.instream.tenant.domain.redis.factory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
@@ -13,12 +15,16 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class ReactiveRedisTemplateFactory {
-
     private final ReactiveRedisConnectionFactory factory;
+
     private final ConcurrentHashMap<Class<?>, ReactiveRedisTemplate<String, ?>> templateCache = new ConcurrentHashMap<>();
 
-    public ReactiveRedisTemplateFactory(ReactiveRedisConnectionFactory factory) {
+    private final ObjectMapper objectMapper;
+
+    @Autowired
+    public ReactiveRedisTemplateFactory(ReactiveRedisConnectionFactory factory, ObjectMapper objectMapper) {
         this.factory = factory;
+        this.objectMapper = objectMapper;
     }
 
     public <T> ReactiveRedisTemplate<String, T> getTemplate(Class<T> clazz) {
@@ -26,7 +32,7 @@ public class ReactiveRedisTemplateFactory {
     }
 
     private <T> ReactiveRedisTemplate<String, T> createReactiveRedisTemplate(Class<T> clazz) {
-        Jackson2JsonRedisSerializer<T> serializer = new Jackson2JsonRedisSerializer<>(clazz);
+        Jackson2JsonRedisSerializer<T> serializer = new Jackson2JsonRedisSerializer<>(objectMapper, clazz);
         RedisSerializationContext.RedisSerializationContextBuilder<String, T> builder =
                 RedisSerializationContext.newSerializationContext(new StringRedisSerializer());
 
