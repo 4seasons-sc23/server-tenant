@@ -5,7 +5,8 @@ import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
 public enum TenantErrorCode implements HttpErrorCode {
-    TENANT_NOT_FOUND("Tenant not found", HttpStatus.NOT_FOUND);
+    TENANT_NOT_FOUND("호스트를 찾지 못 했습니다.", HttpStatus.NOT_FOUND),
+    EXIST_TENANT("존재하는 호스트입니다.", HttpStatus.CONFLICT);
 
     private final String message;
     private final HttpStatus httpStatus;

@@ -51,8 +51,7 @@ public class TenantService {
 
     public Mono<TenantDto> createTenant(TenantCreateRequest tenantCreateRequest) {
         return tenantRepository.findByAccount(tenantCreateRequest.account())
-                // TODO: 글로벌 에러 핸들링
-                .flatMap(existingTenant -> Mono.<TenantDto>error(new RuntimeException("Tenant already exists")))
+                .flatMap(existingTenant -> Mono.<TenantDto>error(new RestApiException(TenantErrorCode.EXIST_TENANT)))
                 .switchIfEmpty(Mono.defer(() -> tenantRepository.save(
                                         TenantEntity.builder()
                                                 .account(tenantCreateRequest.account())
