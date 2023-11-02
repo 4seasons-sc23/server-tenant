@@ -5,6 +5,7 @@ import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.host.domain.dto.TenantDto;
 import com.instream.tenant.domain.host.domain.entity.TenantEntity;
 import com.instream.tenant.domain.host.domain.request.TenantCreateRequest;
+import com.instream.tenant.domain.host.domain.request.TenantSignInRequest;
 import com.instream.tenant.domain.host.infra.enums.TenantErrorCode;
 import com.instream.tenant.domain.host.repository.TenantRepository;
 import com.instream.tenant.domain.redis.model.factory.ReactiveRedisTemplateFactory;
@@ -48,8 +49,20 @@ public class TenantService {
                         .build());
     }
 
+    public Mono<TenantDto> signIn(TenantSignInRequest tenantSignInRequest) {
+        return tenantRepository.findByAccountAndPassword(tenantSignInRequest.account(), tenantSignInRequest.password())
+                .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
+                .map(tenant -> TenantDto.builder()
+                        .id(tenant.getId())
+                        .account(tenant.getAccount())
+                        .name(tenant.getName())
+                        .phoneNumber(tenant.getPhoneNumber())
+                        .status(tenant.getStatus())
+                        .session("")
+                        .build());
+    }
 
-    public Mono<TenantDto> createTenant(TenantCreateRequest tenantCreateRequest) {
+    public Mono<TenantDto> signUp(TenantCreateRequest tenantCreateRequest) {
         return tenantRepository.findByAccount(tenantCreateRequest.account())
                 .flatMap(existingTenant -> Mono.<TenantDto>error(new RestApiException(TenantErrorCode.EXIST_TENANT)))
                 .switchIfEmpty(Mono.defer(() -> tenantRepository.save(
