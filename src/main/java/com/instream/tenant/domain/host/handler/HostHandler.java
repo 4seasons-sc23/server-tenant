@@ -1,5 +1,7 @@
 package com.instream.tenant.domain.host.handler;
 
+import com.instream.tenant.domain.application.domain.request.ApplicationCreateRequest;
+import com.instream.tenant.domain.application.service.ApplicationService;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.host.domain.request.TenantCreateRequest;
@@ -18,9 +20,12 @@ import java.util.UUID;
 public class HostHandler {
     private final TenantService tenantService;
 
+    private final ApplicationService applicationService;
+
     @Autowired
-    public HostHandler(TenantService tenantService) {
+    public HostHandler(TenantService tenantService, ApplicationService applicationService) {
         this.tenantService = tenantService;
+        this.applicationService = applicationService;
     }
 
     public Mono<ServerResponse> getTenantById(ServerRequest request) {
@@ -48,6 +53,15 @@ public class HostHandler {
         return request.bodyToMono(TenantCreateRequest.class)
                 .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
                 .flatMap(tenantService::signUp)
-                .flatMap(tenantDto -> ServerResponse.created(URI.create(String.format("/%s/info", tenantDto.id()))).bodyValue(tenantDto));
+                .flatMap(tenantDto -> ServerResponse.created(URI.create(String.format("/%s/info", tenantDto.id())))
+                        .bodyValue(tenantDto));
+    }
+
+    public Mono<ServerResponse> createApplication(ServerRequest request) {
+        return request.bodyToMono(ApplicationCreateRequest.class)
+                .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
+                .flatMap(applicationService::createApplication)
+                .flatMap(applicationCreateResponse -> ServerResponse.created(URI.create(String.format("/%s/info", applicationCreateResponse.application().applicationId())))
+                        .bodyValue(applicationCreateResponse));
     }
 }

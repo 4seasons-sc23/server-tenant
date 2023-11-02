@@ -67,5 +67,14 @@ public class HostRouterConfig {
                 .build();
     }
 
-
+    private RouterFunction<ServerResponse> createApplication(HostHandler hostHandler) {
+        return route()
+                .POST(
+                        "/{hostId}/applications",
+                        hostHandler::createApplication,
+                        ops -> ops.operationId("123")
+                                .requestBody(requestBodyBuilder().implementation(TenantSignInRequest.class))
+                )
+                .build();
+    }
 }
