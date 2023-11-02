@@ -58,9 +58,17 @@ public class HostHandler {
     }
 
     public Mono<ServerResponse> createApplication(ServerRequest request) {
+        UUID hostId;
+
+        try {
+            hostId = UUID.fromString(request.pathVariable("hostId"));
+        } catch (IllegalArgumentException illegalArgumentException) {
+            throw new RestApiException(CommonHttpErrorCode.BAD_REQUEST);
+        }
+
         return request.bodyToMono(ApplicationCreateRequest.class)
                 .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
-                .flatMap(applicationService::createApplication)
+                .flatMap((applicationCreateRequest -> applicationService.createApplication(applicationCreateRequest, hostId)))
                 .flatMap(applicationCreateResponse -> ServerResponse.created(URI.create(String.format("/%s/info", applicationCreateResponse.application().applicationId())))
                         .bodyValue(applicationCreateResponse));
     }
