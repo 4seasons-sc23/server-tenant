@@ -1,9 +1,11 @@
 package com.instream.tenant.domain.host.service;
 
 import com.instream.tenant.domain.common.infra.enums.Status;
+import com.instream.tenant.domain.error.domain.exception.RestApiException;
 import com.instream.tenant.domain.host.domain.dto.TenantDto;
 import com.instream.tenant.domain.host.domain.entity.TenantEntity;
 import com.instream.tenant.domain.host.domain.request.TenantCreateRequest;
+import com.instream.tenant.domain.host.infra.enums.TenantErrorCode;
 import com.instream.tenant.domain.host.repository.TenantRepository;
 import com.instream.tenant.domain.redis.factory.ReactiveRedisTemplateFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +33,9 @@ public class TenantService {
                 .switchIfEmpty(Mono.defer(() -> tenantRepository.findById(tenantId)
                         .flatMap(tenant -> redisTemplate.opsForValue()
                                 .set(String.valueOf(tenantId), tenant)
-                                .thenReturn(tenant))))
+                                .thenReturn(tenant)))
+                        .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
+                )
                 // TODO: Tenant mapper
                 .map(tenant -> TenantDto.builder()
                         .id(tenant.getId())

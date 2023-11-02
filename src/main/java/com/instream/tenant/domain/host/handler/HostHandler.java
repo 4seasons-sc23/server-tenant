@@ -1,5 +1,7 @@
 package com.instream.tenant.domain.host.handler;
 
+import com.instream.tenant.domain.error.domain.exception.RestApiException;
+import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.host.domain.request.TenantCreateRequest;
 import com.instream.tenant.domain.host.service.TenantService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,8 +12,6 @@ import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
-import static org.springframework.web.reactive.function.server.ServerResponse.ok;
-
 @Component
 public class HostHandler {
     private final TenantService tenantService;
@@ -21,21 +21,24 @@ public class HostHandler {
         this.tenantService = tenantService;
     }
 
-    public Mono<ServerResponse> hello(ServerRequest request) {
-        return ok().body(Mono.just("Hello World!"), String.class);
-    }
-
     public Mono<ServerResponse> getTenantById(ServerRequest request) {
-        String hostId = request.pathVariable("hostId");
-        return tenantService.getTenantById(UUID.fromString(hostId))
-                .flatMap(tenantDto -> ServerResponse.ok().bodyValue(tenantDto))
-                .switchIfEmpty(ServerResponse.notFound().build());
+        UUID hostId;
+
+        try {
+            hostId = UUID.fromString(request.pathVariable("hostId"));
+        } catch (IllegalArgumentException illegalArgumentException) {
+            throw new RestApiException(CommonHttpErrorCode.BAD_REQUEST);
+        }
+
+        return Mono.just(hostId)
+                .flatMap(tenantService::getTenantById)
+                .flatMap(tenantDto -> ServerResponse.ok().bodyValue(tenantDto));
     }
 
     public Mono<ServerResponse> createTenant(ServerRequest request) {
         return request.bodyToMono(TenantCreateRequest.class)
+                .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
                 .flatMap(tenantService::createTenant)
-                .flatMap(tenantDto -> ServerResponse.ok().bodyValue(tenantDto))
-                .switchIfEmpty(ServerResponse.badRequest().build());
+                .flatMap(tenantDto -> ServerResponse.ok().bodyValue(tenantDto));
     }
 }
