@@ -1,4 +1,4 @@
-package com.instream.tenant.domain.redis.factory;
+package com.instream.tenant.domain.redis.model.factory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;

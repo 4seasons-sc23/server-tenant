@@ -1,6 +1,6 @@
 package com.instream.tenant.domain.host.handler;
 
-import com.instream.tenant.domain.error.domain.exception.RestApiException;
+import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.host.domain.request.TenantCreateRequest;
 import com.instream.tenant.domain.host.service.TenantService;
