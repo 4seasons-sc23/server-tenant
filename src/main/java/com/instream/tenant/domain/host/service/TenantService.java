@@ -31,9 +31,9 @@ public class TenantService {
         return redisTemplate.opsForValue()
                 .get(tenantId.toString())
                 .switchIfEmpty(Mono.defer(() -> tenantRepository.findById(tenantId)
-                        .flatMap(tenant -> redisTemplate.opsForValue()
-                                .set(String.valueOf(tenantId), tenant)
-                                .thenReturn(tenant)))
+                                .flatMap(tenant -> redisTemplate.opsForValue()
+                                        .set(String.valueOf(tenantId), tenant)
+                                        .thenReturn(tenant)))
                         .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
                 )
                 // TODO: Tenant mapper
@@ -41,6 +41,7 @@ public class TenantService {
                         .id(tenant.getId())
                         .account(tenant.getAccount())
                         .name(tenant.getName())
+                        .phoneNumber(tenant.getPhoneNumber())
                         .status(tenant.getStatus())
                         // TODO: 세션
                         .session("")
@@ -57,7 +58,7 @@ public class TenantService {
                             .account(tenantCreateRequest.account())
                             .password(tenantCreateRequest.password())
                             .name(tenantCreateRequest.name())
-                            .phoneNum(tenantCreateRequest.phoneNumber())
+                            .phoneNumber(tenantCreateRequest.phoneNumber())
                             .status(Status.USE)
                             .secretKey("")
                             .build();
@@ -67,6 +68,7 @@ public class TenantService {
                                     .id(savedTenant.getId())
                                     .account(savedTenant.getAccount())
                                     .name(savedTenant.getName())
+                                    .phoneNumber(savedTenant.getPhoneNumber())
                                     .status(savedTenant.getStatus())
                                     .session("")
                                     .build()

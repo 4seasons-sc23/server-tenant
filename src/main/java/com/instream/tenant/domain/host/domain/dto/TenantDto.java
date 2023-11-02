@@ -12,6 +12,8 @@ public record TenantDto(
 
         String name,
 
+        String phoneNumber,
+
         Status status,
 
         String session

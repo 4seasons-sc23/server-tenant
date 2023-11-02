@@ -2,7 +2,6 @@ package com.instream.tenant.domain.host.domain.entity;
 
 import com.instream.tenant.domain.common.infra.enums.Status;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
@@ -30,7 +29,7 @@ public class TenantEntity {
 
     private String name;
 
-    private String phoneNum;
+    private String phoneNumber;
 
     private String secretKey;
 
