@@ -4,6 +4,7 @@ import com.instream.tenant.domain.application.infra.enums.ApplicationType;
 import com.instream.tenant.domain.common.infra.enums.Status;
 import lombok.Builder;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record ApplicationDto(
@@ -13,7 +14,9 @@ public record ApplicationDto(
 
         String session,
 
-        Status status
+        Status status,
+
+        LocalDateTime createdAt
 ) {
     @Builder
     public ApplicationDto {

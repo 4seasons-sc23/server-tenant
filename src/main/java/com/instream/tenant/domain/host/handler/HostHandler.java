@@ -67,11 +67,11 @@ public class HostHandler {
             throw new RestApiException(CommonHttpErrorCode.BAD_REQUEST);
         }
 
-        return request.queryParams(ApplicationSearchPaginationOptionRequest.class)
+        return ApplicationSearchPaginationOptionRequest.fromQueryParams(request.queryParams())
                 .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
-                .flatMap((applicationCreateRequest -> applicationService.createApplication(applicationCreateRequest, hostId)))
-                .flatMap(applicationCreateResponse -> ServerResponse.created(URI.create(String.format("/%s/info", applicationCreateResponse.application().applicationId())))
-                        .bodyValue(applicationCreateResponse));
+                .flatMap((applicationSearchPaginationOptionRequest -> applicationService.search(applicationSearchPaginationOptionRequest, hostId)))
+                .flatMap(applicationPaginationDto -> ServerResponse.ok()
+                        .bodyValue(applicationPaginationDto));
     }
 
     public Mono<ServerResponse> createApplication(ServerRequest request) {
