@@ -31,6 +31,7 @@ public class HostApplicationRouterConfig {
                     builder.add(searchApplication(applicationHandler));
                     builder.add(createApplication(applicationHandler));
                     builder.add(onOffApplication(applicationHandler));
+                    builder.add(deleteApplication(applicationHandler));
                 },
                 ops -> ops.operationId("123")
         ).build();
@@ -70,6 +71,26 @@ public class HostApplicationRouterConfig {
                 .PATCH(
                         "/{applicationId}",
                         applicationHandler::onOffApplication,
+                        ops -> ops.operationId("123")
+                                .parameter(parameterBuilder()
+                                        .name("hostId")
+                                        .in(ParameterIn.PATH)
+                                        .required(true)
+                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                                .parameter(parameterBuilder()
+                                        .name("applicationId")
+                                        .in(ParameterIn.PATH)
+                                        .required(true)
+                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                )
+                .build();
+    }
+
+    private RouterFunction<ServerResponse> deleteApplication(ApplicationHandler applicationHandler) {
+        return route()
+                .DELETE(
+                        "/{applicationId}",
+                        applicationHandler::deleteApplication,
                         ops -> ops.operationId("123")
                                 .parameter(parameterBuilder()
                                         .name("hostId")

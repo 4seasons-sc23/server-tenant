@@ -129,4 +129,8 @@ public class ApplicationService {
                     return applicationRepository.save(application).then();
                 });
     }
+
+    public Mono<Void> deleteApplication(UUID applicationId, UUID hostId) {
+        return applicationRepository.deleteByIdAndTenantId(applicationId, hostId);
+    }
 }

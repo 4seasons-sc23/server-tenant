@@ -69,4 +69,18 @@ public class ApplicationHandler {
 
         return applicationService.onOffApplication(applicationId, hostId).then(Mono.defer(() -> ServerResponse.ok().build()));
     }
+
+    public Mono deleteApplication(ServerRequest request) {
+        UUID hostId;
+        UUID applicationId;
+
+        try {
+            hostId = UUID.fromString(request.pathVariable("hostId"));
+            applicationId = UUID.fromString(request.pathVariable("applicationId"));
+        } catch (IllegalArgumentException illegalArgumentException) {
+            throw new RestApiException(CommonHttpErrorCode.BAD_REQUEST);
+        }
+
+        return applicationService.deleteApplication(applicationId, hostId).then(Mono.defer(() -> ServerResponse.ok().build()));
+    }
 }

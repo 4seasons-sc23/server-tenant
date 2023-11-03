@@ -18,5 +18,7 @@ public interface ApplicationRepository extends QuerydslR2dbcRepository<Applicati
 
     Mono<ApplicationEntity> findByIdAndTenantId(UUID id, UUID tenantId);
 
+    Mono<Void> deleteByIdAndTenantId(UUID id, UUID tenantId);
+
     Mono<Long> count(Predicate predicate);
 }
