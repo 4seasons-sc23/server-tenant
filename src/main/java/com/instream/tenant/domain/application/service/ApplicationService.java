@@ -1,15 +1,11 @@
 package com.instream.tenant.domain.application.service;
 
-import com.instream.tenant.domain.application.ApplicationRepository;
+import com.instream.tenant.domain.application.repository.ApplicationRepository;
 import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
 import com.instream.tenant.domain.application.domain.entity.ApplicationEntity;
 import com.instream.tenant.domain.application.domain.request.ApplicationCreateRequest;
 import com.instream.tenant.domain.application.domain.response.ApplicationCreateResponse;
 import com.instream.tenant.domain.common.infra.enums.Status;
-import com.instream.tenant.domain.error.model.exception.RestApiException;
-import com.instream.tenant.domain.host.domain.dto.TenantDto;
-import com.instream.tenant.domain.host.domain.entity.TenantEntity;
-import com.instream.tenant.domain.host.infra.enums.TenantErrorCode;
 import com.instream.tenant.domain.redis.model.factory.ReactiveRedisTemplateFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
