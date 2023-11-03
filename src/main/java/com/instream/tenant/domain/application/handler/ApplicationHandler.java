@@ -56,7 +56,7 @@ public class ApplicationHandler {
                         .bodyValue(applicationCreateResponse));
     }
 
-    public Mono onOffApplication(ServerRequest request) {
+    public Mono startApplication(ServerRequest request) {
         UUID hostId;
         UUID applicationId;
 
@@ -67,8 +67,23 @@ public class ApplicationHandler {
             throw new RestApiException(CommonHttpErrorCode.BAD_REQUEST);
         }
 
-        return applicationService.onOffApplication(applicationId, hostId).then(Mono.defer(() -> ServerResponse.ok().build()));
+        return applicationService.startApplication(applicationId, hostId).then(Mono.defer(() -> ServerResponse.ok().build()));
     }
+
+    public Mono endApplication(ServerRequest request) {
+        UUID hostId;
+        UUID applicationId;
+
+        try {
+            hostId = UUID.fromString(request.pathVariable("hostId"));
+            applicationId = UUID.fromString(request.pathVariable("applicationId"));
+        } catch (IllegalArgumentException illegalArgumentException) {
+            throw new RestApiException(CommonHttpErrorCode.BAD_REQUEST);
+        }
+
+        return applicationService.endApplication(applicationId, hostId).then(Mono.defer(() -> ServerResponse.ok().build()));
+    }
+
 
     public Mono deleteApplication(ServerRequest request) {
         UUID hostId;

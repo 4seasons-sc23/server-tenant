@@ -5,10 +5,6 @@ import com.instream.tenant.domain.application.domain.request.ApplicationCreateRe
 import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.domain.response.ApplicationCreateResponse;
 import com.instream.tenant.domain.application.handler.ApplicationHandler;
-import com.instream.tenant.domain.host.domain.dto.TenantDto;
-import com.instream.tenant.domain.host.domain.request.TenantCreateRequest;
-import com.instream.tenant.domain.host.domain.request.TenantSignInRequest;
-import com.instream.tenant.domain.host.handler.HostHandler;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,7 +26,8 @@ public class HostApplicationRouterConfig {
                 builder -> {
                     builder.add(searchApplication(applicationHandler));
                     builder.add(createApplication(applicationHandler));
-                    builder.add(onOffApplication(applicationHandler));
+                    builder.add(startApplication(applicationHandler));
+                    builder.add(endApplication(applicationHandler));
                     builder.add(deleteApplication(applicationHandler));
                 },
                 ops -> ops.operationId("123")
@@ -66,11 +63,31 @@ public class HostApplicationRouterConfig {
                 .build();
     }
 
-    private RouterFunction<ServerResponse> onOffApplication(ApplicationHandler applicationHandler) {
+    private RouterFunction<ServerResponse> startApplication(ApplicationHandler applicationHandler) {
         return route()
                 .PATCH(
-                        "/{applicationId}",
-                        applicationHandler::onOffApplication,
+                        "/{applicationId}/start",
+                        applicationHandler::startApplication,
+                        ops -> ops.operationId("123")
+                                .parameter(parameterBuilder()
+                                        .name("hostId")
+                                        .in(ParameterIn.PATH)
+                                        .required(true)
+                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                                .parameter(parameterBuilder()
+                                        .name("applicationId")
+                                        .in(ParameterIn.PATH)
+                                        .required(true)
+                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                )
+                .build();
+    }
+
+    private RouterFunction<ServerResponse> endApplication(ApplicationHandler applicationHandler) {
+        return route()
+                .PATCH(
+                        "/{applicationId}/end",
+                        applicationHandler::endApplication,
                         ops -> ops.operationId("123")
                                 .parameter(parameterBuilder()
                                         .name("hostId")

@@ -20,5 +20,7 @@ public interface ApplicationSessionRepository extends QuerydslR2dbcRepository<Ap
 
     Mono<ApplicationSessionEntity> findTopByApplicationIdOrderByCreatedAtDesc(UUID applicationId);
 
+    Mono<Void> deleteByApplicationId(UUID applicationId);
+
     Mono<Long> count(Predicate predicate);
 }

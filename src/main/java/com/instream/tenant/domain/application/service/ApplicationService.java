@@ -131,28 +131,37 @@ public class ApplicationService {
                 ));
     }
 
-    public Mono<Void> onOffApplication(UUID applicationId, UUID hostId) {
+    public Mono<Void> startApplication(UUID applicationId, UUID hostId) {
+        return applicationRepository.findByIdAndTenantId(applicationId, hostId)
+                .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
+                .flatMap(application -> {
+                    boolean isOff = application.getStatus() == Status.PENDING;
+
+                    if (isOff) {
+                        return createApplicationSession(applicationId, application);
+                    }
+
+                    return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
+                });
+    }
+
+    public Mono<Void> endApplication(UUID applicationId, UUID hostId) {
         return applicationRepository.findByIdAndTenantId(applicationId, hostId)
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
                 .flatMap(application -> {
                     boolean isOn = application.getStatus() == Status.USE;
-                    boolean isOff = application.getStatus() == Status.PENDING;
 
                     if (isOn) {
-                        System.out.println("case1");
                         return deleteApplicationSession(applicationId, application);
-                    } else if (isOff) {
-                        System.out.println("case2");
-                        return createApplicationSession(applicationId, application);
-                    } else {
-                        return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
                     }
+
+                    return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
                 });
     }
 
-
     public Mono<Void> deleteApplication(UUID applicationId, UUID hostId) {
-        return applicationRepository.deleteByIdAndTenantId(applicationId, hostId);
+        return applicationSessionRepository.deleteByApplicationId(applicationId)
+                .then(Mono.defer(() -> applicationRepository.deleteByIdAndTenantId(applicationId, hostId)));
     }
 
     private Mono<Void> createApplicationSession(UUID applicationId, ApplicationEntity application) {
