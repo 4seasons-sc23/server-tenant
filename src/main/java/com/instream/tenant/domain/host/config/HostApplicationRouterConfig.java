@@ -30,6 +30,7 @@ public class HostApplicationRouterConfig {
                 builder -> {
                     builder.add(searchApplication(applicationHandler));
                     builder.add(createApplication(applicationHandler));
+                    builder.add(onOffApplication(applicationHandler));
                 },
                 ops -> ops.operationId("123")
         ).build();
@@ -60,6 +61,26 @@ public class HostApplicationRouterConfig {
                                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
                                 .requestBody(requestBodyBuilder().implementation(ApplicationCreateRequest.class))
                                 .response(responseBuilder().implementation(ApplicationCreateResponse.class))
+                )
+                .build();
+    }
+
+    private RouterFunction<ServerResponse> onOffApplication(ApplicationHandler applicationHandler) {
+        return route()
+                .PATCH(
+                        "/{applicationId}",
+                        applicationHandler::onOffApplication,
+                        ops -> ops.operationId("123")
+                                .parameter(parameterBuilder()
+                                        .name("hostId")
+                                        .in(ParameterIn.PATH)
+                                        .required(true)
+                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                                .parameter(parameterBuilder()
+                                        .name("applicationId")
+                                        .in(ParameterIn.PATH)
+                                        .required(true)
+                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
                 )
                 .build();
     }

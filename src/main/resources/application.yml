@@ -24,6 +24,6 @@ springdoc:
 logging:
   level:
     org.springframework.web: DEBUG
-    org.springframework.r2dbc.sql: DEBUG
+    org.springframework.r2dbc.core: DEBUG
     org.springdoc: DEBUG
 

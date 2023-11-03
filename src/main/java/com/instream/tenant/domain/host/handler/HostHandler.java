@@ -1,8 +1,5 @@
 package com.instream.tenant.domain.host.handler;
 
-import com.instream.tenant.domain.application.domain.request.ApplicationCreateRequest;
-import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
-import com.instream.tenant.domain.application.service.ApplicationService;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.host.domain.request.TenantCreateRequest;

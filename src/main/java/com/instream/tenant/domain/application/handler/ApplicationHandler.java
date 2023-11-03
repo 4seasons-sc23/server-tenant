@@ -5,9 +5,6 @@ import com.instream.tenant.domain.application.domain.request.ApplicationSearchPa
 import com.instream.tenant.domain.application.service.ApplicationService;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
-import com.instream.tenant.domain.host.domain.request.TenantCreateRequest;
-import com.instream.tenant.domain.host.domain.request.TenantSignInRequest;
-import com.instream.tenant.domain.host.service.TenantService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -57,5 +54,19 @@ public class ApplicationHandler {
                 .flatMap((applicationCreateRequest -> applicationService.createApplication(applicationCreateRequest, hostId)))
                 .flatMap(applicationCreateResponse -> ServerResponse.created(URI.create(String.format("/%s/info", applicationCreateResponse.application().applicationId())))
                         .bodyValue(applicationCreateResponse));
+    }
+
+    public Mono onOffApplication(ServerRequest request) {
+        UUID hostId;
+        UUID applicationId;
+
+        try {
+            hostId = UUID.fromString(request.pathVariable("hostId"));
+            applicationId = UUID.fromString(request.pathVariable("applicationId"));
+        } catch (IllegalArgumentException illegalArgumentException) {
+            throw new RestApiException(CommonHttpErrorCode.BAD_REQUEST);
+        }
+
+        return applicationService.onOffApplication(applicationId, hostId).then(Mono.defer(() -> ServerResponse.ok().build()));
     }
 }

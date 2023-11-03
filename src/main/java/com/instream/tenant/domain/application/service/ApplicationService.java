@@ -1,6 +1,8 @@
 package com.instream.tenant.domain.application.service;
 
+import com.instream.tenant.domain.application.domain.entity.QApplicationEntity;
 import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
+import com.instream.tenant.domain.application.infra.enums.ApplicationErrorCode;
 import com.instream.tenant.domain.application.model.specification.ApplicationSpecification;
 import com.instream.tenant.domain.application.repository.ApplicationRepository;
 import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
@@ -11,7 +13,10 @@ import com.instream.tenant.domain.common.domain.dto.CollectionDto;
 import com.instream.tenant.domain.common.domain.dto.PaginationDto;
 import com.instream.tenant.domain.common.domain.dto.PaginationInfoDto;
 import com.instream.tenant.domain.common.infra.enums.Status;
+import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
+import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.redis.model.factory.ReactiveRedisTemplateFactory;
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -108,5 +113,20 @@ public class ApplicationService {
                         )
                         .build()
                 ));
+    }
+
+    public Mono<Void> onOffApplication(UUID applicationId, UUID hostId) {
+        return applicationRepository.findByIdAndTenantId(applicationId, hostId)
+                .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
+                .flatMap(application -> {
+                    if (application.getStatus() == Status.USE) {
+                        application.setStatus(Status.PENDING);
+                    } else if (application.getStatus() == Status.PENDING) {
+                        application.setStatus(Status.USE);
+                    } else {
+                        return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
+                    }
+                    return applicationRepository.save(application).then();
+                });
     }
 }
