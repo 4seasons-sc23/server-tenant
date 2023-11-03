@@ -21,12 +21,9 @@ import java.util.UUID;
 public class HostHandler {
     private final TenantService tenantService;
 
-    private final ApplicationService applicationService;
-
     @Autowired
-    public HostHandler(TenantService tenantService, ApplicationService applicationService) {
+    public HostHandler(TenantService tenantService) {
         this.tenantService = tenantService;
-        this.applicationService = applicationService;
     }
 
     public Mono<ServerResponse> getTenantById(ServerRequest request) {
@@ -56,37 +53,5 @@ public class HostHandler {
                 .flatMap(tenantService::signUp)
                 .flatMap(tenantDto -> ServerResponse.created(URI.create(String.format("/%s/info", tenantDto.id())))
                         .bodyValue(tenantDto));
-    }
-
-    public Mono<ServerResponse> searchApplication(ServerRequest request) {
-        UUID hostId;
-
-        try {
-            hostId = UUID.fromString(request.pathVariable("hostId"));
-        } catch (IllegalArgumentException illegalArgumentException) {
-            throw new RestApiException(CommonHttpErrorCode.BAD_REQUEST);
-        }
-
-        return ApplicationSearchPaginationOptionRequest.fromQueryParams(request.queryParams())
-                .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
-                .flatMap((applicationSearchPaginationOptionRequest -> applicationService.search(applicationSearchPaginationOptionRequest, hostId)))
-                .flatMap(applicationPaginationDto -> ServerResponse.ok()
-                        .bodyValue(applicationPaginationDto));
-    }
-
-    public Mono<ServerResponse> createApplication(ServerRequest request) {
-        UUID hostId;
-
-        try {
-            hostId = UUID.fromString(request.pathVariable("hostId"));
-        } catch (IllegalArgumentException illegalArgumentException) {
-            throw new RestApiException(CommonHttpErrorCode.BAD_REQUEST);
-        }
-
-        return request.bodyToMono(ApplicationCreateRequest.class)
-                .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
-                .flatMap((applicationCreateRequest -> applicationService.createApplication(applicationCreateRequest, hostId)))
-                .flatMap(applicationCreateResponse -> ServerResponse.created(URI.create(String.format("/%s/info", applicationCreateResponse.application().applicationId())))
-                        .bodyValue(applicationCreateResponse));
     }
 }

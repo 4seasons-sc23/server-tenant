@@ -52,6 +52,7 @@ public class ApplicationService {
                 )
                 .collectList();
 
+        // TODO: Redis 캐싱 넣기
         if (applicationSearchPaginationOptionRequest.isFirstView()) {
             Mono<Long> totalElementCountMono = applicationRepository.count(predicate);
             Mono<Integer> totalPageCountMono = totalElementCountMono.map(count -> (int) Math.ceil((double) count / pageable.getPageSize()));
