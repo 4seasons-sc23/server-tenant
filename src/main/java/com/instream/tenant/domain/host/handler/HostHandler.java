@@ -1,6 +1,7 @@
 package com.instream.tenant.domain.host.handler;
 
 import com.instream.tenant.domain.application.domain.request.ApplicationCreateRequest;
+import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.service.ApplicationService;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
@@ -55,6 +56,22 @@ public class HostHandler {
                 .flatMap(tenantService::signUp)
                 .flatMap(tenantDto -> ServerResponse.created(URI.create(String.format("/%s/info", tenantDto.id())))
                         .bodyValue(tenantDto));
+    }
+
+    public Mono<ServerResponse> searchApplication(ServerRequest request) {
+        UUID hostId;
+
+        try {
+            hostId = UUID.fromString(request.pathVariable("hostId"));
+        } catch (IllegalArgumentException illegalArgumentException) {
+            throw new RestApiException(CommonHttpErrorCode.BAD_REQUEST);
+        }
+
+        return request.queryParams(ApplicationSearchPaginationOptionRequest.class)
+                .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
+                .flatMap((applicationCreateRequest -> applicationService.createApplication(applicationCreateRequest, hostId)))
+                .flatMap(applicationCreateResponse -> ServerResponse.created(URI.create(String.format("/%s/info", applicationCreateResponse.application().applicationId())))
+                        .bodyValue(applicationCreateResponse));
     }
 
     public Mono<ServerResponse> createApplication(ServerRequest request) {
