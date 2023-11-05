@@ -10,6 +10,7 @@ import com.instream.tenant.domain.participant.domain.dto.ParticipantJoinDto;
 import com.instream.tenant.domain.participant.domain.entity.ParticipantEntity;
 import com.instream.tenant.domain.participant.domain.entity.ParticipantJoinEntity;
 import com.instream.tenant.domain.participant.domain.request.EnterToApplicationParticipantRequest;
+import com.instream.tenant.domain.participant.domain.request.LeaveFromApplicationParticipantRequest;
 import com.instream.tenant.domain.participant.infra.enums.ParticipantErrorCode;
 import com.instream.tenant.domain.participant.infra.enums.ParticipantJoinErrorCode;
 import com.instream.tenant.domain.participant.repository.ParticipantJoinRepository;
@@ -41,7 +42,7 @@ public class ParticipantService {
         this.participantJoinRepository = participantJoinRepository;
     }
 
-    Mono<ParticipantJoinDto> enterToApplication(String apiKey, UUID tenantId, String participantId, EnterToApplicationParticipantRequest enterToApplicationParticipantRequest) {
+    public Mono<ParticipantJoinDto> enterToApplication(String apiKey, UUID tenantId, String participantId, EnterToApplicationParticipantRequest enterToApplicationParticipantRequest) {
         // TODO: 참가자 ID 암호화 로직 결정
         // TODO: participantId로 사용된 로직 추후 encryptedParticipantId로 수정
         // TODO: 현재 Reactive chain이 너무 길어지는 문제 발생. 검증 로직은 Validator로 구현하고, ReactiveValidator는 Validator랑 composite하는 형태로 구현하기
@@ -85,7 +86,7 @@ public class ParticipantService {
         });
     }
 
-    Mono<ParticipantJoinDto> leaveFromApplication(String apiKey, UUID tenantId, String participantId, UUID applicationSessionId) {
+    public Mono<ParticipantJoinDto> leaveFromApplication(String apiKey, UUID tenantId, String participantId, LeaveFromApplicationParticipantRequest leaveFromApplicationParticipantRequest) {
         // TODO: 참가자 ID 암호화 로직 결정
         // TODO: participantId로 사용된 로직 추후 encryptedParticipantId로 수정
         // TODO: 현재 Reactive chain이 너무 길어지는 문제 발생. 검증 로직은 Validator로 구현하고, ReactiveValidator는 Validator랑 composite하는 형태로 구현하기
@@ -96,7 +97,7 @@ public class ParticipantService {
                 return Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND));
             }
 
-            return applicationSessionRepository.findById(applicationSessionId)
+            return applicationSessionRepository.findById(leaveFromApplicationParticipantRequest.applicationSessionId())
                     .switchIfEmpty(Mono.error(new RestApiException(ApplicationSessionErrorCode.APPLICATION_SESSION_NOT_FOUND)))
                     .flatMap(applicationSession -> {
 
@@ -107,7 +108,7 @@ public class ParticipantService {
 
                         Mono<ParticipantEntity> participantEntityMono = participantRepository.findById(participantId)
                                 .switchIfEmpty(Mono.error(new RestApiException(ParticipantErrorCode.PARTICIPANT_NOT_FOUND)));
-                        Mono<ParticipantJoinEntity> participantJoinEntityMono = participantJoinRepository.findByTenantIdAndParticipantIdAndSessionId(tenantId, participantId, applicationSessionId)
+                        Mono<ParticipantJoinEntity> participantJoinEntityMono = participantJoinRepository.findByTenantIdAndParticipantIdAndSessionId(tenantId, participantId, leaveFromApplicationParticipantRequest.applicationSessionId())
                                 .switchIfEmpty(Mono.error(new RestApiException(ParticipantJoinErrorCode.PARTICIPANT_JOIN_NOT_FOUND)));
 
                         return Mono.zip(participantEntityMono, participantJoinEntityMono, (participant, participantJoin) -> ParticipantJoinDto.builder()
