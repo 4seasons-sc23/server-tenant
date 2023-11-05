@@ -1,4 +1,4 @@
-package com.instream.tenant.domain.host.domain.dto;
+package com.instream.tenant.domain.tenant.domain.dto;
 
 import com.instream.tenant.domain.common.infra.enums.Status;
 import lombok.Builder;

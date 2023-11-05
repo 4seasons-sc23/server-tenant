@@ -1,4 +1,4 @@
-package com.instream.tenant.domain.host.infra.converter;
+package com.instream.tenant.domain.tenant.infra.converter;
 
 import com.instream.tenant.domain.common.infra.enums.Status;
 import org.springframework.core.convert.converter.Converter;

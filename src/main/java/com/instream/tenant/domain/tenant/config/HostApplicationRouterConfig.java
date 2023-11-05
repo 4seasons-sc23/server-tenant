@@ -1,4 +1,4 @@
-package com.instream.tenant.domain.host.config;
+package com.instream.tenant.domain.tenant.config;
 
 import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
 import com.instream.tenant.domain.application.domain.request.ApplicationCreateRequest;

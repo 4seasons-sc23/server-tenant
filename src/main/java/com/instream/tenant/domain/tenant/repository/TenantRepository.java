@@ -1,6 +1,6 @@
-package com.instream.tenant.domain.host.repository;
+package com.instream.tenant.domain.tenant.repository;
 
-import com.instream.tenant.domain.host.domain.entity.TenantEntity;
+import com.instream.tenant.domain.tenant.domain.entity.TenantEntity;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import reactor.core.publisher.Mono;
 

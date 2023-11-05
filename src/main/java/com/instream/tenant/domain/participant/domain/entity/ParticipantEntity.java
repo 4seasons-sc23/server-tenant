@@ -1,8 +1,6 @@
 package com.instream.tenant.domain.participant.domain.entity;
 
-import com.instream.tenant.domain.application.infra.enums.ApplicationType;
 import com.instream.tenant.domain.common.infra.enums.Status;
-import com.instream.tenant.domain.host.domain.entity.TenantEntity;
 import com.instream.tenant.domain.redis.domain.entity.RedisEntity;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;

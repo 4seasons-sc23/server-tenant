@@ -3,8 +3,8 @@ package com.instream.tenant.domain.participant.service;
 import com.instream.tenant.domain.application.infra.enums.ApplicationSessionErrorCode;
 import com.instream.tenant.domain.application.repository.ApplicationSessionRepository;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
-import com.instream.tenant.domain.host.infra.enums.TenantErrorCode;
-import com.instream.tenant.domain.host.repository.TenantRepository;
+import com.instream.tenant.domain.tenant.infra.enums.TenantErrorCode;
+import com.instream.tenant.domain.tenant.repository.TenantRepository;
 import com.instream.tenant.domain.participant.domain.dto.ParticipantDto;
 import com.instream.tenant.domain.participant.domain.dto.ParticipantJoinDto;
 import com.instream.tenant.domain.participant.domain.entity.ParticipantEntity;
@@ -20,7 +20,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-import java.util.Optional;
 import java.util.UUID;
 
 @Service

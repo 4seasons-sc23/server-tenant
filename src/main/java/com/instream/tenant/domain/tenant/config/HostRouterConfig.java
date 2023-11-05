@@ -1,17 +1,15 @@
-package com.instream.tenant.domain.host.config;
+package com.instream.tenant.domain.tenant.config;
 
-import com.instream.tenant.domain.host.domain.dto.TenantDto;
-import com.instream.tenant.domain.host.domain.request.TenantCreateRequest;
-import com.instream.tenant.domain.host.domain.request.TenantSignInRequest;
-import com.instream.tenant.domain.host.handler.HostHandler;
+import com.instream.tenant.domain.tenant.domain.dto.TenantDto;
+import com.instream.tenant.domain.tenant.domain.request.TenantCreateRequest;
+import com.instream.tenant.domain.tenant.domain.request.TenantSignInRequest;
+import com.instream.tenant.domain.tenant.handler.HostHandler;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.server.RequestPredicates;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
-
-import java.lang.reflect.Type;
 
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;

@@ -1,13 +1,13 @@
-package com.instream.tenant.domain.host.service;
+package com.instream.tenant.domain.tenant.service;
 
 import com.instream.tenant.domain.common.infra.enums.Status;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
-import com.instream.tenant.domain.host.domain.dto.TenantDto;
-import com.instream.tenant.domain.host.domain.entity.TenantEntity;
-import com.instream.tenant.domain.host.domain.request.TenantCreateRequest;
-import com.instream.tenant.domain.host.domain.request.TenantSignInRequest;
-import com.instream.tenant.domain.host.infra.enums.TenantErrorCode;
-import com.instream.tenant.domain.host.repository.TenantRepository;
+import com.instream.tenant.domain.tenant.domain.dto.TenantDto;
+import com.instream.tenant.domain.tenant.domain.entity.TenantEntity;
+import com.instream.tenant.domain.tenant.domain.request.TenantCreateRequest;
+import com.instream.tenant.domain.tenant.domain.request.TenantSignInRequest;
+import com.instream.tenant.domain.tenant.infra.enums.TenantErrorCode;
+import com.instream.tenant.domain.tenant.repository.TenantRepository;
 import com.instream.tenant.domain.redis.model.factory.ReactiveRedisTemplateFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;

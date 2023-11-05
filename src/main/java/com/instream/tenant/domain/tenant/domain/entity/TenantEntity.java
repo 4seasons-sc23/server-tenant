@@ -1,4 +1,4 @@
-package com.instream.tenant.domain.host.domain.entity;
+package com.instream.tenant.domain.tenant.domain.entity;
 
 import com.instream.tenant.domain.common.infra.enums.Status;
 import com.instream.tenant.domain.redis.domain.entity.RedisEntity;

@@ -1,10 +1,10 @@
-package com.instream.tenant.domain.host.handler;
+package com.instream.tenant.domain.tenant.handler;
 
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
-import com.instream.tenant.domain.host.domain.request.TenantCreateRequest;
-import com.instream.tenant.domain.host.domain.request.TenantSignInRequest;
-import com.instream.tenant.domain.host.service.TenantService;
+import com.instream.tenant.domain.tenant.domain.request.TenantCreateRequest;
+import com.instream.tenant.domain.tenant.domain.request.TenantSignInRequest;
+import com.instream.tenant.domain.tenant.service.TenantService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;

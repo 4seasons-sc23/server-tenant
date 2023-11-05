@@ -1,7 +1,6 @@
-package com.instream.tenant.domain.host.infra.enums;
+package com.instream.tenant.domain.tenant.infra.enums;
 
 import com.instream.tenant.domain.error.infra.enums.HttpErrorCode;
-import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
 public enum TenantErrorCode implements HttpErrorCode {
