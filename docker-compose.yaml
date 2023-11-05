@@ -7,7 +7,7 @@ services:
     environment:
       SERVER_MODE: dev
     env_file:
-      - ./.env
+      - .env/.env
 
   redis:
     image: redis:alpine
@@ -29,7 +29,7 @@ services:
     - "./mariadb/conf.d:/etc/mysql/conf.d"
     - "./mariadb/data:/var/lib/mysql"
     environment:
-      MARIADB_DATABASE: ${MARIADB_DATABASE}
-      MARIADB_USER: ${MARIADB_USER}
-      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
-      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${MARIA_DATABASE}
+      MARIADB_USER: ${MARIA_USERNAME}
+      MARIADB_PASSWORD: ${MARIA_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${MARIA_ROOT_PASSWORD}
