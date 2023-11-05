@@ -5,5 +5,5 @@ import com.instream.tenant.domain.participant.domain.entity.ParticipantEntity;
 
 import java.util.UUID;
 
-public interface ParticipantRepository extends QuerydslR2dbcRepository<ParticipantEntity, UUID> {
+public interface ParticipantRepository extends QuerydslR2dbcRepository<ParticipantEntity, String> {
 }

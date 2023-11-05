@@ -10,6 +10,8 @@ import com.instream.tenant.domain.participant.domain.dto.ParticipantJoinDto;
 import com.instream.tenant.domain.participant.domain.entity.ParticipantEntity;
 import com.instream.tenant.domain.participant.domain.entity.ParticipantJoinEntity;
 import com.instream.tenant.domain.participant.domain.request.EnterToApplicationParticipantRequest;
+import com.instream.tenant.domain.participant.infra.enums.ParticipantErrorCode;
+import com.instream.tenant.domain.participant.infra.enums.ParticipantJoinErrorCode;
 import com.instream.tenant.domain.participant.repository.ParticipantJoinRepository;
 import com.instream.tenant.domain.participant.repository.ParticipantRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -83,10 +85,44 @@ public class ParticipantService {
         });
     }
 
-    Mono<ParticipantJoinDto> leaveFromApplication(String apiKey, String hostId, String participantId, UUID applicationSessionId) {
+    Mono<ParticipantJoinDto> leaveFromApplication(String apiKey, UUID tenantId, String participantId, UUID applicationSessionId) {
         // TODO: 참가자 ID 암호화 로직 결정
         // TODO: participantId로 사용된 로직 추후 encryptedParticipantId로 수정
-        return Mono.just(ParticipantJoinDto.builder()
-                .build());
+        // TODO: 현재 Reactive chain이 너무 길어지는 문제 발생. 검증 로직은 Validator로 구현하고, ReactiveValidator는 Validator랑 composite하는 형태로 구현하기
+        // TODO: method extract 해서 enterToApplication랑 통합
+
+        return tenantRepository.existsById(tenantId).flatMap(exists -> {
+            if (!exists) {
+                return Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND));
+            }
+
+            return applicationSessionRepository.findById(applicationSessionId)
+                    .switchIfEmpty(Mono.error(new RestApiException(ApplicationSessionErrorCode.APPLICATION_SESSION_NOT_FOUND)))
+                    .flatMap(applicationSession -> {
+
+                        // 세션이 종료될 때는 세션 종료 API에서 leave timestampe를 수정합니다.
+                        if (applicationSession.getDeletedAt() != null) {
+                            return Mono.error(new RestApiException(ApplicationSessionErrorCode.APPLICATION_SESSION_ALREADY_ENDED));
+                        }
+
+                        Mono<ParticipantEntity> participantEntityMono = participantRepository.findById(participantId)
+                                .switchIfEmpty(Mono.error(new RestApiException(ParticipantErrorCode.PARTICIPANT_NOT_FOUND)));
+                        Mono<ParticipantJoinEntity> participantJoinEntityMono = participantJoinRepository.findByTenantIdAndParticipantIdAndSessionId(tenantId, participantId, applicationSessionId)
+                                .switchIfEmpty(Mono.error(new RestApiException(ParticipantJoinErrorCode.PARTICIPANT_JOIN_NOT_FOUND)));
+
+                        return Mono.zip(participantEntityMono, participantJoinEntityMono, (participant, participantJoin) -> ParticipantJoinDto.builder()
+                                .id(participantJoin.getId())
+                                .createdAt(participantJoin.getCreatedAt())
+                                .updatedAt(participantJoin.getUpdatedAt())
+                                .participant(ParticipantDto.builder()
+                                        .id(participant.getId())
+                                        .tenantId(participant.getTenantId())
+                                        .nickname(participant.getNickname())
+                                        .profileImgUrl(participant.getProfileImgUrl())
+                                        .createdAt(participant.getCreatedAt())
+                                        .build())
+                                .build());
+                    });
+        });
     }
 }
