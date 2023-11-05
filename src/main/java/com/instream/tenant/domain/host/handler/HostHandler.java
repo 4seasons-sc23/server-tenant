@@ -48,6 +48,7 @@ public class HostHandler {
         return request.bodyToMono(TenantCreateRequest.class)
                 .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
                 .flatMap(tenantService::signUp)
-                .flatMap(tenantDto -> ServerResponse.created(URI.create(String.format("/%s/info", tenantDto.id()))).bodyValue(tenantDto));
+                .flatMap(tenantDto -> ServerResponse.created(URI.create(String.format("/%s/info", tenantDto.id())))
+                        .bodyValue(tenantDto));
     }
 }

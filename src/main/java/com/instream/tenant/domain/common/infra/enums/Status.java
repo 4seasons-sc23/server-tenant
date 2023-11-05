@@ -7,7 +7,8 @@ import java.util.Arrays;
 
 public enum Status {
     USE("N"),
-    DELETED("Y");
+    DELETED("Y"),
+    PENDING("P");
 
     private final String code;
 

@@ -1,5 +1,6 @@
 package com.instream.tenant.domain.host.config;
 
+import com.instream.tenant.domain.host.domain.dto.TenantDto;
 import com.instream.tenant.domain.host.domain.request.TenantCreateRequest;
 import com.instream.tenant.domain.host.domain.request.TenantSignInRequest;
 import com.instream.tenant.domain.host.handler.HostHandler;
@@ -10,6 +11,9 @@ import org.springframework.web.reactive.function.server.RequestPredicates;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
+import java.lang.reflect.Type;
+
+import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 import static org.springdoc.webflux.core.fn.SpringdocRouteBuilder.route;
@@ -18,7 +22,7 @@ import static org.springdoc.webflux.core.fn.SpringdocRouteBuilder.route;
 @Configuration
 public class HostRouterConfig {
     @Bean
-    public RouterFunction<ServerResponse> v1Routes(HostHandler hostHandler) {
+    public RouterFunction<ServerResponse> v1HostRoutes(HostHandler hostHandler) {
         return route().nest(RequestPredicates.path("/v1/hosts"),
                 builder -> {
                     builder.add(getUserInfoFunctionSupplier(hostHandler));
@@ -41,6 +45,7 @@ public class HostRouterConfig {
                                         .required(true)
                                         .example("80bd6328-76a7-11ee-b720-0242ac130003")
                                 )
+                                .response(responseBuilder().implementation(TenantDto.class))
                 )
                 .build();
     }
@@ -52,6 +57,7 @@ public class HostRouterConfig {
                         hostHandler::signIn,
                         ops -> ops.operationId("123")
                                 .requestBody(requestBodyBuilder().implementation(TenantSignInRequest.class))
+                                .response(responseBuilder().implementation(TenantDto.class))
                 )
                 .build();
     }
@@ -63,9 +69,8 @@ public class HostRouterConfig {
                         hostHandler::signUp,
                         ops -> ops.operationId("123")
                                 .requestBody(requestBodyBuilder().implementation(TenantCreateRequest.class))
+                                .response(responseBuilder().implementation(TenantDto.class))
                 )
                 .build();
     }
-
-
 }
