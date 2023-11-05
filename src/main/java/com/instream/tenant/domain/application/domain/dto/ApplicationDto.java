@@ -12,7 +12,7 @@ public record ApplicationDto(
 
         ApplicationType type,
 
-        String session,
+        ApplicationSessionDto session,
 
         Status status,
 
