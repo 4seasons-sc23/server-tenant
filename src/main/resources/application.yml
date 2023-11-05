@@ -16,20 +16,18 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MariaDBDialect
+  webflux:
+    base-path: /api
 
 springdoc:
   swagger-ui:
-    path: /api/swagger-ui.html
+    path: /swagger-ui.html
     enabled: true
   api-docs:
     path: /v3/api-docs
   default-consumes-media-type: application/json
   default-produces-media-type: application/json
   model-and-view-allowed: true
-
-server:
-  servlet:
-    context-path: /api
 
 logging:
   level:
