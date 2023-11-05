@@ -23,7 +23,7 @@ public class ParticipantJoinEntity implements RedisEntity {
     @Column(value = "participant_join_id")
     private UUID id;
 
-    private UUID participantId;
+    private String participantId;
 
     private UUID tenantId;
 

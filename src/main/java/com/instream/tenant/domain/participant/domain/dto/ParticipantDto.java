@@ -5,14 +5,15 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Builder;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public record ParticipantDto(
         @NotBlank
-        String participantId,
+        String id,
 
         @NotBlank
         @JsonIgnore
-        String tenantId,
+        UUID tenantId,
 
         @NotBlank
         String nickname,
