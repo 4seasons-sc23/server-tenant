@@ -18,6 +18,7 @@ import com.instream.tenant.domain.common.domain.dto.PaginationInfoDto;
 import com.instream.tenant.domain.common.infra.enums.Status;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
+import com.instream.tenant.domain.participant.repository.ParticipantJoinRepository;
 import com.instream.tenant.domain.redis.model.factory.ReactiveRedisTemplateFactory;
 import com.querydsl.core.types.Predicate;
 import lombok.extern.slf4j.Slf4j;
@@ -36,14 +37,19 @@ import java.util.UUID;
 @Slf4j
 public class ApplicationService {
     private final ReactiveRedisTemplate<String, ApplicationEntity> redisTemplate;
+
     private final ApplicationRepository applicationRepository;
+
     private final ApplicationSessionRepository applicationSessionRepository;
 
+    private final ParticipantJoinRepository participantJoinRepository;
+
     @Autowired
-    public ApplicationService(ReactiveRedisTemplateFactory redisTemplateFactory, ApplicationRepository applicationRepository, ApplicationSessionRepository applicationSessionRepository) {
+    public ApplicationService(ReactiveRedisTemplateFactory redisTemplateFactory, ApplicationRepository applicationRepository, ApplicationSessionRepository applicationSessionRepository, ParticipantJoinRepository participantJoinRepository) {
         this.redisTemplate = redisTemplateFactory.getTemplate(ApplicationEntity.class);
         this.applicationRepository = applicationRepository;
         this.applicationSessionRepository = applicationSessionRepository;
+        this.participantJoinRepository = participantJoinRepository;
     }
 
     public Mono<PaginationDto<CollectionDto<ApplicationDto>>> search(ApplicationSearchPaginationOptionRequest applicationSearchPaginationOptionRequest, UUID hostId) {
@@ -179,10 +185,12 @@ public class ApplicationService {
     private Mono<Void> deleteApplicationSession(UUID applicationId, ApplicationEntity application) {
         return applicationSessionRepository.findTopByApplicationIdOrderByCreatedAtDesc(applicationId)
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationSessionErrorCode.APPLICATION_SESSION_NOT_FOUND)))
-                .flatMap(applicationSessionEntity -> {
-                    applicationSessionEntity.setDeletedAt(LocalDateTime.now());
-                    return applicationSessionRepository.save(applicationSessionEntity);
-                }).then(Mono.defer(() -> {
+                .flatMap(applicationSession -> {
+                    applicationSession.setDeletedAt(LocalDateTime.now());
+                    return applicationSessionRepository.save(applicationSession);
+                })
+                .flatMap(applicationSession -> participantJoinRepository.updateAllParticipantJoinsBySessionId(applicationSession.getId()))
+                .then(Mono.defer(() -> {
                     application.setStatus(Status.PENDING);
                     return applicationRepository.save(application).then();
                 }));
