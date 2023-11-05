@@ -1,6 +1,5 @@
-package com.instream.tenant.domain.host.domain.entity;
+package com.instream.tenant.domain.application.domain.entity;
 
-import com.instream.tenant.domain.common.infra.enums.Status;
 import com.instream.tenant.domain.redis.domain.entity.RedisEntity;
 import lombok.*;
 import org.springframework.data.annotation.Id;
@@ -10,34 +9,23 @@ import org.springframework.data.relational.core.mapping.Table;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-
-@Table(name = "TENANTS")
+@Table(name = "APPLICATION_SESSIONS")
 @Setter
 @Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class TenantEntity implements RedisEntity {
+public class ApplicationSessionEntity implements RedisEntity {
     @Id
-    @Column(value = "tenant_id")
+    @Column(value = "application_session_id")
     private UUID id;
 
-    private String account;
-
-    private String password;
-
-    private Status status;
-
-    private String name;
-
-    private String phoneNumber;
-
-    private String secretKey;
+    private UUID applicationId;
 
     private LocalDateTime createdAt;
 
-    private LocalDateTime updatedAt;
+    private LocalDateTime deletedAt;
 
     @Override
     public String genRedisKey() {
