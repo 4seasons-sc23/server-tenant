@@ -1,8 +1,6 @@
 package com.instream.tenant.domain.participant.domain.entity;
 
-import com.instream.tenant.domain.common.infra.enums.Status;
 import com.instream.tenant.domain.redis.domain.entity.RedisEntity;
-import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
@@ -27,7 +25,7 @@ public class ParticipantJoinEntity implements RedisEntity {
 
     private UUID tenantId;
 
-    private UUID sessionId;
+    private UUID applicationSessionId;
 
     private LocalDateTime createdAt;
 

@@ -57,35 +57,45 @@ public class ParticipantService {
                         if (applicationSession.getDeletedAt() != null) {
                             return Mono.error(new RestApiException(ApplicationSessionErrorCode.APPLICATION_SESSION_ALREADY_ENDED));
                         }
-                        Mono<ParticipantEntity> participantEntityMono = participantRepository.save(ParticipantEntity.builder()
-                                .id(participantId)
-                                .tenantId(tenantId)
-                                .nickname(enterToApplicationParticipantRequest.nickname())
-                                .profileImgUrl(enterToApplicationParticipantRequest.profileImgUrl())
-                                .build());
-                        Mono<ParticipantJoinEntity> participantJoinEntityMono = participantJoinRepository.findByTenantIdAndParticipantIdAndSessionId(tenantId, participantId, enterToApplicationParticipantRequest.applicationSessionId())
-                                .switchIfEmpty(participantJoinRepository.save(ParticipantJoinEntity.builder()
+                        return participantRepository.findById(participantId)
+                                .flatMap(savedParticipant -> {
+                                    savedParticipant.setNickname(enterToApplicationParticipantRequest.nickname());
+                                    savedParticipant.setProfileImgUrl(enterToApplicationParticipantRequest.profileImgUrl());
+                                    return participantRepository.save(savedParticipant);
+                                })
+                                .switchIfEmpty(participantRepository.insert(ParticipantEntity.builder()
+                                        .id(participantId)
                                         .tenantId(tenantId)
-                                        .participantId(participantId)
-                                        .sessionId(enterToApplicationParticipantRequest.applicationSessionId())
-                                        .build()));
-                        return Mono.zip(participantEntityMono, participantJoinEntityMono, (participant, participantJoin) -> ParticipantJoinDto.builder()
-                                .id(participantJoin.getId())
-                                .createdAt(participantJoin.getCreatedAt())
-                                .updatedAt(participantJoin.getUpdatedAt())
-                                .participant(ParticipantDto.builder()
-                                        .id(participant.getId())
-                                        .tenantId(participant.getTenantId())
-                                        .nickname(participant.getNickname())
-                                        .profileImgUrl(participant.getProfileImgUrl())
-                                        .createdAt(participant.getCreatedAt())
-                                        .build())
-                                .build());
+                                        .nickname(enterToApplicationParticipantRequest.nickname())
+                                        .profileImgUrl(enterToApplicationParticipantRequest.profileImgUrl())
+                                        .build()))
+                                .flatMap(participant -> participantRepository.findById(participantId))
+                                .flatMap(participant -> participantJoinRepository.findByTenantIdAndParticipantIdAndApplicationSessionId(tenantId, participantId, enterToApplicationParticipantRequest.applicationSessionId())
+                                        .switchIfEmpty(participantJoinRepository.save(ParticipantJoinEntity.builder()
+                                                        .tenantId(tenantId)
+                                                        .participantId(participantId)
+                                                        .applicationSessionId(enterToApplicationParticipantRequest.applicationSessionId())
+                                                        .build())
+                                                .flatMap(participantJoin -> participantJoinRepository.findById(participantJoin.getId()))
+                                        )
+                                        .flatMap(participantJoin -> Mono.just(ParticipantJoinDto.builder()
+                                                .id(participantJoin.getId())
+                                                .createdAt(participantJoin.getCreatedAt())
+                                                .updatedAt(participantJoin.getUpdatedAt())
+                                                .participant(ParticipantDto.builder()
+                                                        .id(participant.getId())
+                                                        .tenantId(participant.getTenantId())
+                                                        .nickname(participant.getNickname())
+                                                        .profileImgUrl(participant.getProfileImgUrl())
+                                                        .createdAt(participant.getCreatedAt())
+                                                        .build())
+                                                .build())));
                     });
         });
     }
 
-    public Mono<ParticipantJoinDto> leaveFromApplication(String apiKey, UUID tenantId, String participantId, LeaveFromApplicationParticipantRequest leaveFromApplicationParticipantRequest) {
+    public Mono<ParticipantJoinDto> leaveFromApplication(String apiKey, UUID tenantId, String
+            participantId, LeaveFromApplicationParticipantRequest leaveFromApplicationParticipantRequest) {
         // TODO: 참가자 ID 암호화 로직 결정
         // TODO: participantId로 사용된 로직 추후 encryptedParticipantId로 수정
         // TODO: 현재 Reactive chain이 너무 길어지는 문제 발생. 검증 로직은 Validator로 구현하고, ReactiveValidator는 Validator랑 composite하는 형태로 구현하기
@@ -107,7 +117,7 @@ public class ParticipantService {
 
                         Mono<ParticipantEntity> participantEntityMono = participantRepository.findById(participantId)
                                 .switchIfEmpty(Mono.error(new RestApiException(ParticipantErrorCode.PARTICIPANT_NOT_FOUND)));
-                        Mono<ParticipantJoinEntity> participantJoinEntityMono = participantJoinRepository.findByTenantIdAndParticipantIdAndSessionId(tenantId, participantId, leaveFromApplicationParticipantRequest.applicationSessionId())
+                        Mono<ParticipantJoinEntity> participantJoinEntityMono = participantJoinRepository.findByTenantIdAndParticipantIdAndApplicationSessionId(tenantId, participantId, leaveFromApplicationParticipantRequest.applicationSessionId())
                                 .switchIfEmpty(Mono.error(new RestApiException(ParticipantJoinErrorCode.PARTICIPANT_JOIN_NOT_FOUND)));
 
                         return Mono.zip(participantEntityMono, participantJoinEntityMono, (participant, participantJoin) -> ParticipantJoinDto.builder()

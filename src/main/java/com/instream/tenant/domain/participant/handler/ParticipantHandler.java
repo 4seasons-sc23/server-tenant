@@ -26,36 +26,36 @@ public class ParticipantHandler {
     public Mono<ServerResponse> enterToApplication(ServerRequest request) {
         String apiKey = null;
         UUID hostId;
-        String applicationId;
+        String participantId;
 
         try {
             hostId = UUID.fromString(request.pathVariable("hostId"));
-            applicationId = request.pathVariable("applicationId");
+            participantId = request.pathVariable("participantId");
         } catch (IllegalArgumentException illegalArgumentException) {
             throw new RestApiException(CommonHttpErrorCode.BAD_REQUEST);
         }
 
         return request.bodyToMono(EnterToApplicationParticipantRequest.class)
                 .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
-                .flatMap(enterToApplicationParticipantRequest -> participantService.enterToApplication(apiKey, hostId, applicationId, enterToApplicationParticipantRequest))
+                .flatMap(enterToApplicationParticipantRequest -> participantService.enterToApplication(apiKey, hostId, participantId, enterToApplicationParticipantRequest))
                 .flatMap(participantJoinDto -> ServerResponse.ok().bodyValue(participantJoinDto));
     }
 
     public Mono leaveFromApplication(ServerRequest request) {
         String apiKey = null;
         UUID hostId;
-        String applicationId;
+        String participantId;
 
         try {
             hostId = UUID.fromString(request.pathVariable("hostId"));
-            applicationId = request.pathVariable("applicationId");
+            participantId = request.pathVariable("participantId");
         } catch (IllegalArgumentException illegalArgumentException) {
             throw new RestApiException(CommonHttpErrorCode.BAD_REQUEST);
         }
 
         return request.bodyToMono(LeaveFromApplicationParticipantRequest.class)
                 .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
-                .flatMap(applicationSessionId -> participantService.leaveFromApplication(apiKey, hostId, applicationId, applicationSessionId))
+                .flatMap(applicationSessionId -> participantService.leaveFromApplication(apiKey, hostId, participantId, applicationSessionId))
                 .flatMap(participantJoinDto -> ServerResponse.ok().bodyValue(participantJoinDto));
     }
 }
