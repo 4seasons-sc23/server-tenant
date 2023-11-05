@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
@@ -118,7 +119,12 @@ public class ParticipantService {
                         Mono<ParticipantEntity> participantEntityMono = participantRepository.findById(participantId)
                                 .switchIfEmpty(Mono.error(new RestApiException(ParticipantErrorCode.PARTICIPANT_NOT_FOUND)));
                         Mono<ParticipantJoinEntity> participantJoinEntityMono = participantJoinRepository.findByTenantIdAndParticipantIdAndApplicationSessionId(tenantId, participantId, leaveFromApplicationParticipantRequest.applicationSessionId())
-                                .switchIfEmpty(Mono.error(new RestApiException(ParticipantJoinErrorCode.PARTICIPANT_JOIN_NOT_FOUND)));
+                                .switchIfEmpty(Mono.error(new RestApiException(ParticipantJoinErrorCode.PARTICIPANT_JOIN_NOT_FOUND)))
+                                .flatMap(participantJoin -> {
+                                    participantJoin.setUpdatedAt(LocalDateTime.now());
+                                    return participantJoinRepository.save(participantJoin);
+                                })
+                                .flatMap(participantJoin -> participantJoinRepository.findById(participantJoin.getId()));
 
                         return Mono.zip(participantEntityMono, participantJoinEntityMono, (participant, participantJoin) -> ParticipantJoinDto.builder()
                                 .id(participantJoin.getId())
