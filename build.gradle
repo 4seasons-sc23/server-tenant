@@ -22,22 +22,29 @@ repositories {
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
-	implementation 'org.springframework.session:spring-session-data-redis'
 	implementation 'org.testng:testng:7.1.0'
 	compileOnly 'org.projectlombok:lombok'
-	runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.projectreactor:reactor-test'
+
+	// db
+	implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
+	implementation 'org.springframework.session:spring-session-data-redis'
+	implementation 'org.mariadb:r2dbc-mariadb:1.1.4'
+	runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
 
 	// netty
 	implementation 'io.netty:netty-resolver-dns-native-macos:4.1.68.Final:osx-aarch_64'
 
 	// swagger
 	implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.2.0'
+
+	// jackson
+	// support java 8 time api
+	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 }
 
 tasks.named('test') {

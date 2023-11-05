@@ -1,4 +1,4 @@
-package com.instream.tenant.common;
+package com.instream.tenant.core.config;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
