@@ -1,6 +1,7 @@
 package com.instream.tenant.domain.host.config;
 
 import com.instream.tenant.domain.host.domain.request.TenantCreateRequest;
+import com.instream.tenant.domain.host.domain.request.TenantSignInRequest;
 import com.instream.tenant.domain.host.handler.HostHandler;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import org.springframework.context.annotation.Bean;
@@ -20,22 +21,12 @@ public class HostRouterConfig {
     public RouterFunction<ServerResponse> v1Routes(HostHandler hostHandler) {
         return route().nest(RequestPredicates.path("/v1/hosts"),
                 builder -> {
-                    builder.add(signUpFunctionSupplier(hostHandler));
                     builder.add(getUserInfoFunctionSupplier(hostHandler));
+                    builder.add(signInFunctionSupplier(hostHandler));
+                    builder.add(signUpFunctionSupplier(hostHandler));
                 },
                 ops -> ops.operationId("123")
         ).build();
-    }
-
-    private RouterFunction<ServerResponse> signUpFunctionSupplier(HostHandler hostHandler) {
-        return route()
-                .POST(
-                        "/sign-up",
-                        hostHandler::createTenant,
-                        ops -> ops.operationId("123")
-                                .requestBody(requestBodyBuilder().implementation(TenantCreateRequest.class))
-                )
-                .build();
     }
 
     private RouterFunction<ServerResponse> getUserInfoFunctionSupplier(HostHandler hostHandler) {
@@ -53,4 +44,28 @@ public class HostRouterConfig {
                 )
                 .build();
     }
+
+    private RouterFunction<ServerResponse> signInFunctionSupplier(HostHandler hostHandler) {
+        return route()
+                .POST(
+                        "/sign-in",
+                        hostHandler::signIn,
+                        ops -> ops.operationId("123")
+                                .requestBody(requestBodyBuilder().implementation(TenantSignInRequest.class))
+                )
+                .build();
+    }
+
+    private RouterFunction<ServerResponse> signUpFunctionSupplier(HostHandler hostHandler) {
+        return route()
+                .POST(
+                        "/sign-up",
+                        hostHandler::signUp,
+                        ops -> ops.operationId("123")
+                                .requestBody(requestBodyBuilder().implementation(TenantCreateRequest.class))
+                )
+                .build();
+    }
+
+
 }

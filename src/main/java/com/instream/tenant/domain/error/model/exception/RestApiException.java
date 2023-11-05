@@ -1,4 +1,4 @@
-package com.instream.tenant.domain.error.domain.exception;
+package com.instream.tenant.domain.error.model.exception;
 
 import com.instream.tenant.domain.error.infra.enums.HttpErrorCode;
 import lombok.Getter;
