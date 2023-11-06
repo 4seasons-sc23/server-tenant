@@ -1,6 +1,6 @@
 package com.instream.tenant.domain.media.handler;
 
-import com.instream.tenant.domain.application.service.ApplicationService;
+import com.instream.tenant.domain.application.domain.dto.ApplicationSessionDto;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.media.service.MediaService;
@@ -10,8 +10,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
-
-import java.util.UUID;
 
 @Component
 public class MediaHandler {
@@ -23,23 +21,23 @@ public class MediaHandler {
         this.mediaService = mediaService;
     }
 
-    public Mono startApplication(ServerRequest request) {
+    public Mono<ServerResponse> startLive(ServerRequest request) {
         String apiKey = request.headers().firstHeader(HttpHeaders.AUTHORIZATION);
 
         if (apiKey == null || apiKey.isEmpty()) {
             return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
         }
 
-        return mediaService.startLive(apiKey).then(Mono.defer(() -> ServerResponse.ok().build()));
+        return mediaService.startLive(apiKey).flatMap(applicationSession -> ServerResponse.ok().bodyValue(applicationSession));
     }
 
-    public Mono endApplication(ServerRequest request) {
+    public Mono<ServerResponse> endLive(ServerRequest request) {
         String apiKey = request.headers().firstHeader(HttpHeaders.AUTHORIZATION);
 
         if (apiKey == null || apiKey.isEmpty()) {
             return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
         }
 
-        return mediaService.endLive(apiKey).then(Mono.defer(() -> ServerResponse.ok().build()));
+        return mediaService.endLive(apiKey).flatMap(applicationSession -> ServerResponse.ok().bodyValue(applicationSession));
     }
 }

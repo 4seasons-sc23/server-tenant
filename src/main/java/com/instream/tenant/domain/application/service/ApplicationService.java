@@ -32,6 +32,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -138,12 +139,16 @@ public class ApplicationService {
                 ));
     }
 
-    public Mono<Void> startApplication(UUID applicationId, UUID hostId) {
+    public Mono<Void> startApplication(String apiKey, UUID applicationId, UUID hostId) {
         return applicationRepository.findByIdAndTenantId(applicationId, hostId)
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
                 .flatMap(application -> {
                     boolean isOff = application.getStatus() == Status.PENDING;
 
+                    // TODO: ApiKey 암호화 로직 추가하기
+                    if (!Objects.equals(application.getApiKey(), apiKey)) {
+                        return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
+                    }
                     if (application.getType() == ApplicationType.STREAMING) {
                         return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_SUPPORTED));
                     }
@@ -155,12 +160,15 @@ public class ApplicationService {
                 });
     }
 
-    public Mono<Void> endApplication(UUID applicationId, UUID hostId) {
+    public Mono<Void> endApplication(String apiKey, UUID applicationId, UUID hostId) {
         return applicationRepository.findByIdAndTenantId(applicationId, hostId)
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
                 .flatMap(application -> {
                     boolean isOn = application.getStatus() == Status.USE;
 
+                    if (!Objects.equals(application.getApiKey(), apiKey)) {
+                        return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
+                    }
                     if (application.getType() == ApplicationType.STREAMING) {
                         return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_SUPPORTED));
                     }
@@ -172,9 +180,16 @@ public class ApplicationService {
                 });
     }
 
-    public Mono<Void> deleteApplication(UUID applicationId, UUID hostId) {
-        return applicationSessionRepository.deleteByApplicationId(applicationId)
-                .then(Mono.defer(() -> applicationRepository.deleteByIdAndTenantId(applicationId, hostId)));
+    public Mono<Void> deleteApplication(String apiKey, UUID applicationId, UUID hostId) {
+        return applicationRepository.findById(applicationId)
+                .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
+                .flatMap(application -> {
+                    if (!Objects.equals(application.getApiKey(), apiKey)) {
+                        return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
+                    }
+                    return applicationSessionRepository.deleteByApplicationId(applicationId)
+                            .then(Mono.defer(() -> applicationRepository.deleteByIdAndTenantId(applicationId, hostId)));
+                });
     }
 
     private Mono<Void> createApplicationSession(ApplicationEntity application) {

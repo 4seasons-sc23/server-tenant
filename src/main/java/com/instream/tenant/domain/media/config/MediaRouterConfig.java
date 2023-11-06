@@ -1,7 +1,6 @@
 package com.instream.tenant.domain.media.config;
 
 import com.instream.tenant.domain.application.domain.dto.ApplicationSessionDto;
-import com.instream.tenant.domain.application.handler.ApplicationHandler;
 import com.instream.tenant.domain.media.handler.MediaHandler;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import org.springdoc.core.fn.builders.apiresponse.Builder;
@@ -27,13 +26,19 @@ public class MediaRouterConfig {
                 ops -> ops.operationId("123")
         ).build();
     }
-    
+
     private RouterFunction<ServerResponse> startLive(MediaHandler mediaHandler) {
         return route()
                 .PATCH(
                         "/lives/start",
-                        mediaHandler::startApplication,
+                        mediaHandler::startLive,
                         ops -> ops.operationId("123")
+                                .parameter(parameterBuilder()
+                                        .name("Authorization")
+                                        .in(ParameterIn.HEADER)
+                                        .required(true)
+                                        .example("80bd6328-76a7-11ee-b720-0242ac130003")
+                                )
                                 .parameter(parameterBuilder()
                                         .name("hostId")
                                         .in(ParameterIn.PATH)
@@ -53,8 +58,14 @@ public class MediaRouterConfig {
         return route()
                 .PATCH(
                         "/lives/end",
-                        mediaHandler::endApplication,
+                        mediaHandler::endLive,
                         ops -> ops.operationId("123")
+                                .parameter(parameterBuilder()
+                                        .name("Authorization")
+                                        .in(ParameterIn.HEADER)
+                                        .required(true)
+                                        .example("80bd6328-76a7-11ee-b720-0242ac130003")
+                                )
                                 .parameter(parameterBuilder()
                                         .name("hostId")
                                         .in(ParameterIn.PATH)

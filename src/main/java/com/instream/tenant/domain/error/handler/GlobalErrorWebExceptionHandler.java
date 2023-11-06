@@ -34,6 +34,7 @@ public class GlobalErrorWebExceptionHandler implements ErrorWebExceptionHandler 
 
     @Override
     public Mono<Void> handle(ServerWebExchange exchange, Throwable ex) {
+        System.out.println(String.format("error123 %s", ex));
         if (ex instanceof RestApiException restApiException) {
             log.error("handleRestApiException", ex);
             return writeResponse(restApiException.getHttpErrorCode(), exchange);

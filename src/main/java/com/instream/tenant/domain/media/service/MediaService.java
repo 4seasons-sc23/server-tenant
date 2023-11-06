@@ -1,5 +1,6 @@
 package com.instream.tenant.domain.media.service;
 
+import com.instream.tenant.domain.application.domain.dto.ApplicationSessionDto;
 import com.instream.tenant.domain.application.domain.entity.ApplicationEntity;
 import com.instream.tenant.domain.application.domain.entity.ApplicationSessionEntity;
 import com.instream.tenant.domain.application.infra.enums.ApplicationErrorCode;
@@ -40,13 +41,13 @@ public class MediaService {
         this.participantJoinRepository = participantJoinRepository;
     }
 
-    public Mono<Void> startLive(String apiKey) {
+    public Mono<ApplicationSessionDto> startLive(String apiKey) {
         return applicationRepository.findByApiKey(apiKey)
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
                 .flatMap(application -> {
                     boolean isOff = application.getStatus() == Status.PENDING;
 
-                    if (application.getType() == ApplicationType.STREAMING) {
+                    if (application.getType() != ApplicationType.STREAMING) {
                         return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_SUPPORTED));
                     }
                     if (isOff) {
@@ -57,13 +58,13 @@ public class MediaService {
                 });
     }
 
-    public Mono<Void> endLive(String apiKey) {
+    public Mono<ApplicationSessionDto> endLive(String apiKey) {
         return applicationRepository.findByApiKey(apiKey)
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
                 .flatMap(application -> {
                     boolean isOn = application.getStatus() == Status.USE;
 
-                    if (application.getType() == ApplicationType.STREAMING) {
+                    if (application.getType() != ApplicationType.STREAMING) {
                         return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_SUPPORTED));
                     }
                     if (isOn) {
@@ -74,29 +75,40 @@ public class MediaService {
                 });
     }
 
-    private Mono<Void> createApplicationSession(ApplicationEntity application) {
+    private Mono<ApplicationSessionDto> createApplicationSession(ApplicationEntity application) {
         ApplicationSessionEntity applicationSessionEntity = ApplicationSessionEntity.builder()
                 .applicationId(application.getId())
                 .build();
 
         return applicationSessionRepository.save(applicationSessionEntity)
-                .then(Mono.defer(() -> {
+                .flatMap(applicationSession -> {
                     application.setStatus(Status.USE);
-                    return applicationRepository.save(application).then();
-                }));
+                    applicationRepository.save(application).then();
+                    return applicationSessionRepository.findById(applicationSession.getId());
+                })
+                .flatMap(retrievedApplicationSession -> Mono.just(ApplicationSessionDto.builder()
+                        .id(retrievedApplicationSession.getId())
+                        .createdAt(retrievedApplicationSession.getCreatedAt())
+                        .deletedAt(retrievedApplicationSession.getDeletedAt())
+                        .build()));
     }
 
-    private Mono<Void> deleteApplicationSession(ApplicationEntity application) {
+    private Mono<ApplicationSessionDto> deleteApplicationSession(ApplicationEntity application) {
         return applicationSessionRepository.findTopByApplicationIdOrderByCreatedAtDesc(application.getId())
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationSessionErrorCode.APPLICATION_SESSION_NOT_FOUND)))
                 .flatMap(applicationSession -> {
                     applicationSession.setDeletedAt(LocalDateTime.now());
                     return applicationSessionRepository.save(applicationSession);
                 })
-                .flatMap(applicationSession -> participantJoinRepository.updateAllParticipantJoinsBySessionId(applicationSession.getId()))
-                .then(Mono.defer(() -> {
-                    application.setStatus(Status.PENDING);
-                    return applicationRepository.save(application).then();
-                }));
+                .flatMap(applicationSession -> participantJoinRepository.updateAllParticipantJoinsBySessionId(applicationSession.getId())
+                        .then(Mono.defer(() -> {
+                            application.setStatus(Status.PENDING);
+                            return applicationRepository.save(application);
+                        }))
+                        .thenReturn(ApplicationSessionDto.builder()
+                                .id(applicationSession.getId())
+                                .createdAt(applicationSession.getCreatedAt())
+                                .deletedAt(applicationSession.getDeletedAt())
+                                .build()));
     }
 }
