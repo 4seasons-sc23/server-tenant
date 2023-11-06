@@ -12,11 +12,14 @@ public record ApplicationDto(
 
         ApplicationType type,
 
-        ApplicationSessionDto session,
+        String apiKey,
 
         Status status,
 
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+
+        ApplicationSessionDto session
+
 ) {
     @Builder
     public ApplicationDto {
