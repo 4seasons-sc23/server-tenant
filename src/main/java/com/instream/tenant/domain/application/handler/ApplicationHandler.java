@@ -57,44 +57,40 @@ public class ApplicationHandler {
                         .bodyValue(applicationDto));
     }
 
-    public Mono startApplication(ServerRequest request) {
+    public Mono<ServerResponse> startApplication(ServerRequest request) {
         String apiKey = request.headers().firstHeader(HttpHeaders.AUTHORIZATION);
 
         if (apiKey == null || apiKey.isEmpty()) {
             return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
         }
 
-        UUID hostId;
         UUID applicationId;
 
         try {
-            hostId = UUID.fromString(request.pathVariable("hostId"));
             applicationId = UUID.fromString(request.pathVariable("applicationId"));
         } catch (IllegalArgumentException illegalArgumentException) {
             return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
         }
 
-        return applicationService.startApplication(apiKey, applicationId, hostId).then(Mono.defer(() -> ServerResponse.ok().build()));
+        return applicationService.startApplication(apiKey, applicationId).flatMap((applicationSessionId -> ServerResponse.ok().bodyValue(applicationSessionId)));
     }
 
-    public Mono endApplication(ServerRequest request) {
+    public Mono<ServerResponse> endApplication(ServerRequest request) {
         String apiKey = request.headers().firstHeader(HttpHeaders.AUTHORIZATION);
 
         if (apiKey == null || apiKey.isEmpty()) {
             return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
         }
 
-        UUID hostId;
         UUID applicationId;
 
         try {
-            hostId = UUID.fromString(request.pathVariable("hostId"));
             applicationId = UUID.fromString(request.pathVariable("applicationId"));
         } catch (IllegalArgumentException illegalArgumentException) {
             return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
         }
 
-        return applicationService.endApplication(apiKey, applicationId, hostId).then(Mono.defer(() -> ServerResponse.ok().build()));
+        return applicationService.endApplication(apiKey, applicationId).flatMap((applicationSessionId -> ServerResponse.ok().bodyValue(applicationSessionId)));
     }
 
 
@@ -105,16 +101,14 @@ public class ApplicationHandler {
             return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
         }
 
-        UUID hostId;
         UUID applicationId;
 
         try {
-            hostId = UUID.fromString(request.pathVariable("hostId"));
             applicationId = UUID.fromString(request.pathVariable("applicationId"));
         } catch (IllegalArgumentException illegalArgumentException) {
             return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
         }
 
-        return applicationService.deleteApplication(apiKey, applicationId, hostId).then(Mono.defer(() -> ServerResponse.ok().build()));
+        return applicationService.deleteApplication(apiKey, applicationId).then(Mono.defer(() -> ServerResponse.ok().build()));
     }
 }

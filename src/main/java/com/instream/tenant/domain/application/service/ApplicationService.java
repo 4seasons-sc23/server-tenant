@@ -136,8 +136,8 @@ public class ApplicationService {
                 ));
     }
 
-    public Mono<ApplicationSessionDto> startApplication(String apiKey, UUID applicationId, UUID hostId) {
-        return applicationRepository.findByIdAndTenantId(applicationId, hostId)
+    public Mono<UUID> startApplication(String apiKey, UUID applicationId) {
+        return applicationRepository.findById(applicationId)
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
                 .flatMap(application -> {
                     boolean isOff = application.getStatus() == Status.PENDING;
@@ -145,9 +145,6 @@ public class ApplicationService {
                     // TODO: ApiKey 암호화 로직 추가하기
                     if (!Objects.equals(application.getApiKey(), apiKey)) {
                         return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
-                    }
-                    if (application.getType() == ApplicationType.STREAMING) {
-                        return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_SUPPORTED));
                     }
                     if (isOff) {
                         return createApplicationSession(application);
@@ -157,17 +154,14 @@ public class ApplicationService {
                 });
     }
 
-    public Mono<ApplicationSessionDto> endApplication(String apiKey, UUID applicationId, UUID hostId) {
-        return applicationRepository.findByIdAndTenantId(applicationId, hostId)
+    public Mono<UUID> endApplication(String apiKey, UUID applicationId) {
+        return applicationRepository.findById(applicationId)
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
                 .flatMap(application -> {
                     boolean isOn = application.getStatus() == Status.USE;
 
                     if (!Objects.equals(application.getApiKey(), apiKey)) {
                         return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
-                    }
-                    if (application.getType() == ApplicationType.STREAMING) {
-                        return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_SUPPORTED));
                     }
                     if (isOn) {
                         return deleteApplicationSession(application);
@@ -177,7 +171,7 @@ public class ApplicationService {
                 });
     }
 
-    public Mono<Void> deleteApplication(String apiKey, UUID applicationId, UUID hostId) {
+    public Mono<Void> deleteApplication(String apiKey, UUID applicationId) {
         return applicationRepository.findById(applicationId)
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
                 .flatMap(application -> {
@@ -185,11 +179,11 @@ public class ApplicationService {
                         return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
                     }
                     return applicationSessionRepository.deleteByApplicationId(applicationId)
-                            .then(Mono.defer(() -> applicationRepository.deleteByIdAndTenantId(applicationId, hostId)));
+                            .then(Mono.defer(() -> applicationRepository.deleteById(applicationId)));
                 });
     }
 
-    private Mono<ApplicationSessionDto> createApplicationSession(ApplicationEntity application) {
+    private Mono<UUID> createApplicationSession(ApplicationEntity application) {
         ApplicationSessionEntity applicationSessionEntity = ApplicationSessionEntity.builder()
                 .applicationId(application.getId())
                 .build();
@@ -197,17 +191,12 @@ public class ApplicationService {
         return applicationSessionRepository.save(applicationSessionEntity)
                 .flatMap(applicationSession -> {
                     application.setStatus(Status.USE);
-                    applicationRepository.save(application).then();
-                    return applicationSessionRepository.findById(applicationSession.getId());
+                    return applicationRepository.save(application).then(applicationSessionRepository.findById(applicationSession.getId()));
                 })
-                .flatMap(retrievedApplicationSession -> Mono.just(ApplicationSessionDto.builder()
-                        .id(retrievedApplicationSession.getId())
-                        .createdAt(retrievedApplicationSession.getCreatedAt())
-                        .deletedAt(retrievedApplicationSession.getDeletedAt())
-                        .build()));
+                .flatMap(retrievedApplicationSession -> Mono.just(retrievedApplicationSession.getId()));
     }
 
-    private Mono<ApplicationSessionDto> deleteApplicationSession(ApplicationEntity application) {
+    private Mono<UUID> deleteApplicationSession(ApplicationEntity application) {
         return applicationSessionRepository.findTopByApplicationIdOrderByCreatedAtDesc(application.getId())
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationSessionErrorCode.APPLICATION_SESSION_NOT_FOUND)))
                 .flatMap(applicationSession -> {
@@ -219,10 +208,6 @@ public class ApplicationService {
                             application.setStatus(Status.PENDING);
                             return applicationRepository.save(application);
                         }))
-                        .thenReturn(ApplicationSessionDto.builder()
-                                .id(applicationSession.getId())
-                                .createdAt(applicationSession.getCreatedAt())
-                                .deletedAt(applicationSession.getDeletedAt())
-                                .build()));
+                        .thenReturn(applicationSession.getId()));
     }
 }

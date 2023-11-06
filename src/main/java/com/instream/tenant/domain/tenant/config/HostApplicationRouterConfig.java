@@ -27,9 +27,6 @@ public class HostApplicationRouterConfig {
                 builder -> {
                     builder.add(searchApplication(applicationHandler));
                     builder.add(createApplication(applicationHandler));
-                    builder.add(startApplication(applicationHandler));
-                    builder.add(endApplication(applicationHandler));
-                    builder.add(deleteApplication(applicationHandler));
                 },
                 ops -> ops.operationId("123")
         ).build();
@@ -60,66 +57,6 @@ public class HostApplicationRouterConfig {
                                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
                                 .requestBody(requestBodyBuilder().implementation(ApplicationCreateRequest.class))
                                 .response(responseBuilder().implementation(UUID.class))
-                )
-                .build();
-    }
-
-    private RouterFunction<ServerResponse> startApplication(ApplicationHandler applicationHandler) {
-        return route()
-                .PATCH(
-                        "/{applicationId}/start",
-                        applicationHandler::startApplication,
-                        ops -> ops.operationId("123")
-                                .parameter(parameterBuilder()
-                                        .name("hostId")
-                                        .in(ParameterIn.PATH)
-                                        .required(true)
-                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                                .parameter(parameterBuilder()
-                                        .name("applicationId")
-                                        .in(ParameterIn.PATH)
-                                        .required(true)
-                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                )
-                .build();
-    }
-
-    private RouterFunction<ServerResponse> endApplication(ApplicationHandler applicationHandler) {
-        return route()
-                .PATCH(
-                        "/{applicationId}/end",
-                        applicationHandler::endApplication,
-                        ops -> ops.operationId("123")
-                                .parameter(parameterBuilder()
-                                        .name("hostId")
-                                        .in(ParameterIn.PATH)
-                                        .required(true)
-                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                                .parameter(parameterBuilder()
-                                        .name("applicationId")
-                                        .in(ParameterIn.PATH)
-                                        .required(true)
-                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                )
-                .build();
-    }
-
-    private RouterFunction<ServerResponse> deleteApplication(ApplicationHandler applicationHandler) {
-        return route()
-                .DELETE(
-                        "/{applicationId}",
-                        applicationHandler::deleteApplication,
-                        ops -> ops.operationId("123")
-                                .parameter(parameterBuilder()
-                                        .name("hostId")
-                                        .in(ParameterIn.PATH)
-                                        .required(true)
-                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                                .parameter(parameterBuilder()
-                                        .name("applicationId")
-                                        .in(ParameterIn.PATH)
-                                        .required(true)
-                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
                 )
                 .build();
     }
