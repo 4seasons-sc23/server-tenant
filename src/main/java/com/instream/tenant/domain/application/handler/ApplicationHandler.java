@@ -30,7 +30,7 @@ public class ApplicationHandler {
         try {
             hostId = UUID.fromString(request.pathVariable("hostId"));
         } catch (IllegalArgumentException illegalArgumentException) {
-            throw new RestApiException(CommonHttpErrorCode.BAD_REQUEST);
+            return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
         }
 
         return ApplicationSearchPaginationOptionRequest.fromQueryParams(request.queryParams())
@@ -46,7 +46,7 @@ public class ApplicationHandler {
         try {
             hostId = UUID.fromString(request.pathVariable("hostId"));
         } catch (IllegalArgumentException illegalArgumentException) {
-            throw new RestApiException(CommonHttpErrorCode.BAD_REQUEST);
+            return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
         }
 
         return request.bodyToMono(ApplicationCreateRequest.class)
@@ -64,7 +64,7 @@ public class ApplicationHandler {
             hostId = UUID.fromString(request.pathVariable("hostId"));
             applicationId = UUID.fromString(request.pathVariable("applicationId"));
         } catch (IllegalArgumentException illegalArgumentException) {
-            throw new RestApiException(CommonHttpErrorCode.BAD_REQUEST);
+            return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
         }
 
         return applicationService.startApplication(applicationId, hostId).then(Mono.defer(() -> ServerResponse.ok().build()));
@@ -78,7 +78,7 @@ public class ApplicationHandler {
             hostId = UUID.fromString(request.pathVariable("hostId"));
             applicationId = UUID.fromString(request.pathVariable("applicationId"));
         } catch (IllegalArgumentException illegalArgumentException) {
-            throw new RestApiException(CommonHttpErrorCode.BAD_REQUEST);
+            return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
         }
 
         return applicationService.endApplication(applicationId, hostId).then(Mono.defer(() -> ServerResponse.ok().build()));
@@ -93,7 +93,7 @@ public class ApplicationHandler {
             hostId = UUID.fromString(request.pathVariable("hostId"));
             applicationId = UUID.fromString(request.pathVariable("applicationId"));
         } catch (IllegalArgumentException illegalArgumentException) {
-            throw new RestApiException(CommonHttpErrorCode.BAD_REQUEST);
+            return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
         }
 
         return applicationService.deleteApplication(applicationId, hostId).then(Mono.defer(() -> ServerResponse.ok().build()));

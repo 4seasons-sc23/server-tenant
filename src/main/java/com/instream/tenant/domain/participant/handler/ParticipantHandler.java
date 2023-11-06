@@ -32,7 +32,7 @@ public class ParticipantHandler {
             hostId = UUID.fromString(request.pathVariable("hostId"));
             participantId = request.pathVariable("participantId");
         } catch (IllegalArgumentException illegalArgumentException) {
-            throw new RestApiException(CommonHttpErrorCode.BAD_REQUEST);
+            return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
         }
 
         return request.bodyToMono(EnterToApplicationParticipantRequest.class)
@@ -50,7 +50,7 @@ public class ParticipantHandler {
             hostId = UUID.fromString(request.pathVariable("hostId"));
             participantId = request.pathVariable("participantId");
         } catch (IllegalArgumentException illegalArgumentException) {
-            throw new RestApiException(CommonHttpErrorCode.BAD_REQUEST);
+            return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
         }
 
         return request.bodyToMono(LeaveFromApplicationParticipantRequest.class)

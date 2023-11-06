@@ -29,7 +29,7 @@ public class HostHandler {
         try {
             hostId = UUID.fromString(request.pathVariable("hostId"));
         } catch (IllegalArgumentException illegalArgumentException) {
-            throw new RestApiException(CommonHttpErrorCode.BAD_REQUEST);
+            return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
         }
 
         return Mono.just(hostId)

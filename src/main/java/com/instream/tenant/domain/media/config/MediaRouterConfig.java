@@ -2,6 +2,7 @@ package com.instream.tenant.domain.media.config;
 
 import com.instream.tenant.domain.application.domain.dto.ApplicationSessionDto;
 import com.instream.tenant.domain.application.handler.ApplicationHandler;
+import com.instream.tenant.domain.media.handler.MediaHandler;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import org.springdoc.core.fn.builders.apiresponse.Builder;
 import org.springframework.context.annotation.Bean;
@@ -17,21 +18,21 @@ import static org.springdoc.webflux.core.fn.SpringdocRouteBuilder.route;
 @Configuration
 public class MediaRouterConfig {
     @Bean
-    public RouterFunction<ServerResponse> v1MediaRoutes(ApplicationHandler applicationHandler) {
+    public RouterFunction<ServerResponse> v1MediaRoutes(MediaHandler mediaHandler) {
         return route().nest(RequestPredicates.path("/v1/medias"),
                 builder -> {
-                    builder.add(startLive(applicationHandler));
-                    builder.add(endLive(applicationHandler));
+                    builder.add(startLive(mediaHandler));
+                    builder.add(endLive(mediaHandler));
                 },
                 ops -> ops.operationId("123")
         ).build();
     }
     
-    private RouterFunction<ServerResponse> startLive(ApplicationHandler applicationHandler) {
+    private RouterFunction<ServerResponse> startLive(MediaHandler mediaHandler) {
         return route()
                 .PATCH(
                         "/lives/start",
-                        applicationHandler::startApplication,
+                        mediaHandler::startApplication,
                         ops -> ops.operationId("123")
                                 .parameter(parameterBuilder()
                                         .name("hostId")
@@ -48,11 +49,11 @@ public class MediaRouterConfig {
                 .build();
     }
 
-    private RouterFunction<ServerResponse> endLive(ApplicationHandler applicationHandler) {
+    private RouterFunction<ServerResponse> endLive(MediaHandler mediaHandler) {
         return route()
                 .PATCH(
                         "/lives/end",
-                        applicationHandler::endApplication,
+                        mediaHandler::endApplication,
                         ops -> ops.operationId("123")
                                 .parameter(parameterBuilder()
                                         .name("hostId")
