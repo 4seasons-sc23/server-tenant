@@ -5,6 +5,7 @@ import com.instream.tenant.domain.application.domain.entity.ApplicationSessionEn
 import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.infra.enums.ApplicationErrorCode;
 import com.instream.tenant.domain.application.infra.enums.ApplicationSessionErrorCode;
+import com.instream.tenant.domain.application.infra.enums.ApplicationType;
 import com.instream.tenant.domain.application.model.specification.ApplicationSpecification;
 import com.instream.tenant.domain.application.repository.ApplicationRepository;
 import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
@@ -143,6 +144,9 @@ public class ApplicationService {
                 .flatMap(application -> {
                     boolean isOff = application.getStatus() == Status.PENDING;
 
+                    if (application.getType() == ApplicationType.STREAMING) {
+                        return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_SUPPORTED));
+                    }
                     if (isOff) {
                         return createApplicationSession(applicationId, application);
                     }
@@ -157,6 +161,9 @@ public class ApplicationService {
                 .flatMap(application -> {
                     boolean isOn = application.getStatus() == Status.USE;
 
+                    if (application.getType() == ApplicationType.STREAMING) {
+                        return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_SUPPORTED));
+                    }
                     if (isOn) {
                         return deleteApplicationSession(applicationId, application);
                     }
