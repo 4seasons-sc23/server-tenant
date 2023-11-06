@@ -83,8 +83,8 @@ public class MediaService {
         return applicationSessionRepository.save(applicationSessionEntity)
                 .flatMap(applicationSession -> {
                     application.setStatus(Status.USE);
-                    applicationRepository.save(application).then();
-                    return applicationSessionRepository.findById(applicationSession.getId());
+                    return applicationRepository.save(application)
+                            .then(applicationSessionRepository.findById(applicationSession.getId()));
                 })
                 .flatMap(retrievedApplicationSession -> Mono.just(retrievedApplicationSession.getId()));
     }

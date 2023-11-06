@@ -1,10 +1,5 @@
 package com.instream.tenant.domain.tenant.config;
 
-import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
-import com.instream.tenant.domain.application.domain.request.ApplicationCreateRequest;
-import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
-import com.instream.tenant.domain.application.domain.response.ApplicationCreateResponse;
-import com.instream.tenant.domain.application.handler.ApplicationHandler;
 import com.instream.tenant.domain.participant.domain.dto.ParticipantJoinDto;
 import com.instream.tenant.domain.participant.domain.request.EnterToApplicationParticipantRequest;
 import com.instream.tenant.domain.participant.domain.request.LeaveFromApplicationParticipantRequest;
