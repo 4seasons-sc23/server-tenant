@@ -53,8 +53,8 @@ public class ApplicationHandler {
         return request.bodyToMono(ApplicationCreateRequest.class)
                 .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
                 .flatMap((applicationCreateRequest -> applicationService.createApplication(applicationCreateRequest, hostId)))
-                .flatMap(applicationCreateResponse -> ServerResponse.created(URI.create(String.format("/%s/info", applicationCreateResponse.application().applicationId())))
-                        .bodyValue(applicationCreateResponse));
+                .flatMap(applicationDto -> ServerResponse.created(URI.create(String.format("/%s/info", applicationDto.applicationId())))
+                        .bodyValue(applicationDto));
     }
 
     public Mono startApplication(ServerRequest request) {

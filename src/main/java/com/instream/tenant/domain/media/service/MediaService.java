@@ -41,7 +41,7 @@ public class MediaService {
         this.participantJoinRepository = participantJoinRepository;
     }
 
-    public Mono<ApplicationSessionDto> startLive(String apiKey) {
+    public Mono<UUID> startLive(String apiKey) {
         return applicationRepository.findByApiKey(apiKey)
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
                 .flatMap(application -> {
@@ -58,7 +58,7 @@ public class MediaService {
                 });
     }
 
-    public Mono<ApplicationSessionDto> endLive(String apiKey) {
+    public Mono<UUID> endLive(String apiKey) {
         return applicationRepository.findByApiKey(apiKey)
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
                 .flatMap(application -> {
@@ -75,7 +75,7 @@ public class MediaService {
                 });
     }
 
-    private Mono<ApplicationSessionDto> createApplicationSession(ApplicationEntity application) {
+    private Mono<UUID> createApplicationSession(ApplicationEntity application) {
         ApplicationSessionEntity applicationSessionEntity = ApplicationSessionEntity.builder()
                 .applicationId(application.getId())
                 .build();
@@ -83,17 +83,13 @@ public class MediaService {
         return applicationSessionRepository.save(applicationSessionEntity)
                 .flatMap(applicationSession -> {
                     application.setStatus(Status.USE);
-                    applicationRepository.save(application).then();
-                    return applicationSessionRepository.findById(applicationSession.getId());
+                    return applicationRepository.save(application)
+                            .then(applicationSessionRepository.findById(applicationSession.getId()));
                 })
-                .flatMap(retrievedApplicationSession -> Mono.just(ApplicationSessionDto.builder()
-                        .id(retrievedApplicationSession.getId())
-                        .createdAt(retrievedApplicationSession.getCreatedAt())
-                        .deletedAt(retrievedApplicationSession.getDeletedAt())
-                        .build()));
+                .flatMap(retrievedApplicationSession -> Mono.just(retrievedApplicationSession.getId()));
     }
 
-    private Mono<ApplicationSessionDto> deleteApplicationSession(ApplicationEntity application) {
+    private Mono<UUID> deleteApplicationSession(ApplicationEntity application) {
         return applicationSessionRepository.findTopByApplicationIdOrderByCreatedAtDesc(application.getId())
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationSessionErrorCode.APPLICATION_SESSION_NOT_FOUND)))
                 .flatMap(applicationSession -> {
@@ -105,10 +101,6 @@ public class MediaService {
                             application.setStatus(Status.PENDING);
                             return applicationRepository.save(application);
                         }))
-                        .thenReturn(ApplicationSessionDto.builder()
-                                .id(applicationSession.getId())
-                                .createdAt(applicationSession.getCreatedAt())
-                                .deletedAt(applicationSession.getDeletedAt())
-                                .build()));
+                        .thenReturn(applicationSession.getId()));
     }
 }

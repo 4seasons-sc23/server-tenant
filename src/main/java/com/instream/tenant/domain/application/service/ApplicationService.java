@@ -11,7 +11,6 @@ import com.instream.tenant.domain.application.repository.ApplicationRepository;
 import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
 import com.instream.tenant.domain.application.domain.entity.ApplicationEntity;
 import com.instream.tenant.domain.application.domain.request.ApplicationCreateRequest;
-import com.instream.tenant.domain.application.domain.response.ApplicationCreateResponse;
 import com.instream.tenant.domain.application.repository.ApplicationSessionRepository;
 import com.instream.tenant.domain.common.domain.dto.CollectionDto;
 import com.instream.tenant.domain.common.domain.dto.PaginationDto;
@@ -63,6 +62,7 @@ public class ApplicationService {
                 .flatMap(applicationEntity -> applicationSessionRepository.findTopByApplicationIdOrderByCreatedAtDesc(applicationEntity.getId())
                         .map(applicationSessionEntity -> ApplicationDto.builder()
                                 .applicationId(applicationEntity.getId())
+                                .apiKey(applicationEntity.getApiKey())
                                 .session(ApplicationSessionDto.builder()
                                         .id(applicationSessionEntity.getId())
                                         .createdAt(applicationSessionEntity.getCreatedAt())
@@ -112,7 +112,7 @@ public class ApplicationService {
         );
     }
 
-    public Mono<ApplicationCreateResponse> createApplication(ApplicationCreateRequest applicationCreateRequest, UUID hostId) {
+    public Mono<ApplicationDto> createApplication(ApplicationCreateRequest applicationCreateRequest, UUID hostId) {
         String apiKey = UUID.randomUUID().toString();
 
         return Mono.defer(() -> applicationRepository.save(
@@ -126,20 +126,17 @@ public class ApplicationService {
                 .flatMap(application -> redisTemplate.opsForValue()
                         .set(String.valueOf(application.genRedisKey()), application)
                         .thenReturn(application))
-                .flatMap(savedApplication -> Mono.just(ApplicationCreateResponse.builder()
+                .flatMap(savedApplication -> Mono.just(ApplicationDto.builder()
+                        .applicationId(savedApplication.getId())
+                        .type(savedApplication.getType())
+                        .status(savedApplication.getStatus())
+                        .createdAt(savedApplication.getCreatedAt())
                         .apiKey(apiKey)
-                        .application(
-                                ApplicationDto.builder()
-                                        .applicationId(savedApplication.getId())
-                                        .type(savedApplication.getType())
-                                        .status(savedApplication.getStatus())
-                                        .build()
-                        )
                         .build()
                 ));
     }
 
-    public Mono<Void> startApplication(String apiKey, UUID applicationId, UUID hostId) {
+    public Mono<ApplicationSessionDto> startApplication(String apiKey, UUID applicationId, UUID hostId) {
         return applicationRepository.findByIdAndTenantId(applicationId, hostId)
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
                 .flatMap(application -> {
@@ -160,7 +157,7 @@ public class ApplicationService {
                 });
     }
 
-    public Mono<Void> endApplication(String apiKey, UUID applicationId, UUID hostId) {
+    public Mono<ApplicationSessionDto> endApplication(String apiKey, UUID applicationId, UUID hostId) {
         return applicationRepository.findByIdAndTenantId(applicationId, hostId)
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
                 .flatMap(application -> {
@@ -192,29 +189,40 @@ public class ApplicationService {
                 });
     }
 
-    private Mono<Void> createApplicationSession(ApplicationEntity application) {
+    private Mono<ApplicationSessionDto> createApplicationSession(ApplicationEntity application) {
         ApplicationSessionEntity applicationSessionEntity = ApplicationSessionEntity.builder()
                 .applicationId(application.getId())
                 .build();
 
         return applicationSessionRepository.save(applicationSessionEntity)
-                .then(Mono.defer(() -> {
+                .flatMap(applicationSession -> {
                     application.setStatus(Status.USE);
-                    return applicationRepository.save(application).then();
-                }));
+                    applicationRepository.save(application).then();
+                    return applicationSessionRepository.findById(applicationSession.getId());
+                })
+                .flatMap(retrievedApplicationSession -> Mono.just(ApplicationSessionDto.builder()
+                        .id(retrievedApplicationSession.getId())
+                        .createdAt(retrievedApplicationSession.getCreatedAt())
+                        .deletedAt(retrievedApplicationSession.getDeletedAt())
+                        .build()));
     }
 
-    private Mono<Void> deleteApplicationSession(ApplicationEntity application) {
+    private Mono<ApplicationSessionDto> deleteApplicationSession(ApplicationEntity application) {
         return applicationSessionRepository.findTopByApplicationIdOrderByCreatedAtDesc(application.getId())
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationSessionErrorCode.APPLICATION_SESSION_NOT_FOUND)))
                 .flatMap(applicationSession -> {
                     applicationSession.setDeletedAt(LocalDateTime.now());
                     return applicationSessionRepository.save(applicationSession);
                 })
-                .flatMap(applicationSession -> participantJoinRepository.updateAllParticipantJoinsBySessionId(applicationSession.getId()))
-                .then(Mono.defer(() -> {
-                    application.setStatus(Status.PENDING);
-                    return applicationRepository.save(application).then();
-                }));
+                .flatMap(applicationSession -> participantJoinRepository.updateAllParticipantJoinsBySessionId(applicationSession.getId())
+                        .then(Mono.defer(() -> {
+                            application.setStatus(Status.PENDING);
+                            return applicationRepository.save(application);
+                        }))
+                        .thenReturn(ApplicationSessionDto.builder()
+                                .id(applicationSession.getId())
+                                .createdAt(applicationSession.getCreatedAt())
+                                .deletedAt(applicationSession.getDeletedAt())
+                                .build()));
     }
 }

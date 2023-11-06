@@ -14,14 +14,14 @@
 프로젝트 루트 경로에 .env 파일을 생성하고 다음과 같이 파일 내용을 작성합니다.
 ```dotenv
 # .env
-MARIA_IP=127.0.0.1 # 로컬 기준
-MARIA_PORT=3307 # 로컬 기준
+MARIA_IP=mariadb # Docker Network 기준
+MARIA_PORT=3306 # Docker Network 기준
 MARIA_DATABASE=your_maria_database
 MARIA_USERNAME=your_maria_username
 MARIA_PASSWORD=your_maria_password
 MARIA_ROOT_PASSWORD=your_maria_root_password
-REDIS_IP=127.0.0.1 # 로컬 기준
-REDIS_PORT=6379 # 로컬 기준
+REDIS_IP=redis # Docker Network 기준
+REDIS_PORT=6379 # Docker Network 기준
 REDIS_PASSWORD=your_redis_password 
 ```
 

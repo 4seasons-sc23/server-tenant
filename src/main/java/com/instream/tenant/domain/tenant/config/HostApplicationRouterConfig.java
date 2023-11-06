@@ -3,7 +3,6 @@ package com.instream.tenant.domain.tenant.config;
 import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
 import com.instream.tenant.domain.application.domain.request.ApplicationCreateRequest;
 import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
-import com.instream.tenant.domain.application.domain.response.ApplicationCreateResponse;
 import com.instream.tenant.domain.application.handler.ApplicationHandler;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import org.springframework.context.annotation.Bean;
@@ -11,6 +10,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.server.RequestPredicates;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
+
+import java.util.UUID;
 
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
@@ -58,7 +59,7 @@ public class HostApplicationRouterConfig {
                                         .required(true)
                                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
                                 .requestBody(requestBodyBuilder().implementation(ApplicationCreateRequest.class))
-                                .response(responseBuilder().implementation(ApplicationCreateResponse.class))
+                                .response(responseBuilder().implementation(UUID.class))
                 )
                 .build();
     }
