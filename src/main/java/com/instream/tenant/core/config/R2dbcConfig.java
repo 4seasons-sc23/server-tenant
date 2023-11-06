@@ -4,8 +4,8 @@ import com.instream.tenant.domain.application.infra.converter.applicationType.Ap
 import com.instream.tenant.domain.application.infra.converter.applicationType.ApplicationTypeWriteConverter;
 import com.instream.tenant.domain.common.infra.converter.uuid.UUIDReadConverter;
 import com.instream.tenant.domain.common.infra.converter.uuid.UUIDWriteConverter;
-import com.instream.tenant.domain.host.infra.converter.StatusReadConverter;
-import com.instream.tenant.domain.host.infra.converter.StatusWriteConverter;
+import com.instream.tenant.domain.tenant.infra.converter.StatusReadConverter;
+import com.instream.tenant.domain.tenant.infra.converter.StatusWriteConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;

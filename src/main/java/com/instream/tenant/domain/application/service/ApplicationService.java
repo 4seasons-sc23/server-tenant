@@ -5,6 +5,7 @@ import com.instream.tenant.domain.application.domain.entity.ApplicationSessionEn
 import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.infra.enums.ApplicationErrorCode;
 import com.instream.tenant.domain.application.infra.enums.ApplicationSessionErrorCode;
+import com.instream.tenant.domain.application.infra.enums.ApplicationType;
 import com.instream.tenant.domain.application.model.specification.ApplicationSpecification;
 import com.instream.tenant.domain.application.repository.ApplicationRepository;
 import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
@@ -18,6 +19,7 @@ import com.instream.tenant.domain.common.domain.dto.PaginationInfoDto;
 import com.instream.tenant.domain.common.infra.enums.Status;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
+import com.instream.tenant.domain.participant.repository.ParticipantJoinRepository;
 import com.instream.tenant.domain.redis.model.factory.ReactiveRedisTemplateFactory;
 import com.querydsl.core.types.Predicate;
 import lombok.extern.slf4j.Slf4j;
@@ -30,20 +32,26 @@ import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
 @Slf4j
 public class ApplicationService {
     private final ReactiveRedisTemplate<String, ApplicationEntity> redisTemplate;
+
     private final ApplicationRepository applicationRepository;
+
     private final ApplicationSessionRepository applicationSessionRepository;
 
+    private final ParticipantJoinRepository participantJoinRepository;
+
     @Autowired
-    public ApplicationService(ReactiveRedisTemplateFactory redisTemplateFactory, ApplicationRepository applicationRepository, ApplicationSessionRepository applicationSessionRepository) {
+    public ApplicationService(ReactiveRedisTemplateFactory redisTemplateFactory, ApplicationRepository applicationRepository, ApplicationSessionRepository applicationSessionRepository, ParticipantJoinRepository participantJoinRepository) {
         this.redisTemplate = redisTemplateFactory.getTemplate(ApplicationEntity.class);
         this.applicationRepository = applicationRepository;
         this.applicationSessionRepository = applicationSessionRepository;
+        this.participantJoinRepository = participantJoinRepository;
     }
 
     public Mono<PaginationDto<CollectionDto<ApplicationDto>>> search(ApplicationSearchPaginationOptionRequest applicationSearchPaginationOptionRequest, UUID hostId) {
@@ -131,42 +139,62 @@ public class ApplicationService {
                 ));
     }
 
-    public Mono<Void> startApplication(UUID applicationId, UUID hostId) {
+    public Mono<Void> startApplication(String apiKey, UUID applicationId, UUID hostId) {
         return applicationRepository.findByIdAndTenantId(applicationId, hostId)
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
                 .flatMap(application -> {
                     boolean isOff = application.getStatus() == Status.PENDING;
 
+                    // TODO: ApiKey 암호화 로직 추가하기
+                    if (!Objects.equals(application.getApiKey(), apiKey)) {
+                        return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
+                    }
+                    if (application.getType() == ApplicationType.STREAMING) {
+                        return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_SUPPORTED));
+                    }
                     if (isOff) {
-                        return createApplicationSession(applicationId, application);
+                        return createApplicationSession(application);
                     }
 
                     return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
                 });
     }
 
-    public Mono<Void> endApplication(UUID applicationId, UUID hostId) {
+    public Mono<Void> endApplication(String apiKey, UUID applicationId, UUID hostId) {
         return applicationRepository.findByIdAndTenantId(applicationId, hostId)
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
                 .flatMap(application -> {
                     boolean isOn = application.getStatus() == Status.USE;
 
+                    if (!Objects.equals(application.getApiKey(), apiKey)) {
+                        return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
+                    }
+                    if (application.getType() == ApplicationType.STREAMING) {
+                        return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_SUPPORTED));
+                    }
                     if (isOn) {
-                        return deleteApplicationSession(applicationId, application);
+                        return deleteApplicationSession(application);
                     }
 
                     return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
                 });
     }
 
-    public Mono<Void> deleteApplication(UUID applicationId, UUID hostId) {
-        return applicationSessionRepository.deleteByApplicationId(applicationId)
-                .then(Mono.defer(() -> applicationRepository.deleteByIdAndTenantId(applicationId, hostId)));
+    public Mono<Void> deleteApplication(String apiKey, UUID applicationId, UUID hostId) {
+        return applicationRepository.findById(applicationId)
+                .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
+                .flatMap(application -> {
+                    if (!Objects.equals(application.getApiKey(), apiKey)) {
+                        return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
+                    }
+                    return applicationSessionRepository.deleteByApplicationId(applicationId)
+                            .then(Mono.defer(() -> applicationRepository.deleteByIdAndTenantId(applicationId, hostId)));
+                });
     }
 
-    private Mono<Void> createApplicationSession(UUID applicationId, ApplicationEntity application) {
+    private Mono<Void> createApplicationSession(ApplicationEntity application) {
         ApplicationSessionEntity applicationSessionEntity = ApplicationSessionEntity.builder()
-                .applicationId(applicationId)
+                .applicationId(application.getId())
                 .build();
 
         return applicationSessionRepository.save(applicationSessionEntity)
@@ -176,13 +204,15 @@ public class ApplicationService {
                 }));
     }
 
-    private Mono<Void> deleteApplicationSession(UUID applicationId, ApplicationEntity application) {
-        return applicationSessionRepository.findTopByApplicationIdOrderByCreatedAtDesc(applicationId)
+    private Mono<Void> deleteApplicationSession(ApplicationEntity application) {
+        return applicationSessionRepository.findTopByApplicationIdOrderByCreatedAtDesc(application.getId())
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationSessionErrorCode.APPLICATION_SESSION_NOT_FOUND)))
-                .flatMap(applicationSessionEntity -> {
-                    applicationSessionEntity.setDeletedAt(LocalDateTime.now());
-                    return applicationSessionRepository.save(applicationSessionEntity);
-                }).then(Mono.defer(() -> {
+                .flatMap(applicationSession -> {
+                    applicationSession.setDeletedAt(LocalDateTime.now());
+                    return applicationSessionRepository.save(applicationSession);
+                })
+                .flatMap(applicationSession -> participantJoinRepository.updateAllParticipantJoinsBySessionId(applicationSession.getId()))
+                .then(Mono.defer(() -> {
                     application.setStatus(Status.PENDING);
                     return applicationRepository.save(application).then();
                 }));
