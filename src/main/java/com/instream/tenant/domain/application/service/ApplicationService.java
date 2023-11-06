@@ -148,7 +148,7 @@ public class ApplicationService {
                         return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_SUPPORTED));
                     }
                     if (isOff) {
-                        return createApplicationSession(applicationId, application);
+                        return createApplicationSession(application);
                     }
 
                     return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
@@ -165,7 +165,7 @@ public class ApplicationService {
                         return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_SUPPORTED));
                     }
                     if (isOn) {
-                        return deleteApplicationSession(applicationId, application);
+                        return deleteApplicationSession(application);
                     }
 
                     return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
@@ -177,9 +177,9 @@ public class ApplicationService {
                 .then(Mono.defer(() -> applicationRepository.deleteByIdAndTenantId(applicationId, hostId)));
     }
 
-    private Mono<Void> createApplicationSession(UUID applicationId, ApplicationEntity application) {
+    private Mono<Void> createApplicationSession(ApplicationEntity application) {
         ApplicationSessionEntity applicationSessionEntity = ApplicationSessionEntity.builder()
-                .applicationId(applicationId)
+                .applicationId(application.getId())
                 .build();
 
         return applicationSessionRepository.save(applicationSessionEntity)
@@ -189,8 +189,8 @@ public class ApplicationService {
                 }));
     }
 
-    private Mono<Void> deleteApplicationSession(UUID applicationId, ApplicationEntity application) {
-        return applicationSessionRepository.findTopByApplicationIdOrderByCreatedAtDesc(applicationId)
+    private Mono<Void> deleteApplicationSession(ApplicationEntity application) {
+        return applicationSessionRepository.findTopByApplicationIdOrderByCreatedAtDesc(application.getId())
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationSessionErrorCode.APPLICATION_SESSION_NOT_FOUND)))
                 .flatMap(applicationSession -> {
                     applicationSession.setDeletedAt(LocalDateTime.now());
