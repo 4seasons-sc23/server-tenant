@@ -12,6 +12,7 @@ ENV REDIS_PASSWORD=redis_password
 
 EXPOSE 8080
 
+RUN ./gradlew clean  build -x test --refresh-dependencies
 ARG JAR_FILE=build/libs/*.jar
 
 RUN mkdir -p /usr/local/bin
