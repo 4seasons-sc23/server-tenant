@@ -1,11 +1,7 @@
-FROM docker.io/library/openjdk:19-oracle AS builder
-COPY gradlew .
-COPY gradle gradle
-COPY build.gradle .
-COPY settings.gradle .
-COPY src src
-RUN chmod +x ./gradlew
-RUN ./gradlew clean  build -x test --refresh-dependencies
+FROM docker.io/library/gradle:7-jdk19-focal AS builder
+WORKDIR /build
+COPY . /build
+RUN gradle build -x test
 
 FROM docker.io/library/openjdk:19-oracle
 
@@ -22,7 +18,6 @@ ENV REDIS_PASSWORD=redis_password
 EXPOSE 8080
 
 RUN mkdir -p /usr/local/bin
-COPY --from=builder build/libs/*.jar app.jar
-COPY app.jar /usr/local/bin/app.jar
+COPY --from=builder /build/build/libs/*.jar /usr/local/bin/app.jar
 
 ENTRYPOINT ["java", "-Dspring.profiles.active=${SERVER_MODE}", "-jar", "/usr/local/bin/app.jar"]
