@@ -1,14 +1,14 @@
-FROM openjdk:19-oracle
+FROM docker.io/library/openjdk:19-oracle
 
-ENV MARIA_IP=mariadb
-ENV MARIA_PORT=3306
-ENV MARIA_DATABASE=your_maria_database
-ENV MARIA_USERNAME=your_maria_username
-ENV MARIA_PASSWORD=your_maria_password
-ENV MARIA_ROOT_PASSWORD=your_maria_root_password
-ENV REDIS_IP=redis
-ENV REDIS_PORT=6379
-ENV REDIS_PASSWORD=your_redis_password 
+ENV MARIA_IP=maria_ip
+ENV MARIA_PORT=maria_port
+ENV MARIA_DATABASE=maria_database
+ENV MARIA_USERNAME=maria_username
+ENV MARIA_PASSWORD=maria_password
+ENV MARIA_ROOT_PASSWORD=maria_root_password
+ENV REDIS_IP=redis_ip
+ENV REDIS_PORT=redis_port
+ENV REDIS_PASSWORD=redis_password
 
 EXPOSE 8080
 
