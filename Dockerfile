@@ -1,3 +1,12 @@
+FROM docker.io/library/openjdk:19-oracle AS builder
+COPY gradlew .
+COPY gradle gradle
+COPY build.gradle .
+COPY settings.gradle .
+COPY src src
+RUN chmod +x ./gradlew
+RUN ./gradlew clean  build -x test --refresh-dependencies
+
 FROM docker.io/library/openjdk:19-oracle
 
 ENV MARIA_IP=maria_ip
@@ -12,11 +21,8 @@ ENV REDIS_PASSWORD=redis_password
 
 EXPOSE 8080
 
-RUN ./gradlew clean  build -x test --refresh-dependencies
-ARG JAR_FILE=build/libs/*.jar
-
 RUN mkdir -p /usr/local/bin
-
-COPY ${JAR_FILE} /usr/local/bin/app.jar
+COPY --from=builder build/libs/*.jar app.jar
+COPY app.jar /usr/local/bin/app.jar
 
 ENTRYPOINT ["java", "-Dspring.profiles.active=${SERVER_MODE}", "-jar", "/usr/local/bin/app.jar"]
