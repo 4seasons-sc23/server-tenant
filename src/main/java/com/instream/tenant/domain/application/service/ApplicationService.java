@@ -3,9 +3,11 @@ package com.instream.tenant.domain.application.service;
 import com.instream.tenant.domain.application.domain.dto.ApplicationSessionDto;
 import com.instream.tenant.domain.application.domain.entity.ApplicationSessionEntity;
 import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
+import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.infra.enums.ApplicationErrorCode;
 import com.instream.tenant.domain.application.infra.enums.ApplicationSessionErrorCode;
 import com.instream.tenant.domain.application.infra.enums.ApplicationType;
+import com.instream.tenant.domain.application.model.specification.ApplicationSessionSpecification;
 import com.instream.tenant.domain.application.model.specification.ApplicationSpecification;
 import com.instream.tenant.domain.application.repository.ApplicationRepository;
 import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
@@ -30,6 +32,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -146,9 +149,6 @@ public class ApplicationService {
                     if (!Objects.equals(application.getApiKey(), apiKey)) {
                         return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
                     }
-                    if (application.getType() == ApplicationType.STREAMING) {
-                        return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_SUPPORTED));
-                    }
                     if (isOff) {
                         return createApplicationSession(application);
                     }
@@ -165,9 +165,6 @@ public class ApplicationService {
 
                     if (!Objects.equals(application.getApiKey(), apiKey)) {
                         return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
-                    }
-                    if (application.getType() == ApplicationType.STREAMING) {
-                        return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_SUPPORTED));
                     }
                     if (isOn) {
                         return deleteApplicationSession(application);
@@ -187,6 +184,53 @@ public class ApplicationService {
                     return applicationSessionRepository.deleteByApplicationId(applicationId)
                             .then(Mono.defer(() -> applicationRepository.deleteByIdAndTenantId(applicationId, hostId)));
                 });
+    }
+
+    public Mono<PaginationDto<CollectionDto<ApplicationSessionDto>>> searchSessions(ApplicationSessionSearchPaginationOptionRequest applicationSessionSearchPaginationOptionRequest, UUID hostId, UUID applicationId) {
+        // TODO: 호스트 인증 넣기
+
+        Pageable pageable = applicationSessionSearchPaginationOptionRequest.getPageable();
+        Predicate predicate = ApplicationSessionSpecification.with(applicationSessionSearchPaginationOptionRequest, applicationId);
+
+        // TODO: 체인 하나로 묶기
+        Flux<ApplicationSessionEntity> applicationSessionFlux = applicationSessionRepository.findBy(predicate, pageable);
+        Mono<List<ApplicationSessionDto>> applicationSessionDtoListMono = applicationSessionFlux
+                .map(applicationSessionEntity -> ApplicationSessionDto.builder()
+                        .id(applicationSessionEntity.getId())
+                        .createdAt(applicationSessionEntity.getCreatedAt())
+                        .deletedAt(applicationSessionEntity.getDeletedAt())
+                        .build())
+                .collectList();
+
+        // TODO: Redis 캐싱 넣기
+        if (applicationSessionSearchPaginationOptionRequest.isFirstView()) {
+            Mono<Long> totalElementCountMono = applicationSessionRepository.count(predicate);
+            Mono<Integer> totalPageCountMono = totalElementCountMono.map(count -> (int) Math.ceil((double) count / pageable.getPageSize()));
+
+            return Mono.zip(applicationSessionDtoListMono, totalPageCountMono, totalElementCountMono)
+                    .map(tuple -> {
+                        List<ApplicationSessionDto> applicationSessionDtoList = tuple.getT1();
+                        Integer pageCount = tuple.getT2();
+                        int totalElementCount = tuple.getT3().intValue();
+
+                        return PaginationInfoDto.<CollectionDto<ApplicationSessionDto>>builder()
+                                .totalElementCount(totalElementCount)
+                                .pageCount(pageCount)
+                                .currentPage(applicationSessionSearchPaginationOptionRequest.getPage())
+                                .data(CollectionDto.<ApplicationSessionDto>builder()
+                                        .data(applicationSessionDtoList)
+                                        .build())
+                                .build();
+                    });
+        }
+
+        return applicationSessionDtoListMono.map(applicationDtoList -> PaginationDto.<CollectionDto<ApplicationSessionDto>>builder()
+                .currentPage(applicationSessionSearchPaginationOptionRequest.getPage())
+                .data(CollectionDto.<ApplicationSessionDto>builder()
+                        .data(applicationDtoList)
+                        .build())
+                .build()
+        );
     }
 
     private Mono<ApplicationSessionDto> createApplicationSession(ApplicationEntity application) {

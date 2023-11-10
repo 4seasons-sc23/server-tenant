@@ -15,6 +15,7 @@ import org.springframework.http.codec.HttpMessageWriter;
 import org.springframework.http.codec.ServerCodecConfigurer;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
@@ -34,7 +35,6 @@ public class GlobalErrorWebExceptionHandler implements ErrorWebExceptionHandler 
 
     @Override
     public Mono<Void> handle(ServerWebExchange exchange, Throwable ex) {
-        System.out.println(String.format("error123 %s", ex));
         if (ex instanceof RestApiException restApiException) {
             log.error("handleRestApiException", ex);
             return writeResponse(restApiException.getHttpErrorCode(), exchange);
@@ -42,6 +42,10 @@ public class GlobalErrorWebExceptionHandler implements ErrorWebExceptionHandler 
         if (ex instanceof RestClientException) {
             log.error("handleRestClientException", ex);
             return writeResponse(CommonHttpErrorCode.SERVICE_UNAVAILABLE, exchange);
+        }
+        if (ex instanceof ResponseStatusException) {
+            log.error("handleResponseStatusException", ex);
+            return writeResponse(((ResponseStatusException) ex), exchange);
         }
         log.error("handleException", ex);
         return writeResponse(CommonHttpErrorCode.INTERNAL_SERVER_ERROR, exchange);
@@ -59,6 +63,23 @@ public class GlobalErrorWebExceptionHandler implements ErrorWebExceptionHandler 
 
             exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
             exchange.getResponse().setStatusCode(httpErrorCode.getHttpStatus());
+
+            return messageWriter.write(Mono.just(errorResponse), elementType, MediaType.APPLICATION_JSON, exchange.getResponse(), Collections.emptyMap());
+        });
+    }
+
+    private Mono<Void> writeResponse(ResponseStatusException responseStatusException, ServerWebExchange exchange) {
+        return Mono.defer(() -> {
+            ErrorResponse errorResponse = new ErrorResponse(responseStatusException.getMessage(), responseStatusException.getReason());
+            ResolvableType elementType = ResolvableType.forInstance(errorResponse);
+            @SuppressWarnings("unchecked")
+            HttpMessageWriter<ErrorResponse> messageWriter = (HttpMessageWriter<ErrorResponse>) this.messageWriters.stream()
+                    .filter(writer -> writer.canWrite(elementType, MediaType.APPLICATION_JSON))
+                    .findFirst()
+                    .orElseThrow(() -> new EncodingException("No suitable HttpMessageWriter found"));
+
+            exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
+            exchange.getResponse().setStatusCode(responseStatusException.getStatusCode());
 
             return messageWriter.write(Mono.just(errorResponse), elementType, MediaType.APPLICATION_JSON, exchange.getResponse(), Collections.emptyMap());
         });

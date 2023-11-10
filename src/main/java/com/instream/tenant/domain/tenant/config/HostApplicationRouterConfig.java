@@ -127,9 +127,9 @@ public class HostApplicationRouterConfig {
 
     private RouterFunction<ServerResponse> searchApplicationSession(ApplicationHandler applicationHandler) {
         return route()
-                .DELETE(
+                .GET(
                         "/{applicationId}/sessions",
-                        applicationHandler::deleteApplication,
+                        applicationHandler::searchApplicationSession,
                         ops -> ops.operationId("123")
                                 .parameter(parameterBuilder()
                                         .name("hostId")
