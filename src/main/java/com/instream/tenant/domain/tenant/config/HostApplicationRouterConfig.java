@@ -30,6 +30,7 @@ public class HostApplicationRouterConfig {
                     builder.add(startApplication(applicationHandler));
                     builder.add(endApplication(applicationHandler));
                     builder.add(deleteApplication(applicationHandler));
+                    builder.add(searchApplicationSession(applicationHandler));
                 },
                 ops -> ops.operationId("123")
         ).build();
@@ -120,6 +121,27 @@ public class HostApplicationRouterConfig {
                                         .in(ParameterIn.PATH)
                                         .required(true)
                                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                )
+                .build();
+    }
+
+    private RouterFunction<ServerResponse> searchApplicationSession(ApplicationHandler applicationHandler) {
+        return route()
+                .DELETE(
+                        "/{applicationId}/sessions",
+                        applicationHandler::deleteApplication,
+                        ops -> ops.operationId("123")
+                                .parameter(parameterBuilder()
+                                        .name("hostId")
+                                        .in(ParameterIn.PATH)
+                                        .required(true)
+                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                                .parameter(parameterBuilder()
+                                        .name("applicationId")
+                                        .in(ParameterIn.PATH)
+                                        .required(true)
+                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                                .parameter(parameterBuilder().in(ParameterIn.QUERY).name("option").implementation(ApplicationSearchPaginationOptionRequest.class))
                 )
                 .build();
     }

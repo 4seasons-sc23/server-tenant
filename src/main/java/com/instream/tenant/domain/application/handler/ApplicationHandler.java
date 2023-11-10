@@ -2,6 +2,7 @@ package com.instream.tenant.domain.application.handler;
 
 import com.instream.tenant.domain.application.domain.request.ApplicationCreateRequest;
 import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
+import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.service.ApplicationService;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
@@ -57,7 +58,7 @@ public class ApplicationHandler {
                         .bodyValue(applicationDto));
     }
 
-    public Mono startApplication(ServerRequest request) {
+    public Mono<ServerResponse> startApplication(ServerRequest request) {
         String apiKey = request.headers().firstHeader(HttpHeaders.AUTHORIZATION);
 
         if (apiKey == null || apiKey.isEmpty()) {
@@ -77,7 +78,7 @@ public class ApplicationHandler {
         return applicationService.startApplication(apiKey, applicationId, hostId).then(Mono.defer(() -> ServerResponse.ok().build()));
     }
 
-    public Mono endApplication(ServerRequest request) {
+    public Mono<ServerResponse> endApplication(ServerRequest request) {
         String apiKey = request.headers().firstHeader(HttpHeaders.AUTHORIZATION);
 
         if (apiKey == null || apiKey.isEmpty()) {
@@ -98,7 +99,7 @@ public class ApplicationHandler {
     }
 
 
-    public Mono deleteApplication(ServerRequest request) {
+    public Mono<ServerResponse> deleteApplication(ServerRequest request) {
         String apiKey = request.headers().firstHeader(HttpHeaders.AUTHORIZATION);
 
         if (apiKey == null || apiKey.isEmpty()) {
@@ -116,5 +117,29 @@ public class ApplicationHandler {
         }
 
         return applicationService.deleteApplication(apiKey, applicationId, hostId).then(Mono.defer(() -> ServerResponse.ok().build()));
+    }
+
+    public Mono<ServerResponse> searchApplicationSession(ServerRequest request) {
+        String apiKey = request.headers().firstHeader(HttpHeaders.AUTHORIZATION);
+
+        if (apiKey == null || apiKey.isEmpty()) {
+            return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
+        }
+
+        UUID hostId;
+        UUID applicationId;
+
+        try {
+            hostId = UUID.fromString(request.pathVariable("hostId"));
+            applicationId = UUID.fromString(request.pathVariable("applicationId"));
+        } catch (IllegalArgumentException illegalArgumentException) {
+            return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
+        }
+
+        return ApplicationSessionSearchPaginationOptionRequest.fromQueryParams(request.queryParams())
+                .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
+                .flatMap((applicationSessionSearchPaginationOptionRequest -> applicationService.searchSessions(applicationSessionSearchPaginationOptionRequest, hostId, applicationId)))
+                .flatMap(applicationSessionPaginationDto -> ServerResponse.ok()
+                        .bodyValue(applicationSessionPaginationDto));
     }
 }
