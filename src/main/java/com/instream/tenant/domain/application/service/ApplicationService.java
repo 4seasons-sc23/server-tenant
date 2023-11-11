@@ -2,6 +2,8 @@ package com.instream.tenant.domain.application.service;
 
 import com.instream.tenant.domain.application.domain.dto.ApplicationSessionDto;
 import com.instream.tenant.domain.application.domain.entity.ApplicationSessionEntity;
+import com.instream.tenant.domain.application.domain.entity.QApplicationEntity;
+import com.instream.tenant.domain.application.domain.entity.QApplicationSessionEntity;
 import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.infra.enums.ApplicationErrorCode;
@@ -60,7 +62,13 @@ public class ApplicationService {
         Pageable pageable = applicationSearchPaginationOptionRequest.getPageable();
         Predicate predicate = ApplicationSpecification.with(applicationSearchPaginationOptionRequest);
 
-        Flux<ApplicationEntity> applicationFlux = applicationRepository.findBy(predicate, pageable);
+        Flux<ApplicationEntity> applicationFlux = applicationRepository.query(sqlQuery -> sqlQuery
+                .select(QApplicationEntity.applicationEntity)
+                .from(QApplicationEntity.applicationEntity)
+                .where(predicate)
+                .limit(pageable.getPageSize())
+                .offset(pageable.getOffset())
+        ).all();
         Mono<List<ApplicationDto>> applicationDtoListMono = applicationFlux
                 .flatMap(applicationEntity -> applicationSessionRepository.findTopByApplicationIdOrderByCreatedAtDesc(applicationEntity.getId())
                         .map(applicationSessionEntity -> ApplicationDto.builder()
@@ -123,7 +131,7 @@ public class ApplicationService {
                                 .tenantId(hostId)
                                 .apiKey(apiKey)
                                 .type(applicationCreateRequest.type())
-                                .status(Status.USE)
+                                .status(Status.PENDING)
                                 .build()
                 ))
                 .flatMap(application -> redisTemplate.opsForValue()
@@ -193,7 +201,14 @@ public class ApplicationService {
         Predicate predicate = ApplicationSessionSpecification.with(applicationSessionSearchPaginationOptionRequest, applicationId);
 
         // TODO: 체인 하나로 묶기
-        Flux<ApplicationSessionEntity> applicationSessionFlux = applicationSessionRepository.findBy(predicate, pageable);
+        Flux<ApplicationSessionEntity> applicationSessionFlux = applicationSessionRepository.query(sqlQuery -> sqlQuery
+                .select(QApplicationSessionEntity.applicationSessionEntity)
+                .from(QApplicationSessionEntity.applicationSessionEntity)
+                .where(predicate)
+                .limit(pageable.getPageSize())
+                .offset(pageable.getOffset())
+        ).all();
+
         Mono<List<ApplicationSessionDto>> applicationSessionDtoListMono = applicationSessionFlux
                 .map(applicationSessionEntity -> ApplicationSessionDto.builder()
                         .id(applicationSessionEntity.getId())

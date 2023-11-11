@@ -3,6 +3,7 @@ package com.instream.tenant.domain.tenant.config;
 import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
 import com.instream.tenant.domain.application.domain.request.ApplicationCreateRequest;
 import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
+import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.handler.ApplicationHandler;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import org.springframework.context.annotation.Bean;
@@ -141,7 +142,7 @@ public class HostApplicationRouterConfig {
                                         .in(ParameterIn.PATH)
                                         .required(true)
                                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                                .parameter(parameterBuilder().in(ParameterIn.QUERY).name("option").implementation(ApplicationSearchPaginationOptionRequest.class))
+                                .parameter(parameterBuilder().in(ParameterIn.QUERY).name("option").implementation(ApplicationSessionSearchPaginationOptionRequest.class))
                 )
                 .build();
     }

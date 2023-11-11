@@ -72,7 +72,6 @@ public class TenantService {
                                                 .name(tenantCreateRequest.name())
                                                 .phoneNumber(tenantCreateRequest.phoneNumber())
                                                 .status(Status.USE)
-                                                .secretKey("")
                                                 .build()
                                 ))
                                 .flatMap(tenant -> redisTemplate.opsForValue()

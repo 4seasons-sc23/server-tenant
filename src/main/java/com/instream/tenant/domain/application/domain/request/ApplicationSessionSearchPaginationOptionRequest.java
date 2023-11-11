@@ -5,6 +5,7 @@ import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
+import lombok.ToString;
 import org.springframework.util.MultiValueMap;
 import reactor.core.publisher.Mono;
 
@@ -13,6 +14,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 @Getter
+@ToString
 public class ApplicationSessionSearchPaginationOptionRequest extends PaginationOptionRequest {
     @Schema(description = "생성 날짜 기준 조회 시작 날짜")
     private final LocalDateTime createdStartAt;

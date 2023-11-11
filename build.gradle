@@ -35,9 +35,9 @@ dependencies {
 	implementation 'org.springframework.session:spring-session-data-redis'
 	implementation 'org.mariadb:r2dbc-mariadb:1.1.4'
 	runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
-	implementation 'com.infobip:infobip-spring-data-r2dbc-querydsl-boot-starter:9.0.2'
-	implementation 'com.infobip:infobip-spring-data-jdbc-annotation-processor-common:9.0.2'
-	annotationProcessor 'com.infobip:infobip-spring-data-jdbc-annotation-processor:9.0.2'
+	implementation 'com.infobip:infobip-spring-data-r2dbc-querydsl-boot-starter:8.1.2'
+	implementation 'com.infobip:infobip-spring-data-jdbc-annotation-processor-common:8.1.2'
+	annotationProcessor 'com.infobip:infobip-spring-data-jdbc-annotation-processor:8.1.2'
 
 	// netty
 	implementation 'io.netty:netty-resolver-dns-native-macos:4.1.68.Final:osx-aarch_64'
