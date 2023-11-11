@@ -4,6 +4,7 @@ import com.instream.tenant.domain.application.domain.request.ApplicationCreateRe
 import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.service.ApplicationService;
+import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -114,7 +115,7 @@ public class ApplicationHandler {
     }
 
     public Mono<ServerResponse> searchApplicationSession(ServerRequest request) {
-        String apiKey = request.headers().firstHeader(HttpHeaders.AUTHORIZATION);
+        String apiKey = request.headers().firstHeader(InstreamHttpHeaders.API_KEY);
 
         if (apiKey == null || apiKey.isEmpty()) {
             return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));

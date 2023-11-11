@@ -2,10 +2,14 @@ package com.instream.tenant.domain.tenant.config;
 
 import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
 import com.instream.tenant.domain.application.domain.request.ApplicationCreateRequest;
+import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
+import com.instream.tenant.domain.participant.domain.request.ParticipantJoinSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.handler.ApplicationHandler;
+import com.instream.tenant.domain.participant.handler.ParticipantHandler;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import org.springdoc.core.fn.builders.content.Builder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.server.RequestPredicates;
@@ -15,6 +19,8 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import java.util.UUID;
 
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
+import static org.springdoc.core.fn.builders.content.Builder.contentBuilder;
+import static org.springdoc.core.fn.builders.exampleobject.Builder.exampleOjectBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 import static org.springdoc.webflux.core.fn.SpringdocRouteBuilder.route;
@@ -23,7 +29,7 @@ import static org.springdoc.webflux.core.fn.SpringdocRouteBuilder.route;
 @Configuration
 public class HostApplicationRouterConfig {
     @Bean
-    public RouterFunction<ServerResponse> v1HostApplicationRoutes(ApplicationHandler applicationHandler) {
+    public RouterFunction<ServerResponse> v1HostApplicationRoutes(ApplicationHandler applicationHandler, ParticipantHandler participantHandler) {
         return route().nest(RequestPredicates.path("/v1/hosts/{hostId}/applications"),
                 builder -> {
                     builder.add(searchApplication(applicationHandler));
@@ -32,6 +38,7 @@ public class HostApplicationRouterConfig {
                     builder.add(endApplication(applicationHandler));
                     builder.add(deleteApplication(applicationHandler));
                     builder.add(searchApplicationSession(applicationHandler));
+                    builder.add(searchParticipantSession(participantHandler));
                 },
                 ops -> ops.operationId("123")
         ).build();
@@ -133,6 +140,12 @@ public class HostApplicationRouterConfig {
                         applicationHandler::searchApplicationSession,
                         ops -> ops.operationId("123")
                                 .parameter(parameterBuilder()
+                                        .name(InstreamHttpHeaders.API_KEY)
+                                        .description("API Key")
+                                        .in(ParameterIn.HEADER)
+                                        .required(true)
+                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                                .parameter(parameterBuilder()
                                         .name("hostId")
                                         .in(ParameterIn.PATH)
                                         .required(true)
@@ -143,6 +156,48 @@ public class HostApplicationRouterConfig {
                                         .required(true)
                                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
                                 .parameter(parameterBuilder().in(ParameterIn.QUERY).name("option").implementation(ApplicationSessionSearchPaginationOptionRequest.class))
+                )
+                .build();
+    }
+
+    private RouterFunction<ServerResponse> searchApplicationParticipantSession(ApplicationHandler applicationHandler) {
+        return route()
+                .GET(
+                        "/{applicationId}/participants/sessions",
+                        applicationHandler::searchApplicationSession,
+                        ops -> ops.operationId("123")
+                                .parameter(parameterBuilder()
+                                        .name("hostId")
+                                        .in(ParameterIn.PATH)
+                                        .required(true)
+                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                                .parameter(parameterBuilder()
+                                        .name("applicationId")
+                                        .in(ParameterIn.PATH)
+                                        .required(true)
+                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                                .parameter(parameterBuilder().in(ParameterIn.QUERY).name("option").implementation(ApplicationSessionSearchPaginationOptionRequest.class))
+                )
+                .build();
+    }
+
+    private RouterFunction<ServerResponse> searchParticipantSession(ParticipantHandler participantHandler) {
+        return route()
+                .GET(
+                        "sessions/{sessionId}/participants",
+                        participantHandler::searchParticipantJoin,
+                        ops -> ops.operationId("123")
+                                .parameter(parameterBuilder()
+                                        .name("hostId")
+                                        .in(ParameterIn.PATH)
+                                        .required(true)
+                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                                .parameter(parameterBuilder()
+                                        .name("sessionId")
+                                        .in(ParameterIn.PATH)
+                                        .required(true)
+                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                                .parameter(parameterBuilder().in(ParameterIn.QUERY).name("option").implementation(ParticipantJoinSearchPaginationOptionRequest.class))
                 )
                 .build();
     }

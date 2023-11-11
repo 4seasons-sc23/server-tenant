@@ -1,8 +1,19 @@
 package com.instream.tenant.domain.participant.service;
 
+import com.instream.tenant.domain.application.domain.dto.ApplicationSessionDto;
+import com.instream.tenant.domain.application.domain.entity.ApplicationSessionEntity;
+import com.instream.tenant.domain.application.domain.entity.QApplicationSessionEntity;
+import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.infra.enums.ApplicationSessionErrorCode;
+import com.instream.tenant.domain.application.model.specification.ApplicationSessionSpecification;
 import com.instream.tenant.domain.application.repository.ApplicationSessionRepository;
+import com.instream.tenant.domain.common.domain.dto.CollectionDto;
+import com.instream.tenant.domain.common.domain.dto.PaginationDto;
+import com.instream.tenant.domain.common.domain.dto.PaginationInfoDto;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
+import com.instream.tenant.domain.participant.domain.entity.QParticipantJoinEntity;
+import com.instream.tenant.domain.participant.domain.request.ParticipantJoinSearchPaginationOptionRequest;
+import com.instream.tenant.domain.participant.specification.ParticipantJoinSpecification;
 import com.instream.tenant.domain.tenant.infra.enums.TenantErrorCode;
 import com.instream.tenant.domain.tenant.repository.TenantRepository;
 import com.instream.tenant.domain.participant.domain.dto.ParticipantDto;
@@ -15,12 +26,16 @@ import com.instream.tenant.domain.participant.infra.enums.ParticipantErrorCode;
 import com.instream.tenant.domain.participant.infra.enums.ParticipantJoinErrorCode;
 import com.instream.tenant.domain.participant.repository.ParticipantJoinRepository;
 import com.instream.tenant.domain.participant.repository.ParticipantRepository;
+import com.querydsl.core.types.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -140,5 +155,66 @@ public class ParticipantService {
                                 .build());
                     });
         });
+    }
+
+    public Mono<PaginationDto<CollectionDto<ParticipantJoinDto>>> searchParticipantJoin(ParticipantJoinSearchPaginationOptionRequest participantJoinSearchPaginationOptionRequest, UUID hostId, UUID applicationSessionId) {
+        // TODO: 호스트 인증 넣기
+
+        Pageable pageable = participantJoinSearchPaginationOptionRequest.getPageable();
+        Predicate predicate = ParticipantJoinSpecification.with(participantJoinSearchPaginationOptionRequest, applicationSessionId);
+
+        // TODO: 체인 하나로 묶기
+        Flux<ParticipantJoinEntity> participantJoinFlux = participantJoinRepository.query(sqlQuery -> sqlQuery
+                .select(QParticipantJoinEntity.participantJoinEntity)
+                .from(QParticipantJoinEntity.participantJoinEntity)
+                .where(predicate)
+                .limit(pageable.getPageSize())
+                .offset(pageable.getOffset())
+        ).all();
+
+        Mono<List<ParticipantJoinDto>> applicationSessionDtoListMono = participantJoinFlux
+                .flatMap(participantJoin -> participantRepository.findById(participantJoin.getParticipantId())
+                        .flatMap(participant -> Mono.just(ParticipantJoinDto.builder()
+                                .id(participantJoin.getId())
+                                .createdAt(participantJoin.getCreatedAt())
+                                .updatedAt(participantJoin.getUpdatedAt())
+                                .participant(ParticipantDto.builder()
+                                        .id(participant.getId())
+                                        .nickname(participant.getNickname())
+                                        .profileImgUrl(participant.getProfileImgUrl())
+                                        .createdAt(participant.getCreatedAt())
+                                        .build())
+                                .build())))
+                .collectList();
+
+        // TODO: Redis 캐싱 넣기
+        if (participantJoinSearchPaginationOptionRequest.isFirstView()) {
+            Mono<Long> totalElementCountMono = participantJoinRepository.count(predicate);
+            Mono<Integer> totalPageCountMono = totalElementCountMono.map(count -> (int) Math.ceil((double) count / pageable.getPageSize()));
+
+            return Mono.zip(applicationSessionDtoListMono, totalPageCountMono, totalElementCountMono)
+                    .map(tuple -> {
+                        List<ParticipantJoinDto> participantJoinDtoList = tuple.getT1();
+                        Integer pageCount = tuple.getT2();
+                        int totalElementCount = tuple.getT3().intValue();
+
+                        return PaginationInfoDto.<CollectionDto<ParticipantJoinDto>>builder()
+                                .totalElementCount(totalElementCount)
+                                .pageCount(pageCount)
+                                .currentPage(participantJoinSearchPaginationOptionRequest.getPage())
+                                .data(CollectionDto.<ParticipantJoinDto>builder()
+                                        .data(participantJoinDtoList)
+                                        .build())
+                                .build();
+                    });
+        }
+
+        return applicationSessionDtoListMono.map(participantJoinDtoList -> PaginationDto.<CollectionDto<ParticipantJoinDto>>builder()
+                .currentPage(participantJoinSearchPaginationOptionRequest.getPage())
+                .data(CollectionDto.<ParticipantJoinDto>builder()
+                        .data(participantJoinDtoList)
+                        .build())
+                .build()
+        );
     }
 }
