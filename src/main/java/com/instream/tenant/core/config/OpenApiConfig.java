@@ -1,6 +1,6 @@
 package com.instream.tenant.core.config;
 
-import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
+import com.instream.tenant.domain.application.domain.dto.ApplicationWithApiKeyDto;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.media.*;
 import io.swagger.v3.oas.models.responses.ApiResponse;
@@ -18,7 +18,7 @@ public class OpenApiConfig {
     public OpenApiCustomizer customizePaginationDtoSchema() {
         return openApi -> {
             // DTO 클래스 목록
-            List<Class<?>> dtoClasses = List.of(ApplicationDto.class);
+            List<Class<?>> dtoClasses = List.of(ApplicationWithApiKeyDto.class);
             // 각 DTO 클래스에 대한 스키마 생성 및 등록
             dtoClasses.forEach(dtoClass -> {
                 String schemaName = "PaginationDto" + dtoClass.getSimpleName();
@@ -33,7 +33,7 @@ public class OpenApiConfig {
     public OpenApiCustomizer customizeCollectionDtoSchema() {
         return openApi -> {
             // DTO 클래스 목록
-            List<Class<?>> dtoClasses = List.of(ApplicationDto.class);
+            List<Class<?>> dtoClasses = List.of(ApplicationWithApiKeyDto.class);
             // 각 DTO 클래스에 대한 스키마 생성 및 등록
             dtoClasses.forEach(dtoClass -> {
                 String schemaName = "CollectionDto" + dtoClass.getSimpleName();

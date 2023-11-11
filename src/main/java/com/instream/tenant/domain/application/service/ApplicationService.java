@@ -8,11 +8,10 @@ import com.instream.tenant.domain.application.domain.request.ApplicationSearchPa
 import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.infra.enums.ApplicationErrorCode;
 import com.instream.tenant.domain.application.infra.enums.ApplicationSessionErrorCode;
-import com.instream.tenant.domain.application.infra.enums.ApplicationType;
 import com.instream.tenant.domain.application.model.specification.ApplicationSessionSpecification;
 import com.instream.tenant.domain.application.model.specification.ApplicationSpecification;
 import com.instream.tenant.domain.application.repository.ApplicationRepository;
-import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
+import com.instream.tenant.domain.application.domain.dto.ApplicationWithApiKeyDto;
 import com.instream.tenant.domain.application.domain.entity.ApplicationEntity;
 import com.instream.tenant.domain.application.domain.request.ApplicationCreateRequest;
 import com.instream.tenant.domain.application.repository.ApplicationSessionRepository;
@@ -34,7 +33,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -58,7 +56,7 @@ public class ApplicationService {
         this.participantJoinRepository = participantJoinRepository;
     }
 
-    public Mono<PaginationDto<CollectionDto<ApplicationDto>>> search(ApplicationSearchPaginationOptionRequest applicationSearchPaginationOptionRequest, UUID hostId) {
+    public Mono<PaginationDto<CollectionDto<ApplicationWithApiKeyDto>>> search(ApplicationSearchPaginationOptionRequest applicationSearchPaginationOptionRequest, UUID hostId) {
         Pageable pageable = applicationSearchPaginationOptionRequest.getPageable();
         Predicate predicate = ApplicationSpecification.with(applicationSearchPaginationOptionRequest);
 
@@ -69,9 +67,9 @@ public class ApplicationService {
                 .limit(pageable.getPageSize())
                 .offset(pageable.getOffset())
         ).all();
-        Mono<List<ApplicationDto>> applicationDtoListMono = applicationFlux
+        Mono<List<ApplicationWithApiKeyDto>> applicationDtoListMono = applicationFlux
                 .flatMap(applicationEntity -> applicationSessionRepository.findTopByApplicationIdOrderByCreatedAtDesc(applicationEntity.getId())
-                        .map(applicationSessionEntity -> ApplicationDto.builder()
+                        .map(applicationSessionEntity -> ApplicationWithApiKeyDto.builder()
                                 .applicationId(applicationEntity.getId())
                                 .apiKey(applicationEntity.getApiKey())
                                 .session(ApplicationSessionDto.builder()
@@ -83,7 +81,7 @@ public class ApplicationService {
                                 .status(applicationEntity.getStatus())
                                 .createdAt(applicationEntity.getCreatedAt())
                                 .build())
-                        .defaultIfEmpty(ApplicationDto.builder()
+                        .defaultIfEmpty(ApplicationWithApiKeyDto.builder()
                                 .applicationId(applicationEntity.getId())
                                 .type(applicationEntity.getType())
                                 .status(applicationEntity.getStatus())
@@ -99,31 +97,31 @@ public class ApplicationService {
 
             return Mono.zip(applicationDtoListMono, totalPageCountMono, totalElementCountMono)
                     .map(tuple -> {
-                        List<ApplicationDto> applications = tuple.getT1();
+                        List<ApplicationWithApiKeyDto> applications = tuple.getT1();
                         Integer pageCount = tuple.getT2();
                         int totalElementCount = tuple.getT3().intValue();
 
-                        return PaginationInfoDto.<CollectionDto<ApplicationDto>>builder()
+                        return PaginationInfoDto.<CollectionDto<ApplicationWithApiKeyDto>>builder()
                                 .totalElementCount(totalElementCount)
                                 .pageCount(pageCount)
                                 .currentPage(applicationSearchPaginationOptionRequest.getPage())
-                                .data(CollectionDto.<ApplicationDto>builder()
+                                .data(CollectionDto.<ApplicationWithApiKeyDto>builder()
                                         .data(applications)
                                         .build())
                                 .build();
                     });
         }
 
-        return applicationDtoListMono.map(applicationDtoList -> PaginationDto.<CollectionDto<ApplicationDto>>builder()
+        return applicationDtoListMono.map(applicationDtoList -> PaginationDto.<CollectionDto<ApplicationWithApiKeyDto>>builder()
                 .currentPage(applicationSearchPaginationOptionRequest.getPage())
-                .data(CollectionDto.<ApplicationDto>builder()
+                .data(CollectionDto.<ApplicationWithApiKeyDto>builder()
                         .data(applicationDtoList)
                         .build())
                 .build()
         );
     }
 
-    public Mono<ApplicationDto> createApplication(ApplicationCreateRequest applicationCreateRequest, UUID hostId) {
+    public Mono<ApplicationWithApiKeyDto> createApplication(ApplicationCreateRequest applicationCreateRequest, UUID hostId) {
         String apiKey = UUID.randomUUID().toString();
 
         return Mono.defer(() -> applicationRepository.save(
@@ -137,7 +135,7 @@ public class ApplicationService {
                 .flatMap(application -> redisTemplate.opsForValue()
                         .set(String.valueOf(application.genRedisKey()), application)
                         .thenReturn(application))
-                .flatMap(savedApplication -> Mono.just(ApplicationDto.builder()
+                .flatMap(savedApplication -> Mono.just(ApplicationWithApiKeyDto.builder()
                         .applicationId(savedApplication.getId())
                         .type(savedApplication.getType())
                         .status(savedApplication.getStatus())

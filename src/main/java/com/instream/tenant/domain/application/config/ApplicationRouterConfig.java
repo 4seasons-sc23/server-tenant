@@ -1,8 +1,5 @@
 package com.instream.tenant.domain.application.config;
 
-import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
-import com.instream.tenant.domain.application.domain.request.ApplicationCreateRequest;
-import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.handler.ApplicationHandler;
 import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -12,11 +9,7 @@ import org.springframework.web.reactive.function.server.RequestPredicates;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
-import java.util.UUID;
-
-import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
-import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 import static org.springdoc.webflux.core.fn.SpringdocRouteBuilder.route;
 
 

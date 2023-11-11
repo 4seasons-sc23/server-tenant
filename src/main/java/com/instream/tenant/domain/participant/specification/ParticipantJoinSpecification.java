@@ -11,6 +11,28 @@ import com.querydsl.core.types.dsl.Expressions;
 import java.util.UUID;
 
 public class ParticipantJoinSpecification {
+    public static Predicate with(ParticipantJoinSearchPaginationOptionRequest participantJoinSearchPaginationOptionRequest) {
+        BooleanBuilder builder = new BooleanBuilder();
+
+        if (participantJoinSearchPaginationOptionRequest.getCreatedStartAt() != null) {
+            builder.and(QParticipantJoinEntity.participantJoinEntity.createdAt.goe(participantJoinSearchPaginationOptionRequest.getCreatedStartAt()));
+        }
+
+        if (participantJoinSearchPaginationOptionRequest.getCreatedEndAt() != null) {
+            builder.and(QParticipantJoinEntity.participantJoinEntity.createdAt.loe(participantJoinSearchPaginationOptionRequest.getCreatedEndAt()));
+        }
+
+        if (participantJoinSearchPaginationOptionRequest.getDeletedStartAt() != null) {
+            builder.and(QParticipantJoinEntity.participantJoinEntity.updatedAt.goe(participantJoinSearchPaginationOptionRequest.getDeletedStartAt()));
+        }
+
+        if (participantJoinSearchPaginationOptionRequest.getDeletedEndAt() != null) {
+            builder.and(QParticipantJoinEntity.participantJoinEntity.updatedAt.loe(participantJoinSearchPaginationOptionRequest.getDeletedEndAt()));
+        }
+
+        return builder;
+    }
+
     public static Predicate with(ParticipantJoinSearchPaginationOptionRequest participantJoinSearchPaginationOptionRequest, UUID applicationSessionId) {
         assert (applicationSessionId != null);
 

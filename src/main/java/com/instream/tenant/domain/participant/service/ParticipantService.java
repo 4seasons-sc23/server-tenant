@@ -1,11 +1,10 @@
 package com.instream.tenant.domain.participant.service;
 
+import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
 import com.instream.tenant.domain.application.domain.dto.ApplicationSessionDto;
-import com.instream.tenant.domain.application.domain.entity.ApplicationSessionEntity;
-import com.instream.tenant.domain.application.domain.entity.QApplicationSessionEntity;
-import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
+import com.instream.tenant.domain.application.domain.entity.ApplicationEntity;
 import com.instream.tenant.domain.application.infra.enums.ApplicationSessionErrorCode;
-import com.instream.tenant.domain.application.model.specification.ApplicationSessionSpecification;
+import com.instream.tenant.domain.application.repository.ApplicationRepository;
 import com.instream.tenant.domain.application.repository.ApplicationSessionRepository;
 import com.instream.tenant.domain.common.domain.dto.CollectionDto;
 import com.instream.tenant.domain.common.domain.dto.PaginationDto;
@@ -43,6 +42,8 @@ import java.util.UUID;
 public class ParticipantService {
     private final TenantRepository tenantRepository;
 
+    private final ApplicationRepository applicationRepository;
+
     private final ApplicationSessionRepository applicationSessionRepository;
 
     private final ParticipantRepository participantRepository;
@@ -50,8 +51,9 @@ public class ParticipantService {
     private final ParticipantJoinRepository participantJoinRepository;
 
     @Autowired
-    public ParticipantService(TenantRepository tenantRepository, ApplicationSessionRepository applicationSessionRepository, ParticipantRepository participantRepository, ParticipantJoinRepository participantJoinRepository) {
+    public ParticipantService(TenantRepository tenantRepository, ApplicationRepository applicationRepository, ApplicationSessionRepository applicationSessionRepository, ParticipantRepository participantRepository, ParticipantJoinRepository participantJoinRepository) {
         this.tenantRepository = tenantRepository;
+        this.applicationRepository = applicationRepository;
         this.applicationSessionRepository = applicationSessionRepository;
         this.participantRepository = participantRepository;
         this.participantJoinRepository = participantJoinRepository;
@@ -157,7 +159,91 @@ public class ParticipantService {
         });
     }
 
-    public Mono<PaginationDto<CollectionDto<ParticipantJoinDto>>> searchParticipantJoin(ParticipantJoinSearchPaginationOptionRequest participantJoinSearchPaginationOptionRequest, UUID hostId, UUID applicationSessionId) {
+    public Mono<PaginationDto<CollectionDto<ParticipantJoinDto>>> searchParticipantJoin(ParticipantJoinSearchPaginationOptionRequest participantJoinSearchPaginationOptionRequest, UUID hostId) {
+        // TODO: 호스트 인증 넣기
+
+        Pageable pageable = participantJoinSearchPaginationOptionRequest.getPageable();
+        Predicate predicate = ParticipantJoinSpecification.with(participantJoinSearchPaginationOptionRequest);
+
+        // TODO: 체인 하나로 묶기
+        Flux<ParticipantJoinEntity> participantJoinFlux = participantJoinRepository.query(sqlQuery -> sqlQuery
+                .select(QParticipantJoinEntity.participantJoinEntity)
+                .from(QParticipantJoinEntity.participantJoinEntity)
+                .where(predicate)
+                .limit(pageable.getPageSize())
+                .offset(pageable.getOffset())
+        ).all();
+
+        Mono<List<ParticipantJoinDto>> applicationSessionDtoListMono = participantJoinFlux
+                .flatMap(participantJoin -> applicationSessionRepository.findById(participantJoin.getApplicationSessionId())
+                        .flatMap(applicationSession ->
+                                Mono.zip(
+                                        participantRepository.findById(participantJoin.getParticipantId()),
+                                        applicationRepository.findById(applicationSession.getApplicationId())
+                                ).map(tuple -> {
+                                    ParticipantEntity participant = tuple.getT1();
+                                    ApplicationEntity application = tuple.getT2();
+
+                                    return ParticipantJoinDto.builder()
+                                            .id(participantJoin.getId())
+                                            .createdAt(participantJoin.getCreatedAt())
+                                            .updatedAt(participantJoin.getUpdatedAt())
+                                            .participant(ParticipantDto.builder()
+                                                    .id(participant.getId())
+                                                    .nickname(participant.getNickname())
+                                                    .profileImgUrl(participant.getProfileImgUrl())
+                                                    .createdAt(participant.getCreatedAt())
+                                                    .build())
+                                            .application(ApplicationDto.builder()
+                                                    .applicationId(application.getId())
+                                                    .type(application.getType())
+                                                    .status(application.getStatus())
+                                                    .createdAt(application.getCreatedAt())
+                                                    .session(ApplicationSessionDto.builder()
+                                                            .id(applicationSession.getId())
+                                                            .createdAt(applicationSession.getCreatedAt())
+                                                            .deletedAt(applicationSession.getDeletedAt())
+                                                            .build())
+                                                    .build())
+                                            .build();
+                                })
+                        )
+                )
+                .collectList();
+
+
+        // TODO: Redis 캐싱 넣기
+        if (participantJoinSearchPaginationOptionRequest.isFirstView()) {
+            Mono<Long> totalElementCountMono = participantJoinRepository.count(predicate);
+            Mono<Integer> totalPageCountMono = totalElementCountMono.map(count -> (int) Math.ceil((double) count / pageable.getPageSize()));
+
+            return Mono.zip(applicationSessionDtoListMono, totalPageCountMono, totalElementCountMono)
+                    .map(tuple -> {
+                        List<ParticipantJoinDto> participantJoinDtoList = tuple.getT1();
+                        Integer pageCount = tuple.getT2();
+                        int totalElementCount = tuple.getT3().intValue();
+
+                        return PaginationInfoDto.<CollectionDto<ParticipantJoinDto>>builder()
+                                .totalElementCount(totalElementCount)
+                                .pageCount(pageCount)
+                                .currentPage(participantJoinSearchPaginationOptionRequest.getPage())
+                                .data(CollectionDto.<ParticipantJoinDto>builder()
+                                        .data(participantJoinDtoList)
+                                        .build())
+                                .build();
+                    });
+        }
+
+        return applicationSessionDtoListMono.map(participantJoinDtoList -> PaginationDto.<CollectionDto<ParticipantJoinDto>>builder()
+                .currentPage(participantJoinSearchPaginationOptionRequest.getPage())
+                .data(CollectionDto.<ParticipantJoinDto>builder()
+                        .data(participantJoinDtoList)
+                        .build())
+                .build()
+        );
+    }
+
+    public Mono<PaginationDto<CollectionDto<ParticipantJoinDto>>> searchParticipantJoinWithApplication(ParticipantJoinSearchPaginationOptionRequest participantJoinSearchPaginationOptionRequest, UUID hostId, UUID applicationSessionId) {
         // TODO: 호스트 인증 넣기
 
         Pageable pageable = participantJoinSearchPaginationOptionRequest.getPageable();
@@ -184,8 +270,8 @@ public class ParticipantService {
                                         .profileImgUrl(participant.getProfileImgUrl())
                                         .createdAt(participant.getCreatedAt())
                                         .build())
-                                .build())))
-                .collectList();
+                                .build()))
+                ).collectList();
 
         // TODO: Redis 캐싱 넣기
         if (participantJoinSearchPaginationOptionRequest.isFirstView()) {

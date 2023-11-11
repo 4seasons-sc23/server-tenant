@@ -1,5 +1,7 @@
 package com.instream.tenant.domain.tenant.config;
 
+import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
+import com.instream.tenant.domain.application.handler.ApplicationHandler;
 import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
 import com.instream.tenant.domain.participant.domain.dto.ParticipantJoinDto;
 import com.instream.tenant.domain.participant.domain.request.EnterToApplicationParticipantRequest;
@@ -27,7 +29,7 @@ public class HostParticipantRouterConfig {
                 builder -> {
                     builder.add(enterToApplication(participantHandler));
                     builder.add(leaveFromApplication(participantHandler));
-                    ;
+                    builder.add(searchParticipantSession(participantHandler));
                 },
                 ops -> ops.operationId("123")
         ).build();
@@ -69,6 +71,27 @@ public class HostParticipantRouterConfig {
                                 .parameter(parameterBuilder().name("participantId").in(ParameterIn.PATH).required(true).example("123abc"))
                                 .requestBody(requestBodyBuilder().implementation(LeaveFromApplicationParticipantRequest.class).required(true))
                                 .response(responseBuilder().responseCode(HttpStatus.OK.name()).implementation(ParticipantJoinDto.class))
+                )
+                .build();
+    }
+
+    private RouterFunction<ServerResponse> searchParticipantSession(ParticipantHandler participantHandler) {
+        return route()
+                .GET(
+                        "/histories/join",
+                        participantHandler::searchParticipantJoin,
+                        ops -> ops.operationId("123")
+                                .parameter(parameterBuilder()
+                                        .name("hostId")
+                                        .in(ParameterIn.PATH)
+                                        .required(true)
+                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                                .parameter(parameterBuilder()
+                                        .name("applicationId")
+                                        .in(ParameterIn.PATH)
+                                        .required(true)
+                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                                .parameter(parameterBuilder().in(ParameterIn.QUERY).name("option").implementation(ApplicationSessionSearchPaginationOptionRequest.class))
                 )
                 .build();
     }

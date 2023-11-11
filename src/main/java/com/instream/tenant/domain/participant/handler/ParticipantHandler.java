@@ -1,7 +1,5 @@
 package com.instream.tenant.domain.participant.handler;
 
-import com.instream.tenant.domain.application.domain.request.ApplicationCreateRequest;
-import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
 import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
@@ -74,6 +72,22 @@ public class ParticipantHandler {
     }
 
     public Mono<ServerResponse> searchParticipantJoin(ServerRequest request) {
+        UUID hostId;
+
+        try {
+            hostId = UUID.fromString(request.pathVariable("hostId"));
+        } catch (IllegalArgumentException illegalArgumentException) {
+            return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
+        }
+
+        return ParticipantJoinSearchPaginationOptionRequest.fromQueryParams(request.queryParams())
+                .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
+                .flatMap((participantJoinSearchPaginationOptionRequest -> participantService.searchParticipantJoin(participantJoinSearchPaginationOptionRequest, hostId)))
+                .flatMap(applicationSessionPaginationDto -> ServerResponse.ok()
+                        .bodyValue(applicationSessionPaginationDto));
+    }
+
+    public Mono<ServerResponse> searchParticipantJoinWithApplicationSession(ServerRequest request) {
         String apiKey = request.headers().firstHeader(HttpHeaders.AUTHORIZATION);
 
         if (apiKey == null || apiKey.isEmpty()) {
@@ -92,7 +106,7 @@ public class ParticipantHandler {
 
         return ParticipantJoinSearchPaginationOptionRequest.fromQueryParams(request.queryParams())
                 .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
-                .flatMap((participantJoinSearchPaginationOptionRequest -> participantService.searchParticipantJoin(participantJoinSearchPaginationOptionRequest, hostId, applicationSessionId)))
+                .flatMap((participantJoinSearchPaginationOptionRequest -> participantService.searchParticipantJoinWithApplication(participantJoinSearchPaginationOptionRequest, hostId, applicationSessionId)))
                 .flatMap(applicationSessionPaginationDto -> ServerResponse.ok()
                         .bodyValue(applicationSessionPaginationDto));
     }
