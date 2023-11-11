@@ -2,6 +2,7 @@ package com.instream.tenant.domain.participant.handler;
 
 import com.instream.tenant.domain.application.domain.request.ApplicationCreateRequest;
 import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
+import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.participant.domain.request.EnterToApplicationParticipantRequest;
@@ -27,7 +28,12 @@ public class ParticipantHandler {
     }
 
     public Mono<ServerResponse> enterToApplication(ServerRequest request) {
-        String apiKey = null;
+        String apiKey = request.headers().firstHeader(InstreamHttpHeaders.API_KEY);
+
+        if (apiKey == null || apiKey.isEmpty()) {
+            return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
+        }
+
         UUID hostId;
         String participantId;
 
@@ -45,7 +51,12 @@ public class ParticipantHandler {
     }
 
     public Mono leaveFromApplication(ServerRequest request) {
-        String apiKey = null;
+        String apiKey = request.headers().firstHeader(InstreamHttpHeaders.API_KEY);
+
+        if (apiKey == null || apiKey.isEmpty()) {
+            return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
+        }
+
         UUID hostId;
         String participantId;
 

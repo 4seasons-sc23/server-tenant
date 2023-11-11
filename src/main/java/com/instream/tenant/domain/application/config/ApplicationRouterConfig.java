@@ -4,6 +4,7 @@ import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
 import com.instream.tenant.domain.application.domain.request.ApplicationCreateRequest;
 import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.handler.ApplicationHandler;
+import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -40,6 +41,12 @@ public class ApplicationRouterConfig {
                         applicationHandler::startApplication,
                         ops -> ops.operationId("123")
                                 .parameter(parameterBuilder()
+                                        .name(InstreamHttpHeaders.API_KEY)
+                                        .description("API Key")
+                                        .in(ParameterIn.HEADER)
+                                        .required(true)
+                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                                .parameter(parameterBuilder()
                                         .name("applicationId")
                                         .in(ParameterIn.PATH)
                                         .required(true)
@@ -55,6 +62,12 @@ public class ApplicationRouterConfig {
                         applicationHandler::endApplication,
                         ops -> ops.operationId("123")
                                 .parameter(parameterBuilder()
+                                        .name(InstreamHttpHeaders.API_KEY)
+                                        .description("API Key")
+                                        .in(ParameterIn.HEADER)
+                                        .required(true)
+                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                                .parameter(parameterBuilder()
                                         .name("applicationId")
                                         .in(ParameterIn.PATH)
                                         .required(true)
@@ -69,6 +82,12 @@ public class ApplicationRouterConfig {
                         "/{applicationId}",
                         applicationHandler::deleteApplication,
                         ops -> ops.operationId("123")
+                                .parameter(parameterBuilder()
+                                        .name(InstreamHttpHeaders.API_KEY)
+                                        .description("API Key")
+                                        .in(ParameterIn.HEADER)
+                                        .required(true)
+                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
                                 .parameter(parameterBuilder()
                                         .name("applicationId")
                                         .in(ParameterIn.PATH)

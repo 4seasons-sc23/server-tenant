@@ -80,6 +80,12 @@ public class HostApplicationRouterConfig {
                         applicationHandler::startApplication,
                         ops -> ops.operationId("123")
                                 .parameter(parameterBuilder()
+                                        .name(InstreamHttpHeaders.API_KEY)
+                                        .description("API Key")
+                                        .in(ParameterIn.HEADER)
+                                        .required(true)
+                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                                .parameter(parameterBuilder()
                                         .name("hostId")
                                         .in(ParameterIn.PATH)
                                         .required(true)
@@ -100,6 +106,12 @@ public class HostApplicationRouterConfig {
                         applicationHandler::endApplication,
                         ops -> ops.operationId("123")
                                 .parameter(parameterBuilder()
+                                        .name(InstreamHttpHeaders.API_KEY)
+                                        .description("API Key")
+                                        .in(ParameterIn.HEADER)
+                                        .required(true)
+                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                                .parameter(parameterBuilder()
                                         .name("hostId")
                                         .in(ParameterIn.PATH)
                                         .required(true)
@@ -119,6 +131,12 @@ public class HostApplicationRouterConfig {
                         "/{applicationId}",
                         applicationHandler::deleteApplication,
                         ops -> ops.operationId("123")
+                                .parameter(parameterBuilder()
+                                        .name(InstreamHttpHeaders.API_KEY)
+                                        .description("API Key")
+                                        .in(ParameterIn.HEADER)
+                                        .required(true)
+                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
                                 .parameter(parameterBuilder()
                                         .name("hostId")
                                         .in(ParameterIn.PATH)
@@ -160,33 +178,18 @@ public class HostApplicationRouterConfig {
                 .build();
     }
 
-    private RouterFunction<ServerResponse> searchApplicationParticipantSession(ApplicationHandler applicationHandler) {
-        return route()
-                .GET(
-                        "/{applicationId}/participants/sessions",
-                        applicationHandler::searchApplicationSession,
-                        ops -> ops.operationId("123")
-                                .parameter(parameterBuilder()
-                                        .name("hostId")
-                                        .in(ParameterIn.PATH)
-                                        .required(true)
-                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                                .parameter(parameterBuilder()
-                                        .name("applicationId")
-                                        .in(ParameterIn.PATH)
-                                        .required(true)
-                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                                .parameter(parameterBuilder().in(ParameterIn.QUERY).name("option").implementation(ApplicationSessionSearchPaginationOptionRequest.class))
-                )
-                .build();
-    }
-
     private RouterFunction<ServerResponse> searchParticipantSession(ParticipantHandler participantHandler) {
         return route()
                 .GET(
                         "sessions/{sessionId}/participants",
                         participantHandler::searchParticipantJoin,
                         ops -> ops.operationId("123")
+                                .parameter(parameterBuilder()
+                                        .name(InstreamHttpHeaders.API_KEY)
+                                        .description("API Key")
+                                        .in(ParameterIn.HEADER)
+                                        .required(true)
+                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
                                 .parameter(parameterBuilder()
                                         .name("hostId")
                                         .in(ParameterIn.PATH)

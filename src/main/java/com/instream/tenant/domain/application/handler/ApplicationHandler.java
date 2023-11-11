@@ -60,7 +60,7 @@ public class ApplicationHandler {
     }
 
     public Mono<ServerResponse> startApplication(ServerRequest request) {
-        String apiKey = request.headers().firstHeader(HttpHeaders.AUTHORIZATION);
+        String apiKey = request.headers().firstHeader(InstreamHttpHeaders.API_KEY);
 
         if (apiKey == null || apiKey.isEmpty()) {
             return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
@@ -78,7 +78,7 @@ public class ApplicationHandler {
     }
 
     public Mono<ServerResponse> endApplication(ServerRequest request) {
-        String apiKey = request.headers().firstHeader(HttpHeaders.AUTHORIZATION);
+        String apiKey = request.headers().firstHeader(InstreamHttpHeaders.API_KEY);
 
         if (apiKey == null || apiKey.isEmpty()) {
             return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
@@ -97,7 +97,7 @@ public class ApplicationHandler {
 
 
     public Mono<ServerResponse> deleteApplication(ServerRequest request) {
-        String apiKey = request.headers().firstHeader(HttpHeaders.AUTHORIZATION);
+        String apiKey = request.headers().firstHeader(InstreamHttpHeaders.API_KEY);
 
         if (apiKey == null || apiKey.isEmpty()) {
             return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
