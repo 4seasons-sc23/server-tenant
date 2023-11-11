@@ -1,5 +1,7 @@
 package com.instream.tenant.domain.participant.domain.dto;
 
+import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
+import com.instream.tenant.domain.application.domain.dto.ApplicationWithApiKeyDto;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 
@@ -14,7 +16,9 @@ public record ParticipantJoinDto(
 
         LocalDateTime updatedAt,
 
-        ParticipantDto participant
+        ParticipantDto participant,
+
+        ApplicationDto application
 ) {
         @Builder
         public ParticipantJoinDto {

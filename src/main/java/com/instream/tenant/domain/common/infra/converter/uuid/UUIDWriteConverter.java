@@ -4,6 +4,7 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.convert.WritingConverter;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.UUID;
 
 @WritingConverter

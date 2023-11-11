@@ -7,10 +7,12 @@ import lombok.Builder;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public record ApplicationDto(
+public record ApplicationWithApiKeyDto(
         UUID applicationId,
 
         ApplicationType type,
+
+        String apiKey,
 
         Status status,
 
@@ -20,7 +22,7 @@ public record ApplicationDto(
 
 ) {
     @Builder
-    public ApplicationDto {
+    public ApplicationWithApiKeyDto {
 
     }
 }

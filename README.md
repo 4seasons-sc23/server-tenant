@@ -28,7 +28,9 @@ REDIS_PASSWORD=your_redis_password
 이후 터미널에서 다음 명령어를 실행합니다.
 ```shell
 # shell
+./gradlew clean  build -x test --refresh-dependencies
 docker build --tag instream-tenant-server .
+docker-compose down
 docker-compose up -d
 ```
 

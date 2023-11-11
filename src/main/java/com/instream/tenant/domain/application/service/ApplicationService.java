@@ -2,13 +2,16 @@ package com.instream.tenant.domain.application.service;
 
 import com.instream.tenant.domain.application.domain.dto.ApplicationSessionDto;
 import com.instream.tenant.domain.application.domain.entity.ApplicationSessionEntity;
+import com.instream.tenant.domain.application.domain.entity.QApplicationEntity;
+import com.instream.tenant.domain.application.domain.entity.QApplicationSessionEntity;
 import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
+import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.infra.enums.ApplicationErrorCode;
 import com.instream.tenant.domain.application.infra.enums.ApplicationSessionErrorCode;
-import com.instream.tenant.domain.application.infra.enums.ApplicationType;
+import com.instream.tenant.domain.application.model.specification.ApplicationSessionSpecification;
 import com.instream.tenant.domain.application.model.specification.ApplicationSpecification;
 import com.instream.tenant.domain.application.repository.ApplicationRepository;
-import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
+import com.instream.tenant.domain.application.domain.dto.ApplicationWithApiKeyDto;
 import com.instream.tenant.domain.application.domain.entity.ApplicationEntity;
 import com.instream.tenant.domain.application.domain.request.ApplicationCreateRequest;
 import com.instream.tenant.domain.application.repository.ApplicationSessionRepository;
@@ -53,14 +56,20 @@ public class ApplicationService {
         this.participantJoinRepository = participantJoinRepository;
     }
 
-    public Mono<PaginationDto<CollectionDto<ApplicationDto>>> search(ApplicationSearchPaginationOptionRequest applicationSearchPaginationOptionRequest, UUID hostId) {
+    public Mono<PaginationDto<CollectionDto<ApplicationWithApiKeyDto>>> search(ApplicationSearchPaginationOptionRequest applicationSearchPaginationOptionRequest, UUID hostId) {
         Pageable pageable = applicationSearchPaginationOptionRequest.getPageable();
         Predicate predicate = ApplicationSpecification.with(applicationSearchPaginationOptionRequest);
 
-        Flux<ApplicationEntity> applicationFlux = applicationRepository.findBy(predicate, pageable);
-        Mono<List<ApplicationDto>> applicationDtoListMono = applicationFlux
+        Flux<ApplicationEntity> applicationFlux = applicationRepository.query(sqlQuery -> sqlQuery
+                .select(QApplicationEntity.applicationEntity)
+                .from(QApplicationEntity.applicationEntity)
+                .where(predicate)
+                .limit(pageable.getPageSize())
+                .offset(pageable.getOffset())
+        ).all();
+        Mono<List<ApplicationWithApiKeyDto>> applicationDtoListMono = applicationFlux
                 .flatMap(applicationEntity -> applicationSessionRepository.findTopByApplicationIdOrderByCreatedAtDesc(applicationEntity.getId())
-                        .map(applicationSessionEntity -> ApplicationDto.builder()
+                        .map(applicationSessionEntity -> ApplicationWithApiKeyDto.builder()
                                 .applicationId(applicationEntity.getId())
                                 .apiKey(applicationEntity.getApiKey())
                                 .session(ApplicationSessionDto.builder()
@@ -72,7 +81,7 @@ public class ApplicationService {
                                 .status(applicationEntity.getStatus())
                                 .createdAt(applicationEntity.getCreatedAt())
                                 .build())
-                        .defaultIfEmpty(ApplicationDto.builder()
+                        .defaultIfEmpty(ApplicationWithApiKeyDto.builder()
                                 .applicationId(applicationEntity.getId())
                                 .type(applicationEntity.getType())
                                 .status(applicationEntity.getStatus())
@@ -88,31 +97,31 @@ public class ApplicationService {
 
             return Mono.zip(applicationDtoListMono, totalPageCountMono, totalElementCountMono)
                     .map(tuple -> {
-                        List<ApplicationDto> applications = tuple.getT1();
+                        List<ApplicationWithApiKeyDto> applications = tuple.getT1();
                         Integer pageCount = tuple.getT2();
                         int totalElementCount = tuple.getT3().intValue();
 
-                        return PaginationInfoDto.<CollectionDto<ApplicationDto>>builder()
+                        return PaginationInfoDto.<CollectionDto<ApplicationWithApiKeyDto>>builder()
                                 .totalElementCount(totalElementCount)
                                 .pageCount(pageCount)
                                 .currentPage(applicationSearchPaginationOptionRequest.getPage())
-                                .data(CollectionDto.<ApplicationDto>builder()
+                                .data(CollectionDto.<ApplicationWithApiKeyDto>builder()
                                         .data(applications)
                                         .build())
                                 .build();
                     });
         }
 
-        return applicationDtoListMono.map(applicationDtoList -> PaginationDto.<CollectionDto<ApplicationDto>>builder()
+        return applicationDtoListMono.map(applicationDtoList -> PaginationDto.<CollectionDto<ApplicationWithApiKeyDto>>builder()
                 .currentPage(applicationSearchPaginationOptionRequest.getPage())
-                .data(CollectionDto.<ApplicationDto>builder()
+                .data(CollectionDto.<ApplicationWithApiKeyDto>builder()
                         .data(applicationDtoList)
                         .build())
                 .build()
         );
     }
 
-    public Mono<ApplicationDto> createApplication(ApplicationCreateRequest applicationCreateRequest, UUID hostId) {
+    public Mono<ApplicationWithApiKeyDto> createApplication(ApplicationCreateRequest applicationCreateRequest, UUID hostId) {
         String apiKey = UUID.randomUUID().toString();
 
         return Mono.defer(() -> applicationRepository.save(
@@ -120,13 +129,13 @@ public class ApplicationService {
                                 .tenantId(hostId)
                                 .apiKey(apiKey)
                                 .type(applicationCreateRequest.type())
-                                .status(Status.USE)
+                                .status(Status.PENDING)
                                 .build()
                 ))
                 .flatMap(application -> redisTemplate.opsForValue()
                         .set(String.valueOf(application.genRedisKey()), application)
                         .thenReturn(application))
-                .flatMap(savedApplication -> Mono.just(ApplicationDto.builder()
+                .flatMap(savedApplication -> Mono.just(ApplicationWithApiKeyDto.builder()
                         .applicationId(savedApplication.getId())
                         .type(savedApplication.getType())
                         .status(savedApplication.getStatus())
@@ -181,6 +190,60 @@ public class ApplicationService {
                     return applicationSessionRepository.deleteByApplicationId(applicationId)
                             .then(Mono.defer(() -> applicationRepository.deleteById(applicationId)));
                 });
+    }
+
+    public Mono<PaginationDto<CollectionDto<ApplicationSessionDto>>> searchSessions(ApplicationSessionSearchPaginationOptionRequest applicationSessionSearchPaginationOptionRequest, UUID hostId, UUID applicationId) {
+        // TODO: 호스트 인증 넣기
+
+        Pageable pageable = applicationSessionSearchPaginationOptionRequest.getPageable();
+        Predicate predicate = ApplicationSessionSpecification.with(applicationSessionSearchPaginationOptionRequest, applicationId);
+
+        // TODO: 체인 하나로 묶기
+        Flux<ApplicationSessionEntity> applicationSessionFlux = applicationSessionRepository.query(sqlQuery -> sqlQuery
+                .select(QApplicationSessionEntity.applicationSessionEntity)
+                .from(QApplicationSessionEntity.applicationSessionEntity)
+                .where(predicate)
+                .limit(pageable.getPageSize())
+                .offset(pageable.getOffset())
+        ).all();
+
+        Mono<List<ApplicationSessionDto>> applicationSessionDtoListMono = applicationSessionFlux
+                .map(applicationSessionEntity -> ApplicationSessionDto.builder()
+                        .id(applicationSessionEntity.getId())
+                        .createdAt(applicationSessionEntity.getCreatedAt())
+                        .deletedAt(applicationSessionEntity.getDeletedAt())
+                        .build())
+                .collectList();
+
+        // TODO: Redis 캐싱 넣기
+        if (applicationSessionSearchPaginationOptionRequest.isFirstView()) {
+            Mono<Long> totalElementCountMono = applicationSessionRepository.count(predicate);
+            Mono<Integer> totalPageCountMono = totalElementCountMono.map(count -> (int) Math.ceil((double) count / pageable.getPageSize()));
+
+            return Mono.zip(applicationSessionDtoListMono, totalPageCountMono, totalElementCountMono)
+                    .map(tuple -> {
+                        List<ApplicationSessionDto> applicationSessionDtoList = tuple.getT1();
+                        Integer pageCount = tuple.getT2();
+                        int totalElementCount = tuple.getT3().intValue();
+
+                        return PaginationInfoDto.<CollectionDto<ApplicationSessionDto>>builder()
+                                .totalElementCount(totalElementCount)
+                                .pageCount(pageCount)
+                                .currentPage(applicationSessionSearchPaginationOptionRequest.getPage())
+                                .data(CollectionDto.<ApplicationSessionDto>builder()
+                                        .data(applicationSessionDtoList)
+                                        .build())
+                                .build();
+                    });
+        }
+
+        return applicationSessionDtoListMono.map(applicationDtoList -> PaginationDto.<CollectionDto<ApplicationSessionDto>>builder()
+                .currentPage(applicationSessionSearchPaginationOptionRequest.getPage())
+                .data(CollectionDto.<ApplicationSessionDto>builder()
+                        .data(applicationDtoList)
+                        .build())
+                .build()
+        );
     }
 
     private Mono<UUID> createApplicationSession(ApplicationEntity application) {
