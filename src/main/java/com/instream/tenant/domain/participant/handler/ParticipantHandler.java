@@ -88,7 +88,7 @@ public class ParticipantHandler {
     }
 
     public Mono<ServerResponse> searchParticipantJoinWithApplicationSession(ServerRequest request) {
-        String apiKey = request.headers().firstHeader(HttpHeaders.AUTHORIZATION);
+        String apiKey = request.headers().firstHeader(InstreamHttpHeaders.API_KEY);
 
         if (apiKey == null || apiKey.isEmpty()) {
             return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
