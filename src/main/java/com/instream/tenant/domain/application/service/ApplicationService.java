@@ -83,6 +83,7 @@ public class ApplicationService {
                                 .build())
                         .defaultIfEmpty(ApplicationWithApiKeyDto.builder()
                                 .applicationId(applicationEntity.getId())
+                                .apiKey(applicationEntity.getApiKey())
                                 .type(applicationEntity.getType())
                                 .status(applicationEntity.getStatus())
                                 .createdAt(applicationEntity.getCreatedAt())
