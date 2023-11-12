@@ -11,7 +11,7 @@ import org.springframework.data.relational.core.mapping.Table;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Table(name = "PARTICIPANTS")
+@Table(name = "participants")
 @Setter
 @Getter
 @Builder

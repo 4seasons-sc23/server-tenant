@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 
-@Table(name = "TENANTS")
+@Table(name = "tenants")
 @Setter
 @Getter
 @Builder

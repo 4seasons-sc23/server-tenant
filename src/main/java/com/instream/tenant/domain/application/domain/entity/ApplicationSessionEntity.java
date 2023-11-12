@@ -9,7 +9,7 @@ import org.springframework.data.relational.core.mapping.Table;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Table(name = "APPLICATION_SESSIONS")
+@Table(name = "application_sessions")
 @Setter
 @Getter
 @Builder
