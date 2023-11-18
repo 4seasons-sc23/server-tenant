@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.codec.multipart.FilePart;
@@ -24,6 +25,7 @@ import reactor.core.scheduler.Schedulers;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MinioService {
     private final MinioClient minioClient;
 
@@ -31,6 +33,11 @@ public class MinioService {
     private String bucketName;
 
     public Mono<String> uploadFile(String objectName, FilePart filePart, String contentType) {
+        if(filePart == null) {
+            log.warn(String.format("objectName: %s, filePart: %s, contentType: %s"));
+            return Mono.just(String.format("objectName: %s, filePart: %s, contentType: %s"));
+        }
+
         return Mono.fromCallable(() -> {
             try {
                 // DataBuffer Flux를 InputStream으로 변환

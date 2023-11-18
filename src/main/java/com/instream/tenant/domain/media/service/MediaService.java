@@ -42,6 +42,7 @@ public class MediaService {
             .flatMap(sessionId -> {
                 String savedPath = sessionId.toString();
 
+
                 if (uploadRequest.getM3u8Main() == null) {
                     return Mono.zip(
                         minioService.uploadFile(savedPath + "/" + uploadRequest.getQuality() + "/" + "index.m3u8",
