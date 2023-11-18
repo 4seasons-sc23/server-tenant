@@ -10,8 +10,11 @@ import com.instream.tenant.domain.common.domain.dto.CollectionDto;
 import com.instream.tenant.domain.common.domain.dto.PaginationDto;
 import com.instream.tenant.domain.common.domain.dto.PaginationInfoDto;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
+import com.instream.tenant.domain.participant.domain.dto.MessageDto;
 import com.instream.tenant.domain.participant.domain.entity.QParticipantJoinEntity;
 import com.instream.tenant.domain.participant.domain.request.ParticipantJoinSearchPaginationOptionRequest;
+import com.instream.tenant.domain.participant.domain.request.SendMessageParticipantRequest;
+import com.instream.tenant.domain.participant.repository.ParticipantActionRepository;
 import com.instream.tenant.domain.participant.specification.ParticipantJoinSpecification;
 import com.instream.tenant.domain.tenant.infra.enums.TenantErrorCode;
 import com.instream.tenant.domain.tenant.repository.TenantRepository;
@@ -50,13 +53,16 @@ public class ParticipantService {
 
     private final ParticipantJoinRepository participantJoinRepository;
 
+    private  final ParticipantActionRepository participantActionRepository;
+
     @Autowired
-    public ParticipantService(TenantRepository tenantRepository, ApplicationRepository applicationRepository, ApplicationSessionRepository applicationSessionRepository, ParticipantRepository participantRepository, ParticipantJoinRepository participantJoinRepository) {
+    public ParticipantService(TenantRepository tenantRepository, ApplicationRepository applicationRepository, ApplicationSessionRepository applicationSessionRepository, ParticipantRepository participantRepository, ParticipantJoinRepository participantJoinRepository, ParticipantActionRepository participantActionRepository) {
         this.tenantRepository = tenantRepository;
         this.applicationRepository = applicationRepository;
         this.applicationSessionRepository = applicationSessionRepository;
         this.participantRepository = participantRepository;
         this.participantJoinRepository = participantJoinRepository;
+        this.participantActionRepository = participantActionRepository;
     }
 
     public Mono<ParticipantJoinDto> enterToApplication(String apiKey, UUID tenantId, String participantId, EnterToApplicationParticipantRequest enterToApplicationParticipantRequest) {
@@ -302,5 +308,9 @@ public class ParticipantService {
                         .build())
                 .build()
         );
+    }
+
+    public Mono<MessageDto> sendMessage(String apiKey, UUID tenantId, String participantId, SendMessageParticipantRequest sendMessageParticipantRequest) {
+        return Mono.just(MessageDto.builder().build());
     }
 }

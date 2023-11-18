@@ -7,10 +7,8 @@ import com.instream.tenant.domain.participant.domain.request.EnterToApplicationP
 import com.instream.tenant.domain.participant.domain.request.LeaveFromApplicationParticipantRequest;
 import com.instream.tenant.domain.participant.domain.request.ParticipantJoinSearchPaginationOptionRequest;
 import com.instream.tenant.domain.participant.domain.request.SendMessageParticipantRequest;
-import com.instream.tenant.domain.participant.service.MessageService;
 import com.instream.tenant.domain.participant.service.ParticipantService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -22,12 +20,9 @@ import java.util.UUID;
 public class ParticipantHandler {
     private final ParticipantService participantService;
 
-    private final MessageService messageService;
-
     @Autowired
-    public ParticipantHandler(ParticipantService participantService, MessageService messageService) {
+    public ParticipantHandler(ParticipantService participantService) {
         this.participantService = participantService;
-        this.messageService = messageService;
     }
 
     public Mono<ServerResponse> enterToApplication(ServerRequest request) {
@@ -135,7 +130,7 @@ public class ParticipantHandler {
 
         return request.bodyToMono(SendMessageParticipantRequest.class)
                 .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
-                .flatMap((sendMessageParticipantRequest -> messageService.sendMessage(apiKey, hostId, participantId, sendMessageParticipantRequest)))
+                .flatMap((sendMessageParticipantRequest -> participantService.sendMessage(apiKey, hostId, participantId, sendMessageParticipantRequest)))
                 .flatMap(applicationSessionPaginationDto -> ServerResponse.ok()
                         .bodyValue(applicationSessionPaginationDto));
     }
