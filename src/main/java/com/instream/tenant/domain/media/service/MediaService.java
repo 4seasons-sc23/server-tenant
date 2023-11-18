@@ -8,6 +8,7 @@ import com.instream.tenant.domain.media.domain.request.MediaUploadRequestDto;
 import com.instream.tenant.domain.minio.MinioService;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -41,23 +42,21 @@ public class MediaService {
                 applicationEntity -> this.getSessionIdByApplicationId(applicationEntity.getId()))
             .flatMap(sessionId -> {
                 String savedPath = sessionId.toString();
-
-
-                if (uploadRequest.getM3u8Main() == null) {
+                if (uploadRequest.ts() == null) {
                     return Mono.zip(
-                        minioService.uploadFile(savedPath + "/" + uploadRequest.getQuality() + "/" + "index.m3u8",
-                            uploadRequest.getM3u8(), "application/vnd.apple.mpegurl"),
-                        minioService.uploadFile(savedPath + "/" + uploadRequest.getQuality() + "/" + uploadRequest.getTs().filename(),
-                            uploadRequest.getTs(), "video/MP2T")
+                            minioService.uploadFile(savedPath + "/index.m3u8", uploadRequest.m3u8(),
+                                    "application/vnd.apple.mpegurl"),
+                            minioService.uploadFile(savedPath + "/" + uploadRequest.quality() + "/" + "index.m3u8",
+                                    uploadRequest.m3u8(), "application/vnd.apple.mpegurl")
                     );
                 }
                 return Mono.zip(
-                    minioService.uploadFile(savedPath + "/index.m3u8", uploadRequest.getM3u8Main(),
+                    minioService.uploadFile(savedPath + "/index.m3u8", uploadRequest.m3u8(),
                         "application/vnd.apple.mpegurl"),
-                    minioService.uploadFile(savedPath + "/" + uploadRequest.getQuality() + "/" + "index.m3u8",
-                        uploadRequest.getM3u8(), "application/vnd.apple.mpegurl"),
-                    minioService.uploadFile(savedPath + "/" + uploadRequest.getQuality() + "/" + uploadRequest.getTs().filename(),
-                        uploadRequest.getTs(), "video/MP2T")
+                    minioService.uploadFile(savedPath + "/" + uploadRequest.quality() + "/" + "index.m3u8",
+                        uploadRequest.m3u8(), "application/vnd.apple.mpegurl"),
+                    minioService.uploadFile(savedPath + "/" + uploadRequest.quality() + "/" + uploadRequest.ts().filename(),
+                        uploadRequest.ts(), "video/MP2T")
                 );
             }).thenReturn("File uploaded successfully");
     }
