@@ -9,6 +9,17 @@ services:
       SERVER_MODE: dev
     env_file:
       - .env
+  instream-media-server:
+    image: instream-media-server:latest
+    container_name: instream-media-server
+    volumes:
+      - /Users/jangseongho/Documents/developers/4seasons/nginx-rtmp/hls-data:${HLS_PATH}
+      - /Users/jangseongho/Documents/developers/4seasons/nginx-rtmp/log/hls:/var/log/hls
+    ports:
+      - "1935:1935"
+      - "80:80"
+    env_file:
+      - .env
 
   redis:
     image: redis:alpine
