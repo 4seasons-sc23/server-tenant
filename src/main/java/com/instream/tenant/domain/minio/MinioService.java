@@ -10,10 +10,12 @@ import io.minio.errors.InvalidResponseException;
 import io.minio.errors.MinioException;
 import io.minio.errors.ServerException;
 import io.minio.errors.XmlParserException;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,25 +35,28 @@ public class MinioService {
     private String bucketName;
 
     public Mono<String> uploadFile(String objectName, FilePart filePart, String contentType) {
-        if(filePart == null) {
-            log.warn("objectName: {}, contentType: {}", objectName, contentType);
+        log.debug("objectName: {}, contentType: {}", objectName, contentType);
+        if (filePart == null) {
+            log.warn("file is null objectName: {}, contentType: {}", objectName, contentType);
             return Mono.just(String.format("objectName: %s, contentType: %s", objectName, contentType));
         }
         return Mono.fromCallable(() -> {
             try {
                 // DataBuffer Flux를 InputStream으로 변환
                 InputStream inputStream = DataBufferUtils
-                    .join(filePart.content())
-                    .map(dataBuffer -> dataBuffer.asInputStream(true))
-                    .block();
+                        .join(filePart.content())
+                        .map(dataBuffer -> dataBuffer.asInputStream(true))
+                        .block();
+
+                log.debug("putObject {} {} {}", bucketName, objectName, contentType);
 
                 minioClient.putObject(
-                    PutObjectArgs.builder()
-                        .bucket(bucketName)
-                        .object(objectName)
-                        .stream(inputStream, -1, 10485760)
-                        .contentType(contentType)
-                        .build());
+                        PutObjectArgs.builder()
+                                .bucket(bucketName)
+                                .object(objectName)
+                                .stream(inputStream, -1, 10485760)
+                                .contentType(contentType)
+                                .build());
             } catch (MinioException e) {
                 throw new RuntimeException("Error uploading file to MinIO", e);
             }
