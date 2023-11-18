@@ -1,0 +1,13 @@
+#1 [internal] load build definition from Dockerfile
+#1 sha256:47bbc032193ed2493272c435eb806e136829bf46c4c3c06a9f58d3fd1f77b817
+#1 transferring dockerfile: 716B done
+#1 DONE 0.0s
+
+#2 [internal] load .dockerignore
+#2 sha256:35fd2edf5dda76ee50f965616d2c3178190f82e8b05483c1883af6284cfc707e
+#2 transferring context: 2B done
+#2 DONE 0.0s
+
+#4 [internal] load metadata for docker.io/library/gradle:7-jdk19-focal
+#4 sha256:a734a280d316990688dd7c4a3c576fb475c66eccf30e8caecfde59d2443103b9
+time="2023-11-18T20:17:39+09:00" level=error msg="got 3 SIGTERM/SIGINTs, forcing shutdown"

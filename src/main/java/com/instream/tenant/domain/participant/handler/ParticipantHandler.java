@@ -6,9 +6,9 @@ import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.participant.domain.request.EnterToApplicationParticipantRequest;
 import com.instream.tenant.domain.participant.domain.request.LeaveFromApplicationParticipantRequest;
 import com.instream.tenant.domain.participant.domain.request.ParticipantJoinSearchPaginationOptionRequest;
+import com.instream.tenant.domain.participant.domain.request.SendMessageParticipantRequest;
 import com.instream.tenant.domain.participant.service.ParticipantService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -107,6 +107,30 @@ public class ParticipantHandler {
         return ParticipantJoinSearchPaginationOptionRequest.fromQueryParams(request.queryParams())
                 .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
                 .flatMap((participantJoinSearchPaginationOptionRequest -> participantService.searchParticipantJoinWithApplication(participantJoinSearchPaginationOptionRequest, hostId, applicationSessionId)))
+                .flatMap(applicationSessionPaginationDto -> ServerResponse.ok()
+                        .bodyValue(applicationSessionPaginationDto));
+    }
+
+    public Mono<ServerResponse> sendMessage(ServerRequest request) {
+        String apiKey = request.headers().firstHeader(InstreamHttpHeaders.API_KEY);
+
+        if (apiKey == null || apiKey.isEmpty()) {
+            return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
+        }
+
+        UUID hostId;
+        String participantId;
+
+        try {
+            hostId = UUID.fromString(request.pathVariable("hostId"));
+            participantId = request.pathVariable("participantId");
+        } catch (IllegalArgumentException illegalArgumentException) {
+            return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
+        }
+
+        return request.bodyToMono(SendMessageParticipantRequest.class)
+                .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
+                .flatMap((sendMessageParticipantRequest -> participantService.sendMessage(apiKey, hostId, participantId, sendMessageParticipantRequest)))
                 .flatMap(applicationSessionPaginationDto -> ServerResponse.ok()
                         .bodyValue(applicationSessionPaginationDto));
     }

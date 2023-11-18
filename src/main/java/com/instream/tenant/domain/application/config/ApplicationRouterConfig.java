@@ -1,5 +1,6 @@
 package com.instream.tenant.domain.application.config;
 
+import com.instream.tenant.domain.application.domain.request.NginxRtmpStreamEvent;
 import com.instream.tenant.domain.application.handler.ApplicationHandler;
 import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -10,6 +11,7 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
+import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 import static org.springdoc.webflux.core.fn.SpringdocRouteBuilder.route;
 
 
@@ -22,9 +24,33 @@ public class ApplicationRouterConfig {
                     builder.add(startApplication(applicationHandler));
                     builder.add(endApplication(applicationHandler));
                     builder.add(deleteApplication(applicationHandler));
+                    builder.add(startNginxRtmpStream(applicationHandler));
+                    builder.add(endNginxRtmpStream(applicationHandler));
                 },
                 ops -> ops.operationId("123")
         ).build();
+    }
+
+    private RouterFunction<ServerResponse> startNginxRtmpStream(ApplicationHandler applicationHandler) {
+        return route()
+                .POST(
+                        "/start",
+                        applicationHandler::startNginxRtmpStream,
+                        ops -> ops.operationId("123")
+                                .requestBody(requestBodyBuilder().implementation(NginxRtmpStreamEvent.class).required(true).description("Nginx publishing request"))
+                )
+                .build();
+    }
+
+    private RouterFunction<ServerResponse> endNginxRtmpStream(ApplicationHandler applicationHandler) {
+        return route()
+                .POST(
+                        "/end",
+                        applicationHandler::endNginxRtmpStream,
+                        ops -> ops.operationId("123")
+                                .requestBody(requestBodyBuilder().implementation(NginxRtmpStreamEvent.class).required(true).description("Nginx publishing request"))
+                )
+                .build();
     }
 
     private RouterFunction<ServerResponse> startApplication(ApplicationHandler applicationHandler) {
