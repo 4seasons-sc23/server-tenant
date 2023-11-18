@@ -42,6 +42,8 @@ public class MediaService {
                 applicationEntity -> this.getSessionIdByApplicationId(applicationEntity.getId()))
             .flatMap(sessionId -> {
                 String savedPath = sessionId.toString();
+                log.debug("uploadRequest {}, apiKey: {}", uploadRequest, apiKey);
+
                 if (uploadRequest.ts() == null) {
                     return Mono.zip(
                             minioService.uploadFile(savedPath + "/index.m3u8", uploadRequest.m3u8(),
@@ -58,7 +60,8 @@ public class MediaService {
                     minioService.uploadFile(savedPath + "/" + uploadRequest.quality() + "/" + uploadRequest.ts().filename(),
                         uploadRequest.ts(), "video/MP2T")
                 );
-            }).thenReturn("File uploaded successfully");
+            })
+                .thenReturn("File uploaded successfully");
     }
 
 }

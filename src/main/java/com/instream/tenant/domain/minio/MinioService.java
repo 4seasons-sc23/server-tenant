@@ -36,10 +36,12 @@ public class MinioService {
 
     public Mono<String> uploadFile(String objectName, FilePart filePart, String contentType) {
         log.debug("objectName: {}, contentType: {}", objectName, contentType);
+
         if (filePart == null) {
             log.warn("file is null objectName: {}, contentType: {}", objectName, contentType);
             return Mono.just(String.format("objectName: %s, contentType: %s", objectName, contentType));
         }
+
         return Mono.fromCallable(() -> {
             try {
                 // DataBuffer Flux를 InputStream으로 변환
