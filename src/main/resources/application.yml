@@ -27,3 +27,8 @@ logging:
     org.springframework.r2dbc.core: DEBUG
     org.springdoc: DEBUG
 
+minio:
+  bucket: ${MINIO_BUCKET}
+  endpoint: ${MINIO_ENDPOINT}
+  access-key: ${MINIO_ACCESS_KEY}
+  secret-key: ${MINIO_SECRET_KEY}
