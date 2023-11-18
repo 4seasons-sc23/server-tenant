@@ -26,6 +26,7 @@ logging:
     org.springframework.web: DEBUG
     org.springframework.r2dbc.core: DEBUG
     org.springdoc: DEBUG
+    com.instream.tenant: DEBUG
 
 minio:
   bucket: ${MINIO_BUCKET}

@@ -42,28 +42,25 @@ public class MinioService {
             return Mono.just(String.format("objectName: %s, contentType: %s", objectName, contentType));
         }
 
-        return Mono.fromCallable(() -> {
-            try {
-                // DataBuffer Flux를 InputStream으로 변환
-                InputStream inputStream = DataBufferUtils
-                        .join(filePart.content())
-                        .map(dataBuffer -> dataBuffer.asInputStream(true))
-                        .block();
+        return DataBufferUtils.join(filePart.content())
+                .flatMap(dataBuffer -> {
+                    try (InputStream inputStream = dataBuffer.asInputStream(true)) {
+                        log.debug("putObject {} {} {}", bucketName, objectName, contentType);
 
-                log.debug("putObject {} {} {}", bucketName, objectName, contentType);
+                        minioClient.putObject(
+                                PutObjectArgs.builder()
+                                        .bucket(bucketName)
+                                        .object(objectName)
+                                        .stream(inputStream, -1, 10485760)
+                                        .contentType(contentType)
+                                        .build());
 
-                minioClient.putObject(
-                        PutObjectArgs.builder()
-                                .bucket(bucketName)
-                                .object(objectName)
-                                .stream(inputStream, -1, 10485760)
-                                .contentType(contentType)
-                                .build());
-            } catch (MinioException e) {
-                throw new RuntimeException("Error uploading file to MinIO", e);
-            }
-
-            return "File uploaded successfully !!";
-        }).subscribeOn(Schedulers.boundedElastic());
+                        return Mono.just("File uploaded successfully !!");
+                    } catch (MinioException | IOException | NoSuchAlgorithmException | InvalidKeyException e) {
+                        log.error("Error uploading file to MinIO: ", e);
+                        return Mono.error(new RuntimeException("Error uploading file to MinIO", e));
+                    }
+                })
+                .subscribeOn(Schedulers.boundedElastic());
     }
 }
