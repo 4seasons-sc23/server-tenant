@@ -14,12 +14,16 @@ import io.minio.errors.InvalidResponseException;
 import io.minio.errors.MinioException;
 import io.minio.errors.ServerException;
 import io.minio.errors.XmlParserException;
+
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.http.codec.multipart.Part;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.BodyExtractors;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -39,22 +43,15 @@ public class MediaHandler {
 
     public Mono<ServerResponse> uploadMedia(ServerRequest request) {
         return request.body(BodyExtractors.toMultipartData())
-            .map(map -> {
-                var parts = map.toSingleValueMap();
-                MediaUploadRequestDto uploadRequest = new MediaUploadRequestDto();
-                if (parts.get("m3u8Main") instanceof FilePart) {
-                    uploadRequest.setM3u8Main((FilePart) parts.get("m3u8Main"));
-                }
-                if (parts.get("m3u8") instanceof FilePart) {
-                    uploadRequest.setM3u8((FilePart) parts.get("m3u8"));
-                }
-                if (parts.get("ts") instanceof FilePart) {
-                    uploadRequest.setTs((FilePart) parts.get("ts"));
-                }
-                uploadRequest.setQuality(request.pathVariable("quality"));
-                return uploadRequest;
-            })
-            .flatMap(uploadRequest -> mediaService.uploadMedia(uploadRequest, request.headers().firstHeader(InstreamHttpHeaders.API_KEY)))
-            .flatMap(result -> ok().bodyValue(result));
+                .flatMap(stringPartMultiValueMap -> {
+                    Map<String, Part> partMap = stringPartMultiValueMap.toSingleValueMap();
+                    return Mono.just(MediaUploadRequestDto.builder()
+                            .m3u8Main((FilePart) partMap.get("m3u8Main"))
+                            .m3u8((FilePart) partMap.get("m3u8"))
+                            .ts((FilePart) partMap.get("ts"))
+                            .build());
+                })
+                .flatMap(uploadRequest -> mediaService.uploadMedia(uploadRequest, request.headers().firstHeader(InstreamHttpHeaders.API_KEY)))
+                .flatMap(result -> ok().bodyValue(result));
     }
 }
