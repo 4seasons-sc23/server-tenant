@@ -1,20 +1,26 @@
-package com.instream.media.minio;
+package com.instream.tenant.domain.minio;
 
 import io.minio.MinioClient;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class MinioConfig {
-    private String endpoint = "https://minio.aolda.net";
-    private String accessKey = "ZYH8rcgdl0okiPtV4eHD";
-    private String secretKey = "bksx22pdUW705EJPojbKQu9ZnfRpZ3v7PYXZ0Wjm";
+    @Value("${minio.endpoint}")
+    private String minioEndpoint;
+
+    @Value("${minio.access-key}")
+    private String minioAccessKey;
+
+    @Value("${minio.secret-key}")
+    private String minioSecretKey;
 
     @Bean
     public MinioClient minioClient() {
         return MinioClient.builder()
-            .endpoint(endpoint)
-            .credentials(accessKey, secretKey)
+            .endpoint(minioEndpoint)
+            .credentials(minioAccessKey, minioSecretKey)
             .build();
     }
 }
