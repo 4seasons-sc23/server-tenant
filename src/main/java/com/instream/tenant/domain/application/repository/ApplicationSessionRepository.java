@@ -9,6 +9,7 @@ import com.instream.tenant.domain.application.domain.entity.QApplicationSessionE
 import com.querydsl.core.types.Predicate;
 import com.querydsl.sql.SQLQuery;
 import com.querydsl.sql.SQLQueryFactory;
+import java.time.LocalDateTime;
 import org.springframework.data.domain.Pageable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -20,6 +21,9 @@ public interface ApplicationSessionRepository extends QuerydslR2dbcRepository<Ap
     Mono<ApplicationSessionEntity> findByIdAndApplicationId(UUID id, UUID applicationId);
 
     Mono<ApplicationSessionEntity> findTopByApplicationIdOrderByCreatedAtDesc(UUID applicationId);
+
+    Mono<ApplicationSessionEntity> findTopByApplicationIdAndDeletedAtOrderByCreatedAtDesc(
+        UUID applicationId, LocalDateTime deletedAt);
 
     Mono<Void> deleteByApplicationId(UUID applicationId);
 

@@ -48,6 +48,9 @@ dependencies {
 	// jackson
 	// support java 8 time api
 	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+	// minio object storage
+	implementation 'io.minio:minio:8.5.2'
 }
 
 tasks.named('test') {
