@@ -53,7 +53,7 @@ public class MediaService {
                     );
                 }
                 return Mono.zip(
-                    minioService.uploadFile(savedPath + "/index.m3u8", uploadRequest.m3u8(),
+                    minioService.uploadFile(savedPath + "/index.m3u8", uploadRequest.m3u8Main(),
                         "application/vnd.apple.mpegurl"),
                     minioService.uploadFile(savedPath + "/" + uploadRequest.quality() + "/" + "index.m3u8",
                         uploadRequest.m3u8(), "application/vnd.apple.mpegurl"),
