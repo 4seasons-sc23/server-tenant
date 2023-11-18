@@ -2,6 +2,7 @@ package com.instream.tenant.domain.media.handler;
 
 import static org.springframework.web.reactive.function.server.ServerResponse.ok;
 
+import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
 import com.instream.tenant.domain.media.domain.request.MediaUploadRequestDto;
 import com.instream.tenant.domain.media.service.MediaService;
 import com.instream.tenant.domain.minio.MinioService;
@@ -53,7 +54,7 @@ public class MediaHandler {
                 uploadRequest.setQuality(request.pathVariable("quality"));
                 return uploadRequest;
             })
-            .flatMap(uploadRequest -> mediaService.uploadMedia(uploadRequest, request.headers().header("api_key").get(0)))
+            .flatMap(uploadRequest -> mediaService.uploadMedia(uploadRequest, request.headers().firstHeader(InstreamHttpHeaders.API_KEY)))
             .flatMap(result -> ok().bodyValue(result));
     }
 }
