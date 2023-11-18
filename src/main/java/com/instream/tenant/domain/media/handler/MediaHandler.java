@@ -49,6 +49,7 @@ public class MediaHandler {
                             .m3u8Main((FilePart) partMap.get("m3u8Main"))
                             .m3u8((FilePart) partMap.get("m3u8"))
                             .ts((FilePart) partMap.get("ts"))
+                            .quality(request.pathVariable("quality"))
                             .build());
                 })
                 .flatMap(uploadRequest -> mediaService.uploadMedia(uploadRequest, request.headers().firstHeader(InstreamHttpHeaders.API_KEY)))
