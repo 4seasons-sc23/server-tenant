@@ -6,7 +6,9 @@ import com.instream.tenant.domain.application.repository.ApplicationRepository;
 import com.instream.tenant.domain.application.repository.ApplicationSessionRepository;
 import com.instream.tenant.domain.media.domain.request.MediaUploadRequestDto;
 import com.instream.tenant.domain.minio.MinioService;
+
 import java.util.UUID;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
@@ -22,7 +24,7 @@ public class MediaService {
 
 
     public MediaService(ApplicationRepository applicationRepository,
-        ApplicationSessionRepository applicationSessionRepository, MinioService minioService) {
+                        ApplicationSessionRepository applicationSessionRepository, MinioService minioService) {
         this.applicationRepository = applicationRepository;
         this.applicationSessionRepository = applicationSessionRepository;
         this.minioService = minioService;
@@ -30,37 +32,37 @@ public class MediaService {
 
     public Mono<UUID> getSessionIdByApplicationId(UUID applicationId) {
         return applicationRepository.findById(applicationId)
-            .flatMap(app -> applicationSessionRepository
-                .findTopByApplicationIdAndDeletedAtOrderByCreatedAtDesc(app.getId(), null)
-            )
-            .flatMap(applicationSessionEntity -> Mono.just(applicationSessionEntity.getId()));
+                .flatMap(app -> applicationSessionRepository
+                        .findTopByApplicationIdAndDeletedAtOrderByCreatedAtDesc(app.getId(), null)
+                )
+                .flatMap(applicationSessionEntity -> Mono.just(applicationSessionEntity.getId()));
     }
 
     public Mono<String> uploadMedia(MediaUploadRequestDto uploadRequest, String apiKey) {
         return applicationRepository.findByApiKey(apiKey)
-            .flatMap(
-                applicationEntity -> this.getSessionIdByApplicationId(applicationEntity.getId()))
-            .flatMap(sessionId -> {
-                String savedPath = sessionId.toString();
-                log.debug("uploadRequest {}, apiKey: {}", uploadRequest, apiKey);
+                .flatMap(
+                        applicationEntity -> this.getSessionIdByApplicationId(applicationEntity.getId()))
+                .flatMap(sessionId -> {
+                    String savedPath = sessionId.toString();
 
-                if (uploadRequest.ts() == null) {
-                    return Mono.zip(
-                            minioService.uploadFile(savedPath + "/index.m3u8", uploadRequest.m3u8Main(),
-                                    "application/vnd.apple.mpegurl"),
-                            minioService.uploadFile(savedPath + "/" + uploadRequest.quality() + "/" + "index.m3u8",
-                                    uploadRequest.m3u8(), "application/vnd.apple.mpegurl")
-                    );
-                }
-                return Mono.zip(
-                    minioService.uploadFile(savedPath + "/index.m3u8", uploadRequest.m3u8Main(),
-                        "application/vnd.apple.mpegurl"),
-                    minioService.uploadFile(savedPath + "/" + uploadRequest.quality() + "/" + "index.m3u8",
-                        uploadRequest.m3u8(), "application/vnd.apple.mpegurl"),
-                    minioService.uploadFile(savedPath + "/" + uploadRequest.quality() + "/" + uploadRequest.ts().filename(),
-                        uploadRequest.ts(), "video/MP2T")
-                );
-            })
+                    log.debug("uploadRequest {}, apiKey: {}", uploadRequest, apiKey);
+
+                    if (uploadRequest.quality() == null) {
+                        return Mono.just("quality is null");
+                    }
+                    if (uploadRequest.ts() == null) {
+                        return Mono.just("ts is null");
+                    }
+
+                    Mono<String> uploadMainM3u8 = minioService.uploadFile(savedPath + "/index.m3u8", uploadRequest.m3u8Main(),
+                            "application/vnd.apple.mpegurl");
+                    Mono<String> uploadM3u8 = minioService.uploadFile(savedPath + "/" + uploadRequest.quality() + "/" + "index.m3u8",
+                            uploadRequest.m3u8(), "application/vnd.apple.mpegurl");
+                    Mono<String> uploadTs = minioService.uploadFile(savedPath + "/" + uploadRequest.quality() + "/" + uploadRequest.ts().filename(),
+                            uploadRequest.ts(), "video/MP2T");
+
+                    return Mono.zip(uploadMainM3u8, uploadM3u8, uploadTs);
+                })
                 .thenReturn("File uploaded successfully");
     }
 
