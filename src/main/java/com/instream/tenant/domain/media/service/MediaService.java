@@ -86,7 +86,7 @@ public class MediaService {
 
     private Mono<File> convertToFile(FilePart filePart, String sessionId) {
         if(filePart == null) {
-            return Mono.just(null);
+            return Mono.empty();
         }
         return Mono.create(sink -> {
             try {
@@ -121,7 +121,7 @@ public class MediaService {
 
     private Mono<File> convertM3u8ToFile(FilePart filePart, String apiKey, String sessionId) {
         if(filePart == null) {
-            return Mono.just(null);
+            return Mono.empty();
         }
         return Mono.create(sink -> {
             try {
