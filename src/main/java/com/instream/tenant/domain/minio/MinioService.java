@@ -11,6 +11,8 @@ import io.minio.errors.MinioException;
 import io.minio.errors.ServerException;
 import io.minio.errors.XmlParserException;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.InvalidKeyException;
@@ -34,33 +36,31 @@ public class MinioService {
     @Value("${minio.bucket}")
     private String bucketName;
 
-    public Mono<String> uploadFile(String objectName, FilePart filePart, String contentType) {
+    public Mono<String> uploadFile(String objectName, File file, String contentType) {
         log.debug("objectName: {}, contentType: {}", objectName, contentType);
 
-        if (filePart == null) {
+        if (file == null) {
             log.warn("file is null objectName: {}, contentType: {}", objectName, contentType);
             return Mono.just(String.format("objectName: %s, contentType: %s", objectName, contentType));
         }
 
-        return DataBufferUtils.join(filePart.content())
-                .flatMap(dataBuffer -> {
-                    try (InputStream inputStream = dataBuffer.asInputStream(true)) {
-                        log.debug("putObject {} {} {}", bucketName, objectName, contentType);
+        return Mono.fromCallable(() -> {
+            try (FileInputStream fileInputStream = new FileInputStream(file)) {
+                log.debug("putObject {} {} {}", bucketName, objectName, contentType);
 
-                        minioClient.putObject(
-                                PutObjectArgs.builder()
-                                        .bucket(bucketName)
-                                        .object(objectName)
-                                        .stream(inputStream, -1, 10485760)
-                                        .contentType(contentType)
-                                        .build());
+                minioClient.putObject(
+                        PutObjectArgs.builder()
+                                .bucket(bucketName)
+                                .object(objectName)
+                                .stream(fileInputStream, file.length(), 10485760)
+                                .contentType(contentType)
+                                .build());
 
-                        return Mono.just("File uploaded successfully !!");
-                    } catch (MinioException | IOException | NoSuchAlgorithmException | InvalidKeyException e) {
-                        log.error("Error uploading file to MinIO: ", e);
-                        return Mono.error(new RuntimeException("Error uploading file to MinIO", e));
-                    }
-                })
-                .subscribeOn(Schedulers.boundedElastic());
+                return "File uploaded successfully !!";
+            } catch (MinioException | IOException | NoSuchAlgorithmException | InvalidKeyException e) {
+                log.error("Error uploading file to MinIO: ", e);
+                throw new RuntimeException("Error uploading file to MinIO", e);
+            }
+        }).subscribeOn(Schedulers.boundedElastic());
     }
 }
