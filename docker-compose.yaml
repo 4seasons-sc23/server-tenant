@@ -15,6 +15,7 @@ services:
     volumes:
       - /Users/jangseongho/Documents/developers/4seasons/nginx-rtmp/hls-data:${HLS_PATH}
       - /Users/jangseongho/Documents/developers/4seasons/nginx-rtmp/log/hls:/var/log/hls
+      - /Users/jangseongho/Documents/developers/4seasons/nginx-rtmp/log/ffmpeg:/var/log/ffmpeg
     ports:
       - "1935:1935"
       - "80:80"
