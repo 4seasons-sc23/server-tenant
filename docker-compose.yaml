@@ -9,6 +9,9 @@ services:
       SERVER_MODE: dev
     env_file:
       - .env
+    networks:
+      - instream-network
+
   instream-media-server:
     image: instream-media-server:latest
     container_name: instream-media-server
@@ -21,28 +24,40 @@ services:
       - "80:80"
     env_file:
       - .env
+    networks:
+      - instream-network
 
   redis:
     image: redis:alpine
     command: redis-server --port 6379
     container_name: redis
     labels:
-    - "name=redis"
-    - "mode=standalone"
+      - "name=redis"
+      - "mode=standalone"
     ports:
-    - "6379:6379"
+      - "6379:6379"
+    networks:
+      - instream-network
 
   mariadb:
     container_name: "mariadb"
     image: mariadb:10
     restart: always
     ports:
-    - "3307:3306"
+      - "3307:3306"
     volumes:
-    - "./mariadb/conf.d:/etc/mysql/conf.d"
-    - "./mariadb/data:/var/lib/mysql"
+      - "./mariadb/conf.d:/etc/mysql/conf.d"
+      - "./mariadb/data:/var/lib/mysql"
     environment:
       MARIADB_DATABASE: ${MARIA_DATABASE}
       MARIADB_USER: ${MARIA_USERNAME}
       MARIADB_PASSWORD: ${MARIA_PASSWORD}
       MARIADB_ROOT_PASSWORD: ${MARIA_ROOT_PASSWORD}
+    networks:
+      - instream-network
+
+networks:
+  instream-network:
+    ipam:
+      config:
+        - subnet: 10.15.0.0/16

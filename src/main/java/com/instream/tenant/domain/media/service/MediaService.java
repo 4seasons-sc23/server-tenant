@@ -85,7 +85,7 @@ public class MediaService {
         return Mono.create(sink -> {
             try {
                 // 임시 파일 생성
-                File tempFile = File.createTempFile(String.format("temp_%s", sessionId), filePart.filename());
+                File tempFile = File.createTempFile(String.format("temp_%s_%s", sessionId, UUID.randomUUID()), filePart.filename());
                 WritableByteChannel channel = Channels.newChannel(new FileOutputStream(tempFile));
 
                 // FilePart의 내용을 임시 파일에 쓴다
@@ -117,7 +117,7 @@ public class MediaService {
         return Mono.create(sink -> {
             try {
                 // 임시 파일 생성
-                File tempFile = File.createTempFile(String.format("temp_main_%s", sessionId), ".m3u8");
+                File tempFile = File.createTempFile(String.format("temp_main_%s_%s", sessionId, UUID.randomUUID()), ".m3u8");
 
                 // FilePart의 내용을 임시 파일에 쓴다
                 filePart.content()
@@ -147,11 +147,30 @@ public class MediaService {
     private Mono<File> replaceTextInFile(File file, String searchText, String replaceText) {
         return Mono.fromCallable(() -> {
             Path path = file.toPath();
+            StringBuilder fileContentBuilder = new StringBuilder();
+
+            // 파일 내용을 읽고 수정
             String content = Files.lines(path)
-                    .map(line -> line.replace(searchText, replaceText))
+                    .map(line -> {
+                        fileContentBuilder.append(line).append("\n"); // 파일 내용 누적
+                        return line.replace(searchText, replaceText);
+                    })
                     .collect(Collectors.joining("\n"));
+
+            // 수정된 내용을 파일에 다시 씀
             Files.write(path, content.getBytes(), StandardOpenOption.WRITE);
+
+            // 파일 내용 전부 출력
+            System.out.println("File content after replacement:");
+            System.out.println(fileContentBuilder.toString());
+
             return file;
+//            Path path = file.toPath();
+//            String content = Files.lines(path)
+//                    .map(line -> line.replace(searchText, replaceText))
+//                    .collect(Collectors.joining("\n"));
+//            Files.write(path, content.getBytes(), StandardOpenOption.WRITE);
+//            return file;
         });
     }
 }
