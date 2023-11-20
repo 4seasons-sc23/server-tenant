@@ -76,8 +76,13 @@ public class MediaService {
                             .flatMap(file -> minioService.uploadFile(savedPath + "/" + uploadRequest.quality() + "/" + "index.m3u8",
                                     file, "application/vnd.apple.mpegurl"));
                     Mono<String> uploadTs = convertToFile(uploadRequest.ts(), savedPath)
-                            .flatMap(file -> minioService.uploadFile(savedPath + "/" + uploadRequest.quality() + "/" + uploadRequest.ts().filename(),
-                                    file, "video/MP2T"));
+                            .flatMap(file -> {
+                                if (file == null) {
+                                    return Mono.just("emtpy ts");
+                                }
+                                return minioService.uploadFile(savedPath + "/" + uploadRequest.quality() + "/" + file.getName(),
+                                        file, "video/MP2T");
+                            });
 
                     return Mono.zip(uploadMainM3u8, uploadM3u8, uploadTs);
                 })
@@ -85,7 +90,7 @@ public class MediaService {
     }
 
     private Mono<File> convertToFile(FilePart filePart, String sessionId) {
-        if(filePart == null) {
+        if (filePart == null) {
             return Mono.empty();
         }
         return Mono.create(sink -> {
@@ -120,7 +125,7 @@ public class MediaService {
     }
 
     private Mono<File> convertM3u8ToFile(FilePart filePart, String apiKey, String sessionId) {
-        if(filePart == null) {
+        if (filePart == null) {
             return Mono.empty();
         }
         return Mono.create(sink -> {
