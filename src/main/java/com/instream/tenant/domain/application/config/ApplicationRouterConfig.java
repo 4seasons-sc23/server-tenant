@@ -24,33 +24,9 @@ public class ApplicationRouterConfig {
                     builder.add(startApplication(applicationHandler));
                     builder.add(endApplication(applicationHandler));
                     builder.add(deleteApplication(applicationHandler));
-                    builder.add(startNginxRtmpStream(applicationHandler));
-                    builder.add(endNginxRtmpStream(applicationHandler));
                 },
                 ops -> ops.operationId("123")
         ).build();
-    }
-
-    private RouterFunction<ServerResponse> startNginxRtmpStream(ApplicationHandler applicationHandler) {
-        return route()
-                .POST(
-                        "/start",
-                        applicationHandler::startNginxRtmpStream,
-                        ops -> ops.operationId("123")
-                                .requestBody(requestBodyBuilder().implementation(NginxRtmpStreamEvent.class).required(true).description("Nginx publishing request"))
-                )
-                .build();
-    }
-
-    private RouterFunction<ServerResponse> endNginxRtmpStream(ApplicationHandler applicationHandler) {
-        return route()
-                .POST(
-                        "/end",
-                        applicationHandler::endNginxRtmpStream,
-                        ops -> ops.operationId("123")
-                                .requestBody(requestBodyBuilder().implementation(NginxRtmpStreamEvent.class).required(true).description("Nginx publishing request"))
-                )
-                .build();
     }
 
     private RouterFunction<ServerResponse> startApplication(ApplicationHandler applicationHandler) {

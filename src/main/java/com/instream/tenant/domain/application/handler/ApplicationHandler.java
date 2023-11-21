@@ -142,26 +142,4 @@ public class ApplicationHandler {
                 .flatMap(applicationSessionPaginationDto -> ServerResponse.ok()
                         .bodyValue(applicationSessionPaginationDto));
     }
-
-
-    public Mono<ServerResponse> startNginxRtmpStream(ServerRequest request) {
-        String apiKey = request.headers().firstHeader(InstreamHttpHeaders.API_KEY);
-
-        if (apiKey == null || apiKey.isEmpty()) {
-            return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
-        }
-
-        // return request.bodyToMono(ApplicationCreateRequest.class);
-        return Mono.defer(() -> ServerResponse.ok().build());
-    }
-
-    public Mono<ServerResponse> endNginxRtmpStream(ServerRequest request) {
-        String apiKey = request.headers().firstHeader(InstreamHttpHeaders.API_KEY);
-
-        if (apiKey == null || apiKey.isEmpty()) {
-            return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
-        }
-
-        return Mono.defer(() -> ServerResponse.ok().build());
-    }
 }

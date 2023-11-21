@@ -3,6 +3,8 @@ package com.instream.tenant.domain.media.handler;
 import static org.springframework.web.reactive.function.server.ServerResponse.ok;
 
 import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
+import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
+import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.media.domain.request.MediaUploadRequestDto;
 import com.instream.tenant.domain.media.service.MediaService;
 import com.instream.tenant.domain.minio.MinioService;
@@ -39,6 +41,27 @@ public class MediaHandler {
     public MediaHandler(MediaService mediaService, MinioService minioService) {
         this.mediaService = mediaService;
         this.minioService = minioService;
+    }
+
+    public Mono<ServerResponse> startNginxRtmpStream(ServerRequest request) {
+        String apiKey = request.headers().firstHeader(InstreamHttpHeaders.API_KEY);
+
+        if (apiKey == null || apiKey.isEmpty()) {
+            return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
+        }
+
+        // return request.bodyToMono(ApplicationCreateRequest.class);
+        return Mono.defer(() -> ServerResponse.ok().build());
+    }
+
+    public Mono<ServerResponse> endNginxRtmpStream(ServerRequest request) {
+        String apiKey = request.headers().firstHeader(InstreamHttpHeaders.API_KEY);
+
+        if (apiKey == null || apiKey.isEmpty()) {
+            return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
+        }
+
+        return Mono.defer(() -> ServerResponse.ok().build());
     }
 
     public Mono<ServerResponse> uploadMedia(ServerRequest request) {
