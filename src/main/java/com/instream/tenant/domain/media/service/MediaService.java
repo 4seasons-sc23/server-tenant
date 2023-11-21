@@ -80,7 +80,7 @@ public class MediaService {
                                 if (file == null) {
                                     return Mono.just("emtpy ts");
                                 }
-                                return minioService.uploadFile(savedPath + "/" + uploadRequest.quality() + "/" + file.getName(),
+                                return minioService.uploadFile(savedPath + "/" + uploadRequest.quality() + "/" + uploadRequest.ts().filename(),
                                         file, "video/MP2T");
                             });
 
