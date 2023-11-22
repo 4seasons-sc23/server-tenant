@@ -67,7 +67,7 @@ public class ApplicationRouterConfig {
     private RouterFunction<ServerResponse> startApplicationSession(ApplicationHandler applicationHandler) {
         return route().PATCH(
                         "/start",
-                        applicationHandler::startApplication,
+                        applicationHandler::startApplicationSession,
                         ops -> ops.operationId("startApplicationSession")
                                 .tag(v1ApplicationSessionsRoutesTag)
                                 .parameter(parameterBuilder()
@@ -88,7 +88,7 @@ public class ApplicationRouterConfig {
     private RouterFunction<ServerResponse> endApplicationSession(ApplicationHandler applicationHandler) {
         return route().PATCH(
                         "/end",
-                        applicationHandler::endApplication,
+                        applicationHandler::endApplicationSession,
                         ops -> ops.operationId("endApplicationSession")
                                 .tag(v1ApplicationSessionsRoutesTag)
                                 .parameter(parameterBuilder()

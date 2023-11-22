@@ -66,42 +66,23 @@ public class ApplicationHandler {
     }
 
     public Mono<ServerResponse> startApplication(ServerRequest request) {
-        String apiKey = request.headers().firstHeader(InstreamHttpHeaders.API_KEY);
         return HandlerHelper.getUUIDFromPathVariable(request, "applicationId")
-                .flatMap(applicationId ->
-                        applicationService.startApplication(apiKey, applicationId).flatMap((applicationSessionId -> ServerResponse.ok().bodyValue(applicationSessionId))));
+                .flatMap(applicationService::startApplication)
+                .flatMap(applicationDto -> ServerResponse.ok().bodyValue(applicationDto));
     }
 
     public Mono<ServerResponse> endApplication(ServerRequest request) {
-        String apiKey = request.headers().firstHeader(InstreamHttpHeaders.API_KEY);
-        UUID applicationId;
-
-        try {
-            applicationId = UUID.fromString(request.pathVariable("applicationId"));
-        } catch (IllegalArgumentException illegalArgumentException) {
-            return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
-        }
-
-        return applicationService.endApplication(apiKey, applicationId).flatMap((applicationSessionId -> ServerResponse.ok().bodyValue(applicationSessionId)));
+        return HandlerHelper.getUUIDFromPathVariable(request, "applicationId")
+                .flatMap(applicationService::endApplication)
+                .flatMap(applicationDto -> ServerResponse.ok().bodyValue(applicationDto));
     }
 
 
     public Mono<ServerResponse> deleteApplication(ServerRequest request) {
         String apiKey = request.headers().firstHeader(InstreamHttpHeaders.API_KEY);
-
-        if (apiKey == null || apiKey.isEmpty()) {
-            return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
-        }
-
-        UUID applicationId;
-
-        try {
-            applicationId = UUID.fromString(request.pathVariable("applicationId"));
-        } catch (IllegalArgumentException illegalArgumentException) {
-            return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
-        }
-
-        return applicationService.deleteApplication(apiKey, applicationId).then(Mono.defer(() -> ServerResponse.ok().build()));
+        return HandlerHelper.getUUIDFromPathVariable(request, "applicationId")
+                .flatMap(applicationId -> applicationService.deleteApplication(apiKey, applicationId))
+                .then(Mono.defer(() -> ServerResponse.ok().build()));
     }
 
     public Mono<ServerResponse> searchApplicationSession(ServerRequest request) {
@@ -126,5 +107,17 @@ public class ApplicationHandler {
                 .flatMap((applicationSessionSearchPaginationOptionRequest -> applicationService.searchSessions(applicationSessionSearchPaginationOptionRequest, hostId, applicationId)))
                 .flatMap(applicationSessionPaginationDto -> ServerResponse.ok()
                         .bodyValue(applicationSessionPaginationDto));
+    }
+
+    public Mono<ServerResponse> startApplicationSession(ServerRequest request) {
+        return HandlerHelper.getUUIDFromPathVariable(request, "applicationId")
+                .flatMap(applicationService::startApplicationSession)
+                .flatMap(applicationSessionId -> ServerResponse.ok().bodyValue(applicationSessionId));
+    }
+
+    public Mono<ServerResponse> endApplicationSession(ServerRequest request) {
+        return HandlerHelper.getUUIDFromPathVariable(request, "applicationId")
+                .flatMap(applicationService::endApplicationSession)
+                .flatMap(applicationSessionId -> ServerResponse.ok().bodyValue(applicationSessionId));
     }
 }
