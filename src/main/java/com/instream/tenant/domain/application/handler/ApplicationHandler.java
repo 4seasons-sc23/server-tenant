@@ -5,6 +5,7 @@ import com.instream.tenant.domain.application.domain.request.ApplicationSearchPa
 import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.domain.request.NginxRtmpStreamEvent;
 import com.instream.tenant.domain.application.service.ApplicationService;
+import com.instream.tenant.domain.common.infra.model.HandlerHelper;
 import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
@@ -66,29 +67,13 @@ public class ApplicationHandler {
 
     public Mono<ServerResponse> startApplication(ServerRequest request) {
         String apiKey = request.headers().firstHeader(InstreamHttpHeaders.API_KEY);
-
-        if (apiKey == null || apiKey.isEmpty()) {
-            return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
-        }
-
-        UUID applicationId;
-
-        try {
-            applicationId = UUID.fromString(request.pathVariable("applicationId"));
-        } catch (IllegalArgumentException illegalArgumentException) {
-            return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
-        }
-
-        return applicationService.startApplication(apiKey, applicationId).flatMap((applicationSessionId -> ServerResponse.ok().bodyValue(applicationSessionId)));
+        return HandlerHelper.getUUIDFromPathVariable(request, "applicationId")
+                .flatMap(applicationId ->
+                        applicationService.startApplication(apiKey, applicationId).flatMap((applicationSessionId -> ServerResponse.ok().bodyValue(applicationSessionId))));
     }
 
     public Mono<ServerResponse> endApplication(ServerRequest request) {
         String apiKey = request.headers().firstHeader(InstreamHttpHeaders.API_KEY);
-
-        if (apiKey == null || apiKey.isEmpty()) {
-            return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
-        }
-
         UUID applicationId;
 
         try {

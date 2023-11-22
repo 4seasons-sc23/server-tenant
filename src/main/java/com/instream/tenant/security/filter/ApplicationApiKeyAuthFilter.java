@@ -9,9 +9,13 @@ import reactor.core.publisher.Mono;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class ApplicationApiKeyAuthFilter extends CustomWebFilter {
-    private final List<String> API_WHITE_LIST = new ArrayList<>(Arrays.asList("/api"));
+    private final List<Pattern> API_BLACK_LIST = new ArrayList<>(Arrays.asList(
+            Pattern.compile("/api/v1/medias.*"),
+            Pattern.compile("/api/v1/applications.*")
+    ));
     private final ApplicationRepository applicationRepository;
 
     public ApplicationApiKeyAuthFilter(ApplicationRepository applicationRepository, ObjectMapper objectMapper) {
@@ -23,9 +27,10 @@ public class ApplicationApiKeyAuthFilter extends CustomWebFilter {
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
 
-        if (API_WHITE_LIST.stream().anyMatch(path::startsWith)) {
+        if (API_BLACK_LIST.stream().noneMatch(pattern -> pattern.matcher(path).find())) {
             return chain.filter(exchange);
         }
+
 
         String apiKey = exchange.getRequest().getHeaders().getFirst("ApiKey");
 
