@@ -58,7 +58,7 @@ public class ApplicationService {
 
     public Mono<PaginationDto<CollectionDto<ApplicationWithApiKeyDto>>> search(ApplicationSearchPaginationOptionRequest applicationSearchPaginationOptionRequest, UUID hostId) {
         Pageable pageable = applicationSearchPaginationOptionRequest.getPageable();
-        Predicate predicate = ApplicationSpecification.with(applicationSearchPaginationOptionRequest);
+        Predicate predicate = ApplicationSpecification.with(applicationSearchPaginationOptionRequest, hostId);
 
         Flux<ApplicationEntity> applicationFlux = applicationRepository.query(sqlQuery -> sqlQuery
                 .select(QApplicationEntity.applicationEntity)

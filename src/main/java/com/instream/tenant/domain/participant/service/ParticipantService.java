@@ -173,7 +173,7 @@ public class ParticipantService {
         // TODO: 호스트 인증 넣기
 
         Pageable pageable = participantJoinSearchPaginationOptionRequest.getPageable();
-        Predicate predicate = ParticipantJoinSpecification.with(participantJoinSearchPaginationOptionRequest);
+        Predicate predicate = ParticipantJoinSpecification.with(participantJoinSearchPaginationOptionRequest, hostId);
 
         // TODO: 체인 하나로 묶기
         Flux<ParticipantJoinEntity> participantJoinFlux = participantJoinRepository.query(sqlQuery -> sqlQuery
@@ -258,7 +258,7 @@ public class ParticipantService {
         // TODO: 호스트 인증 넣기
 
         Pageable pageable = participantJoinSearchPaginationOptionRequest.getPageable();
-        Predicate predicate = ParticipantJoinSpecification.with(participantJoinSearchPaginationOptionRequest, applicationSessionId);
+        Predicate predicate = ParticipantJoinSpecification.with(participantJoinSearchPaginationOptionRequest, hostId, applicationSessionId);
 
         // TODO: 체인 하나로 묶기
         Flux<ParticipantJoinEntity> participantJoinFlux = participantJoinRepository.query(sqlQuery -> sqlQuery

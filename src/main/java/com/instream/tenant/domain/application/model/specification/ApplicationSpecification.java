@@ -4,12 +4,17 @@ import com.instream.tenant.domain.application.domain.entity.QApplicationEntity;
 import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Predicate;
+import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.StringPath;
 
 import java.util.UUID;
 
 public class ApplicationSpecification {
-    public static Predicate with(ApplicationSearchPaginationOptionRequest applicationSearchPaginationOptionRequest) {
+    public static Predicate with(ApplicationSearchPaginationOptionRequest applicationSearchPaginationOptionRequest, UUID hostId) {
         BooleanBuilder builder = new BooleanBuilder();
+
+        StringPath stringPath = Expressions.stringPath("tenant_id");
+        builder.and(stringPath.eq(String.valueOf(hostId)));
 
         if (applicationSearchPaginationOptionRequest.getType() != null) {
             builder.and(QApplicationEntity.applicationEntity.type.eq(applicationSearchPaginationOptionRequest.getType()));
