@@ -44,7 +44,7 @@ public class ParticipantHandler {
 
         return request.bodyToMono(EnterToApplicationParticipantRequest.class)
                 .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
-                .flatMap(enterToApplicationParticipantRequest -> participantService.enterToApplication(apiKey, hostId, participantId, enterToApplicationParticipantRequest))
+                .flatMap(enterToApplicationParticipantRequest -> participantService.enterToApplication(hostId, participantId, enterToApplicationParticipantRequest))
                 .flatMap(participantJoinDto -> ServerResponse.ok().bodyValue(participantJoinDto));
     }
 
