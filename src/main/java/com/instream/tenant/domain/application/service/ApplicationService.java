@@ -100,18 +100,17 @@ public class ApplicationService {
         // TODO: Redis 캐싱 넣기
         if (applicationSearchPaginationOptionRequest.isFirstView()) {
             Mono<Long> totalElementCountMono = applicationRepository.count(predicate);
-            Mono<Integer> totalPageCountMono = totalElementCountMono.map(count -> (int) Math.ceil((double) count / pageable.getPageSize()));
 
-            return Mono.zip(applicationDtoListMono, totalPageCountMono, totalElementCountMono)
+            return Mono.zip(applicationDtoListMono, totalElementCountMono)
                     .map(tuple -> {
                         List<ApplicationWithApiKeyDto> applications = tuple.getT1();
-                        Integer pageCount = tuple.getT2();
-                        int totalElementCount = tuple.getT3().intValue();
+                        Long pageCount = tuple.getT2();
+                        int totalElementCount = (int) Math.ceil((double) pageCount / pageable.getPageSize());
 
                         return PaginationInfoDto.<CollectionDto<ApplicationWithApiKeyDto>>builder()
                                 .totalElementCount(totalElementCount)
                                 .pageCount(pageCount)
-                                .currentPage(applicationSearchPaginationOptionRequest.getPageable().getPageNumber())
+                                .currentPage(applicationSearchPaginationOptionRequest.getPage())
                                 .data(CollectionDto.<ApplicationWithApiKeyDto>builder()
                                         .data(applications)
                                         .build())
