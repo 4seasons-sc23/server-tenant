@@ -8,14 +8,19 @@ import lombok.Getter;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
+
 @Getter
 @AllArgsConstructor
 public class PaginationOptionRequest {
     @Schema(description = "현재 페이지")
     private final int page;
 
-    @Schema(description = "페이지 사이즈")
+    @Schema(description = "요청 사이즈")
     private final int size;
+
+    @Schema(description = "정렬 옵션")
+    private final List<SortOptionRequest> sort;
 
     @Schema(description = "페이지 데이터를 처음 불러오는지 여부")
     private final boolean firstView;

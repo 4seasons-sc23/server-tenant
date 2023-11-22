@@ -1,15 +1,17 @@
 package com.instream.tenant.domain.application.model.specification;
 
 import com.instream.tenant.domain.application.domain.entity.QApplicationEntity;
-import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
+import com.instream.tenant.domain.application.domain.request.applicationSearchPagination.ApplicationSearchPaginationOptionRequest;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Predicate;
 
 import java.util.UUID;
 
 public class ApplicationSpecification {
-    public static Predicate with(ApplicationSearchPaginationOptionRequest applicationSearchPaginationOptionRequest) {
+    public static Predicate with(ApplicationSearchPaginationOptionRequest applicationSearchPaginationOptionRequest, UUID hostId) {
         BooleanBuilder builder = new BooleanBuilder();
+
+        builder.and(QApplicationEntity.applicationEntity.tenantId.eq(hostId));
 
         if (applicationSearchPaginationOptionRequest.getType() != null) {
             builder.and(QApplicationEntity.applicationEntity.type.eq(applicationSearchPaginationOptionRequest.getType()));

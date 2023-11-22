@@ -4,7 +4,7 @@ import com.instream.tenant.domain.application.domain.dto.ApplicationWithApiKeyDt
 import com.instream.tenant.domain.application.domain.request.ApplicationCreateRequest;
 import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
 import com.instream.tenant.domain.participant.domain.request.ParticipantJoinSearchPaginationOptionRequest;
-import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
+import com.instream.tenant.domain.application.domain.request.applicationSearchPagination.ApplicationSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.handler.ApplicationHandler;
 import com.instream.tenant.domain.participant.handler.ParticipantHandler;
