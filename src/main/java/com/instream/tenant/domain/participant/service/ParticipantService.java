@@ -3,7 +3,6 @@ package com.instream.tenant.domain.participant.service;
 import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
 import com.instream.tenant.domain.application.domain.dto.ApplicationSessionDto;
 import com.instream.tenant.domain.application.domain.entity.ApplicationEntity;
-import com.instream.tenant.domain.application.domain.entity.ApplicationSessionEntity;
 import com.instream.tenant.domain.application.infra.enums.ApplicationErrorCode;
 import com.instream.tenant.domain.application.infra.enums.ApplicationSessionErrorCode;
 import com.instream.tenant.domain.application.repository.ApplicationRepository;
@@ -96,7 +95,7 @@ public class ParticipantService {
         return tenantMono.then(
                 applicationMono.flatMap(application -> createOrUpdateParticipantMono
                         .flatMap(participant -> participantRepository.findById(participantId))
-                        .flatMap(participant -> participantJoinRepository.findByTenantIdAndParticipantIdAndApplicationSessionIdAndUpdatedAtIsNullOOrderByCreatedAtDesc(tenantId, participantId, enterToApplicationParticipantRequest.applicationSessionId())
+                        .flatMap(participant -> participantJoinRepository.findByTenantIdAndParticipantIdAndApplicationSessionIdAndUpdatedAtIsNullOrderByCreatedAtDesc(tenantId, participantId, enterToApplicationParticipantRequest.applicationSessionId())
                                 .flatMap(participantJoin -> {
                                     participantJoin.setUpdatedAt(LocalDateTime.now());
                                     return participantJoinRepository.save(participantJoin);
@@ -145,7 +144,7 @@ public class ParticipantService {
 
                         Mono<ParticipantEntity> participantEntityMono = participantRepository.findById(participantId)
                                 .switchIfEmpty(Mono.error(new RestApiException(ParticipantErrorCode.PARTICIPANT_NOT_FOUND)));
-                        Mono<ParticipantJoinEntity> participantJoinEntityMono = participantJoinRepository.findByTenantIdAndParticipantIdAndApplicationSessionIdAndUpdatedAtIsNullOOrderByCreatedAtDesc(tenantId, participantId, leaveFromApplicationParticipantRequest.applicationSessionId())
+                        Mono<ParticipantJoinEntity> participantJoinEntityMono = participantJoinRepository.findByTenantIdAndParticipantIdAndApplicationSessionIdAndUpdatedAtIsNullOrderByCreatedAtDesc(tenantId, participantId, leaveFromApplicationParticipantRequest.applicationSessionId())
                                 .switchIfEmpty(Mono.error(new RestApiException(ParticipantJoinErrorCode.PARTICIPANT_JOIN_NOT_FOUND)))
                                 .flatMap(participantJoin -> {
                                     participantJoin.setUpdatedAt(LocalDateTime.now());
