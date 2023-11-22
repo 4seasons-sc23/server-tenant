@@ -1,4 +1,4 @@
-package com.instream.tenant.domain.application.domain.request.applicationSearchPagination;
+package com.instream.tenant.domain.application.domain.request;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.instream.tenant.domain.application.infra.enums.ApplicationType;
@@ -11,14 +11,14 @@ import com.instream.tenant.domain.error.model.exception.RestApiException;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.util.MultiValueMap;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Getter
 @Slf4j
@@ -61,19 +61,12 @@ public class ApplicationSearchPaginationOptionRequest extends PaginationOptionRe
                     .orElse(null);
             LocalDateTime startAt = parseDateTime(queryParams.getFirst("startAt"));
             LocalDateTime endAt = parseDateTime(queryParams.getFirst("endAt"));
-            List<SortOptionRequest> sortOptions = new ArrayList<>();
-            String sortJson = queryParams.getFirst("sort");
-
-            if (sortJson != null) {
-                ObjectMapper objectMapper = new ObjectMapper();
-                SortOptionRequest[] sortArray = objectMapper.readValue(sortJson, SortOptionRequest[].class);
-                Collections.addAll(sortOptions, sortArray);
-            }
-
-            ApplicationSearchPaginationOptionRequest searchParams = new ApplicationSearchPaginationOptionRequest(page, size, sortOptions, firstView, type, status, startAt, endAt);
+            List<SortOptionRequest> sortOptionRequestList = getSortOptionRequestList(queryParams);
+            ApplicationSearchPaginationOptionRequest searchParams = new ApplicationSearchPaginationOptionRequest(page, size, sortOptionRequestList, firstView, type, status, startAt, endAt);
 
             return Mono.just(searchParams);
         } catch (Exception e) {
+            log.warn(e.toString());
             return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
         }
     }

@@ -7,11 +7,9 @@ import org.springframework.data.convert.ReadingConverter;
 import org.springframework.stereotype.Component;
 
 @ReadingConverter
-@Slf4j
 public class StatusReadConverter implements Converter<String, Status> {
     @Override
     public Status convert(String source) {
-        log.info("hello {}", source);
         return Status.fromCode(source);
     }
 }

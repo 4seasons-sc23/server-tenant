@@ -5,7 +5,7 @@ import com.instream.tenant.domain.application.domain.dto.ApplicationSessionDto;
 import com.instream.tenant.domain.application.domain.entity.ApplicationSessionEntity;
 import com.instream.tenant.domain.application.domain.entity.QApplicationEntity;
 import com.instream.tenant.domain.application.domain.entity.QApplicationSessionEntity;
-import com.instream.tenant.domain.application.domain.request.applicationSearchPagination.ApplicationSearchPaginationOptionRequest;
+import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.infra.enums.ApplicationErrorCode;
 import com.instream.tenant.domain.application.infra.enums.ApplicationSessionErrorCode;
@@ -24,10 +24,11 @@ import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.participant.repository.ParticipantJoinRepository;
 import com.instream.tenant.domain.redis.model.factory.ReactiveRedisTemplateFactory;
+import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.Path;
 import com.querydsl.core.types.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -37,6 +38,7 @@ import reactor.core.publisher.Mono;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -59,16 +61,16 @@ public class ApplicationService {
     }
 
     public Mono<PaginationDto<CollectionDto<ApplicationWithApiKeyDto>>> search(ApplicationSearchPaginationOptionRequest applicationSearchPaginationOptionRequest, UUID hostId) {
-        Pageable pageable = PageRequest.of(1, 1);
-        // Pageable pageable = applicationSearchPaginationOptionRequest.getPage();
-        Predicate predicate = ApplicationSpecification.with(applicationSearchPaginationOptionRequest, hostId);
+        Pageable pageable = applicationSearchPaginationOptionRequest.getPageable();
+        Predicate predicate = ApplicationSpecification.getPredicate(applicationSearchPaginationOptionRequest, hostId);
+        List<OrderSpecifier> orderSpecifier = ApplicationSpecification.getOrderSpecifier(applicationSearchPaginationOptionRequest);
 
         Flux<ApplicationEntity> applicationFlux = applicationRepository.query(sqlQuery -> sqlQuery
                 .select(QApplicationEntity.applicationEntity)
                 .from(QApplicationEntity.applicationEntity)
                 .where(predicate)
+                .orderBy(orderSpecifier.toArray(new OrderSpecifier[0]))
                 .limit(pageable.getPageSize())
-                .orderBy()
                 .offset(pageable.getOffset())
         ).all();
         Mono<List<ApplicationWithApiKeyDto>> applicationDtoListMono = applicationFlux

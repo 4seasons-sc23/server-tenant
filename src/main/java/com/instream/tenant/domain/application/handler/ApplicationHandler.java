@@ -1,7 +1,7 @@
 package com.instream.tenant.domain.application.handler;
 
 import com.instream.tenant.domain.application.domain.request.ApplicationCreateRequest;
-import com.instream.tenant.domain.application.domain.request.applicationSearchPagination.ApplicationSearchPaginationOptionRequest;
+import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.service.ApplicationService;
 import com.instream.tenant.domain.common.infra.model.HandlerHelper;
@@ -9,7 +9,6 @@ import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
