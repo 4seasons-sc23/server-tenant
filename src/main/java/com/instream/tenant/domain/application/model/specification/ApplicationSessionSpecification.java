@@ -5,6 +5,7 @@ import com.instream.tenant.domain.application.domain.request.ApplicationSessionS
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.StringPath;
 import com.querydsl.sql.SQLExpressions;
 
 import java.nio.ByteBuffer;
@@ -16,7 +17,8 @@ public class ApplicationSessionSpecification {
 
         BooleanBuilder builder = new BooleanBuilder();
 
-        builder.and(QApplicationSessionEntity.applicationSessionEntity.applicationId.eq(Expressions.constant(applicationId.toString())));
+        StringPath stringPath = Expressions.stringPath("application_id");
+        builder.and(stringPath.eq(String.valueOf(applicationId)));
 
         if (applicationSessionSearchPaginationOptionRequest.getCreatedStartAt() != null) {
             builder.and(QApplicationSessionEntity.applicationSessionEntity.createdAt.goe(applicationSessionSearchPaginationOptionRequest.getCreatedStartAt()));
