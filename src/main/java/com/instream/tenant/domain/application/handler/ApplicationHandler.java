@@ -80,17 +80,9 @@ public class ApplicationHandler {
     }
 
     public Mono<ServerResponse> searchApplicationSession(ServerRequest request) {
-        String apiKey = request.headers().firstHeader(InstreamHttpHeaders.API_KEY);
-
-        if (apiKey == null || apiKey.isEmpty()) {
-            return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
-        }
-
-        UUID hostId;
         UUID applicationId;
 
         try {
-            hostId = UUID.fromString(request.pathVariable("hostId"));
             applicationId = UUID.fromString(request.pathVariable("applicationId"));
         } catch (IllegalArgumentException illegalArgumentException) {
             return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
@@ -98,7 +90,7 @@ public class ApplicationHandler {
 
         return ApplicationSessionSearchPaginationOptionRequest.fromQueryParams(request.queryParams())
                 .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
-                .flatMap((applicationSessionSearchPaginationOptionRequest -> applicationService.searchSessions(applicationSessionSearchPaginationOptionRequest, hostId, applicationId)))
+                .flatMap((applicationSessionSearchPaginationOptionRequest -> applicationService.searchSessions(applicationSessionSearchPaginationOptionRequest, applicationId)))
                 .flatMap(applicationSessionPaginationDto -> ServerResponse.ok()
                         .bodyValue(applicationSessionPaginationDto));
     }

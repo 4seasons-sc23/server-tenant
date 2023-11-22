@@ -9,6 +9,7 @@ import com.instream.tenant.domain.application.domain.request.ApplicationSearchPa
 import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.infra.enums.ApplicationErrorCode;
 import com.instream.tenant.domain.application.infra.enums.ApplicationSessionErrorCode;
+import com.instream.tenant.domain.application.infra.mapper.ApplicationMapper;
 import com.instream.tenant.domain.application.model.specification.ApplicationSessionSpecification;
 import com.instream.tenant.domain.application.model.specification.ApplicationDynamicQueryBuilder;
 import com.instream.tenant.domain.application.repository.ApplicationRepository;
@@ -63,7 +64,6 @@ public class ApplicationService {
         Pageable pageable = applicationSearchPaginationOptionRequest.getPageable();
         Predicate predicate = applicationDynamicQueryBuilder.getPredicate(applicationSearchPaginationOptionRequest, hostId);
         List<OrderSpecifier> orderSpecifier = applicationDynamicQueryBuilder.getOrderSpecifier(applicationSearchPaginationOptionRequest);
-
         Flux<ApplicationEntity> applicationFlux = applicationRepository.query(sqlQuery -> sqlQuery
                 .select(QApplicationEntity.applicationEntity)
                 .from(QApplicationEntity.applicationEntity)
@@ -74,26 +74,8 @@ public class ApplicationService {
         ).all();
         Flux<ApplicationWithApiKeyDto> applicationDtoFlux = applicationFlux
                 .flatMap(application -> applicationSessionRepository.findTopByApplicationIdOrderByCreatedAtDesc(application.getId())
-                        .flatMap(applicationSession -> Mono.just(ApplicationWithApiKeyDto.builder()
-                                .applicationId(application.getId())
-                                .apiKey(application.getApiKey())
-                                .session(ApplicationSessionDto.builder()
-                                        .id(applicationSession.getId())
-                                        .createdAt(applicationSession.getCreatedAt())
-                                        .deletedAt(applicationSession.getDeletedAt())
-                                        .build())
-                                .type(application.getType())
-                                .status(application.getStatus())
-                                .createdAt(application.getCreatedAt())
-                                .build()))
-                        .defaultIfEmpty(ApplicationWithApiKeyDto.builder()
-                                .applicationId(application.getId())
-                                .apiKey(application.getApiKey())
-                                .type(application.getType())
-                                .status(application.getStatus())
-                                .createdAt(application.getCreatedAt())
-                                .build()
-                        ));
+                        .flatMap(applicationSession -> Mono.just(ApplicationMapper.INSTANCE.applicationAndSessionEntityToDto(application, applicationSession)))
+                        .defaultIfEmpty(ApplicationMapper.INSTANCE.applicationAndSessionEntityToDto(application, null)));
 
         // TODO: Redis 캐싱 넣기
         if (applicationSearchPaginationOptionRequest.isFirstView()) {
@@ -201,7 +183,7 @@ public class ApplicationService {
                 });
     }
 
-    public Mono<PaginationDto<CollectionDto<ApplicationSessionDto>>> searchSessions(ApplicationSessionSearchPaginationOptionRequest applicationSessionSearchPaginationOptionRequest, UUID hostId, UUID applicationId) {
+    public Mono<PaginationDto<CollectionDto<ApplicationSessionDto>>> searchSessions(ApplicationSessionSearchPaginationOptionRequest applicationSessionSearchPaginationOptionRequest, UUID applicationId) {
         // TODO: 호스트 인증 넣기
 
         Pageable pageable = applicationSessionSearchPaginationOptionRequest.getPageable();
