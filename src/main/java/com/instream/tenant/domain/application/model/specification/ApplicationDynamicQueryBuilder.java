@@ -1,19 +1,20 @@
 package com.instream.tenant.domain.application.model.specification;
 
+import com.instream.tenant.domain.application.domain.entity.ApplicationEntity;
 import com.instream.tenant.domain.application.domain.entity.QApplicationEntity;
 import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
-import com.instream.tenant.domain.common.domain.request.SortOptionRequest;
-import com.instream.tenant.domain.common.infra.enums.SortOption;
+import com.instream.tenant.domain.common.model.DynamicQueryBuilder;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.*;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.StringPath;
+import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
-public class ApplicationSpecification {
-    public static Predicate getPredicate(ApplicationSearchPaginationOptionRequest applicationSearchPaginationOptionRequest, UUID hostId) {
+@Component
+public class ApplicationDynamicQueryBuilder extends DynamicQueryBuilder<ApplicationEntity> {
+    public Predicate getPredicate(ApplicationSearchPaginationOptionRequest applicationSearchPaginationOptionRequest, UUID hostId) {
         BooleanBuilder builder = new BooleanBuilder();
 
         StringPath tenantIdPath = Expressions.stringPath("tenant_id");
@@ -40,21 +41,7 @@ public class ApplicationSpecification {
         return builder.getValue();
     }
 
-    public static List<OrderSpecifier> getOrderSpecifier(ApplicationSearchPaginationOptionRequest applicationSearchPaginationOptionRequest) {
-        return applicationSearchPaginationOptionRequest.getSort().stream()
-                .flatMap(sortOptionRequest -> QApplicationEntity.applicationEntity.getColumns().stream()
-                        .filter(path -> Objects.equals(sortOptionRequest.name(), path.getMetadata().getName()))
-                        .map(path -> createOrderSpecifier(path, sortOptionRequest.option())))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-    }
-
-
-    private static OrderSpecifier<?> createOrderSpecifier(Path<?> path, SortOption option) {
-        Expression<?> expression = path;
-        return switch (option) {
-            case ASC ->  new OrderSpecifier(Order.ASC, expression);
-            case DESC -> new OrderSpecifier(Order.DESC, expression);
-        };
+    public List<OrderSpecifier> getOrderSpecifier(ApplicationSearchPaginationOptionRequest applicationSearchPaginationOptionRequest) {
+        return super.getOrderSpecifier(QApplicationEntity.applicationEntity, applicationSearchPaginationOptionRequest.getSort());
     }
 }
