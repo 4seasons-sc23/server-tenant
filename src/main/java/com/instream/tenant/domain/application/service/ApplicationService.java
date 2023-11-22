@@ -64,6 +64,7 @@ public class ApplicationService {
                 .select(QApplicationEntity.applicationEntity)
                 .from(QApplicationEntity.applicationEntity)
                 .where(predicate)
+                .orderBy(QApplicationEntity.applicationEntity.createdAt.desc())
                 .limit(pageable.getPageSize())
                 .offset(pageable.getOffset())
         ).all();
@@ -204,6 +205,7 @@ public class ApplicationService {
                 .select(QApplicationSessionEntity.applicationSessionEntity)
                 .from(QApplicationSessionEntity.applicationSessionEntity)
                 .where(predicate)
+                .orderBy(QApplicationSessionEntity.applicationSessionEntity.createdAt.desc())
                 .limit(pageable.getPageSize())
                 .offset(pageable.getOffset())
         ).all();
