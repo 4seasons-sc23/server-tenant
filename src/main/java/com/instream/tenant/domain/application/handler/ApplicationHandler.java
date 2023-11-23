@@ -73,9 +73,8 @@ public class ApplicationHandler {
 
 
     public Mono<ServerResponse> deleteApplication(ServerRequest request) {
-        String apiKey = request.headers().firstHeader(InstreamHttpHeaders.API_KEY);
         return HandlerHelper.getUUIDFromPathVariable(request, "applicationId")
-                .flatMap(applicationId -> applicationService.deleteApplication(apiKey, applicationId))
+                .flatMap(applicationService::deleteApplication)
                 .then(Mono.defer(() -> ServerResponse.ok().build()));
     }
 

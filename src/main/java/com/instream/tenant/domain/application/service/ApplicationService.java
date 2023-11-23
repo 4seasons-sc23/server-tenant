@@ -19,13 +19,13 @@ import com.instream.tenant.domain.application.domain.request.ApplicationCreateRe
 import com.instream.tenant.domain.application.repository.ApplicationSessionRepository;
 import com.instream.tenant.domain.common.domain.dto.*;
 import com.instream.tenant.domain.common.infra.enums.Status;
-import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.participant.repository.ParticipantJoinRepository;
 import com.instream.tenant.domain.redis.model.factory.ReactiveRedisTemplateFactory;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Predicate;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
@@ -35,8 +35,8 @@ import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Function;
 
 @Service
 @Slf4j
@@ -74,8 +74,9 @@ public class ApplicationService {
         ).all();
         Flux<ApplicationWithApiKeyDto> applicationDtoFlux = applicationFlux
                 .flatMap(application -> applicationSessionRepository.findTopByApplicationIdOrderByCreatedAtDesc(application.getId())
-                        .flatMap(applicationSession -> Mono.just(ApplicationMapper.INSTANCE.applicationAndSessionEntityToDto(application, applicationSession)))
-                        .defaultIfEmpty(ApplicationMapper.INSTANCE.applicationAndSessionEntityToDto(application, null)));
+                        .flatMap(applicationSession -> Mono.just(ApplicationMapper.INSTANCE.applicationAndSessionEntityToWithApiKeyDto(application, applicationSession)))
+                        .defaultIfEmpty(ApplicationMapper.INSTANCE.applicationAndSessionEntityToWithApiKeyDto(application, null)));
+
 
         // TODO: Redis 캐싱 넣기
         if (applicationSearchPaginationOptionRequest.isFirstView()) {
@@ -105,82 +106,47 @@ public class ApplicationService {
 
     public Mono<ApplicationWithApiKeyDto> createApplication(ApplicationCreateRequest applicationCreateRequest, UUID hostId) {
         String apiKey = UUID.randomUUID().toString();
+        Function<ApplicationEntity, Mono<ApplicationEntity>> cachingRedis = application -> redisTemplate.opsForValue()
+                .set(String.valueOf(application.genRedisKey()), application)
+                .thenReturn(application);
+        Function<ApplicationEntity, Mono<ApplicationWithApiKeyDto>> result = savedApplication -> Mono.just(ApplicationWithApiKeyDto.builder()
+                .applicationId(savedApplication.getId())
+                .type(savedApplication.getType())
+                .status(savedApplication.getStatus())
+                .createdAt(savedApplication.getCreatedAt())
+                .apiKey(apiKey)
+                .build()
+        );
 
-        return Mono.defer(() -> applicationRepository.save(
-                        ApplicationEntity.builder()
-                                .tenantId(hostId)
-                                .apiKey(apiKey)
-                                .type(applicationCreateRequest.type())
-                                .status(Status.PENDING)
-                                .build()
-                ))
-                .flatMap(application -> redisTemplate.opsForValue()
-                        .set(String.valueOf(application.genRedisKey()), application)
-                        .thenReturn(application))
-                .flatMap(savedApplication -> Mono.just(ApplicationWithApiKeyDto.builder()
-                        .applicationId(savedApplication.getId())
-                        .type(savedApplication.getType())
-                        .status(savedApplication.getStatus())
-                        .createdAt(savedApplication.getCreatedAt())
+        return applicationRepository.save(ApplicationEntity.builder()
+                        .tenantId(hostId)
                         .apiKey(apiKey)
-                        .build()
-                ));
+                        .type(applicationCreateRequest.type())
+                        .status(Status.PENDING)
+                        .build())
+                .flatMap(cachingRedis)
+                .flatMap(result);
     }
 
     public Mono<ApplicationDto> startApplication(UUID applicationId) {
         return applicationRepository.findById(applicationId)
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
-                .flatMap(application -> {
-                    boolean invalidStatus = application.getStatus() != Status.PENDING;
-
-                    if (invalidStatus) {
-                        return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_CAN_NOT_MODIFY));
-                    }
-
-                    application.setStatus(Status.USE);
-                    return applicationRepository.save(application).thenReturn(application);
-                })
-                .flatMap(applicationEntity -> Mono.just(ApplicationDto.builder()
-                        .applicationId(applicationEntity.getId())
-                        .status(applicationEntity.getStatus())
-                        .type(applicationEntity.getType())
-                        .createdAt(applicationEntity.getCreatedAt())
-                        .build())
-                );
+                .flatMap(application -> getApplicationEntityMonoWhenValidStatus(application, Status.PENDING, Status.USE))
+                .flatMap(application -> Mono.just(ApplicationMapper.INSTANCE.applicationAndSessionEntityToDto(application, null)));
     }
 
     public Mono<ApplicationDto> endApplication(UUID applicationId) {
         return applicationRepository.findById(applicationId)
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
-                .flatMap(application -> {
-                    boolean isOn = application.getStatus() != Status.USE;
-
-                    if (isOn) {
-                        return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_CAN_NOT_MODIFY));
-                    }
-
-                    application.setStatus(Status.USE);
-                    return applicationRepository.save(application).thenReturn(application);
-                })
-                .flatMap(applicationEntity -> Mono.just(ApplicationDto.builder()
-                        .applicationId(applicationEntity.getId())
-                        .status(applicationEntity.getStatus())
-                        .type(applicationEntity.getType())
-                        .createdAt(applicationEntity.getCreatedAt())
-                        .build())
-                );
+                .flatMap(application -> getApplicationEntityMonoWhenValidStatus(application, Status.USE, Status.PENDING))
+                .flatMap(application -> Mono.just(ApplicationMapper.INSTANCE.applicationAndSessionEntityToDto(application, null)));
     }
 
-    public Mono<Void> deleteApplication(String apiKey, UUID applicationId) {
+    public Mono<Void> deleteApplication(UUID applicationId) {
         return applicationRepository.findById(applicationId)
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
-                .flatMap(application -> {
-                    if (!Objects.equals(application.getApiKey(), apiKey)) {
-                        return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
-                    }
-                    return applicationSessionRepository.deleteByApplicationId(applicationId)
-                            .then(Mono.defer(() -> applicationRepository.deleteById(applicationId)));
-                });
+                .flatMap(application -> applicationSessionRepository.deleteByApplicationId(applicationId))
+                .then(Mono.defer(() -> applicationRepository.deleteById(applicationId)));
     }
 
     public Mono<PaginationDto<CollectionDto<ApplicationSessionDto>>> searchSessions(ApplicationSessionSearchPaginationOptionRequest applicationSessionSearchPaginationOptionRequest, UUID applicationId) {
@@ -276,5 +242,17 @@ public class ApplicationService {
                 .sort((session1, session2) -> session2.getCreatedAt().compareTo(session1.getCreatedAt())) // createdAt으로 정렬
                 .next()
                 .map(ApplicationSessionEntity::getId);
+    }
+
+    @NotNull
+    private Mono<ApplicationEntity> getApplicationEntityMonoWhenValidStatus(ApplicationEntity application, Status validationStatus, Status saveStatus) {
+        boolean invalidStatus = application.getStatus() != validationStatus;
+
+        if (invalidStatus) {
+            return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_CAN_NOT_MODIFY));
+        }
+
+        application.setStatus(saveStatus);
+        return applicationRepository.save(application).thenReturn(application);
     }
 }

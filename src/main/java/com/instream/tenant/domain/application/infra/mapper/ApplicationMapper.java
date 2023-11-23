@@ -1,5 +1,6 @@
 package com.instream.tenant.domain.application.infra.mapper;
 
+import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
 import com.instream.tenant.domain.application.domain.dto.ApplicationSessionDto;
 import com.instream.tenant.domain.application.domain.dto.ApplicationWithApiKeyDto;
 import com.instream.tenant.domain.application.domain.entity.ApplicationEntity;
@@ -14,10 +15,13 @@ import org.mapstruct.factory.Mappers;
 public interface ApplicationMapper {
     ApplicationMapper INSTANCE = Mappers.getMapper(ApplicationMapper.class);
 
+    @Mapping(source = "id", target = "applicationId")
+    @Mapping(source = "applicationSession", target = "session", qualifiedByName = "applicationSessionToSession")
+    ApplicationDto applicationAndSessionEntityToDto(ApplicationEntity application, ApplicationSessionEntity applicationSession);
 
-    @Mapping(target = "createdAt", source = "application.createdAt")
-    @Mapping(target = "session", source = "applicationSession", qualifiedByName = "applicationSessionToSession")
-    ApplicationWithApiKeyDto applicationAndSessionEntityToDto(ApplicationEntity application, ApplicationSessionEntity applicationSession);
+    @Mapping(source = "application.createdAt", target = "createdAt")
+    @Mapping(source = "applicationSession", target = "session", qualifiedByName = "applicationSessionToSession")
+    ApplicationWithApiKeyDto applicationAndSessionEntityToWithApiKeyDto(ApplicationEntity application, ApplicationSessionEntity applicationSession);
 
     @Named("applicationSessionToSession")
     default ApplicationSessionDto applicationSessionToSession(ApplicationSessionEntity applicationSession) {
