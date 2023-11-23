@@ -7,27 +7,23 @@ import com.instream.tenant.domain.common.model.DynamicQueryBuilder;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.*;
 import com.querydsl.core.types.dsl.Expressions;
-import com.querydsl.core.types.dsl.StringPath;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 
 @Component
-public class ApplicationDynamicQueryBuilder extends DynamicQueryBuilder<ApplicationEntity> {
+public class ApplicationQueryBuilder extends DynamicQueryBuilder<ApplicationEntity> {
     public Predicate getPredicate(ApplicationSearchPaginationOptionRequest applicationSearchPaginationOptionRequest, UUID hostId) {
         BooleanBuilder builder = new BooleanBuilder();
 
-        StringPath tenantIdPath = Expressions.stringPath("tenant_id");
-        builder.and(tenantIdPath.eq(hostId.toString()));
+        builder.and(QApplicationEntity.applicationEntity.tenantId.eq(Expressions.constant(hostId.toString())));
 
         if (applicationSearchPaginationOptionRequest.getType() != null) {
-            StringPath typePath = Expressions.stringPath("type");
-            builder.and(typePath.eq(applicationSearchPaginationOptionRequest.getType().getCode()));
+            builder.and(QApplicationEntity.applicationEntity.type.eq(Expressions.constant(applicationSearchPaginationOptionRequest.getType().getCode())));
         }
 
         if (applicationSearchPaginationOptionRequest.getStatus() != null) {
-            StringPath statusPath = Expressions.stringPath("status");
-            builder.and(statusPath.eq(applicationSearchPaginationOptionRequest.getStatus().getCode()));
+            builder.and(QApplicationEntity.applicationEntity.status.eq(Expressions.constant(applicationSearchPaginationOptionRequest.getStatus().getCode())));
         }
 
         if (applicationSearchPaginationOptionRequest.getStartAt() != null) {
@@ -41,7 +37,9 @@ public class ApplicationDynamicQueryBuilder extends DynamicQueryBuilder<Applicat
         return builder.getValue();
     }
 
-    public List<OrderSpecifier> getOrderSpecifier(ApplicationSearchPaginationOptionRequest applicationSearchPaginationOptionRequest) {
+    public OrderSpecifier[] getOrderSpecifier(ApplicationSearchPaginationOptionRequest applicationSearchPaginationOptionRequest) {
         return super.getOrderSpecifier(QApplicationEntity.applicationEntity, applicationSearchPaginationOptionRequest.getSort());
     }
 }
+
+

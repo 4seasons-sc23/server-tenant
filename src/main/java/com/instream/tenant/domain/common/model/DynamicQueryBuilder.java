@@ -16,12 +16,12 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 public abstract class DynamicQueryBuilder<T> {
-    protected List<OrderSpecifier> getOrderSpecifier(RelationalPathBase<T> relationalPathBase, Collection<SortOptionRequest> sortOptionRequests) {
+    protected OrderSpecifier[] getOrderSpecifier(RelationalPathBase<T> relationalPathBase, Collection<SortOptionRequest> sortOptionRequests) {
         return sortOptionRequests.stream()
                 .flatMap(sortOptionRequest -> relationalPathBase.getColumns().stream()
                         .filter(path -> Objects.equals(sortOptionRequest.name(), path.getMetadata().getName()))
                         .map(path -> createOrderSpecifier(path, sortOptionRequest.option())))
-                .collect(Collectors.toList());
+                .toArray(OrderSpecifier[]::new);
     }
 
     private OrderSpecifier<?> createOrderSpecifier(Path<?> path, SortOption option) {
