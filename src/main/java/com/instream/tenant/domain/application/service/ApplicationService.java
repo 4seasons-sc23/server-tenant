@@ -196,14 +196,14 @@ public class ApplicationService {
                         .build()));
     }
 
-    public Mono<UUID> startApplicationSession(UUID applicationId) {
-        Supplier<Mono<UUID>> getApplicationSessionAfterSave = () -> {
+    public Mono<ApplicationSessionDto> startApplicationSession(UUID applicationId) {
+        Supplier<Mono<ApplicationSessionDto>> getApplicationSessionAfterSave = () -> {
             ApplicationSessionEntity applicationSessionEntity = ApplicationSessionEntity.builder()
                     .applicationId(applicationId)
                     .build();
             return applicationSessionRepository.save(applicationSessionEntity)
                     .then(applicationSessionRepository.findById(applicationSessionEntity.getId()))
-                    .flatMap(retrievedApplicationSession -> Mono.just(retrievedApplicationSession.getId()));
+                    .flatMap(retrievedApplicationSession -> Mono.just(ApplicationSessionMapper.INSTANCE.entityToDto(retrievedApplicationSession)));
         };
         return applicationRepository.findById(applicationId)
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))

@@ -25,6 +25,7 @@ public class WebConfig implements WebFluxConfigurer {
     public WebConfig(List<Converter<?, ?>> converters) {
         this.converters = converters;
     }
+
     @Bean
     public ObjectMapper objectMapper() {
         ObjectMapper objectMapper = new ObjectMapper();

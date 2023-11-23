@@ -15,7 +15,8 @@ import org.mapstruct.factory.Mappers;
 public interface ApplicationMapper {
     ApplicationMapper INSTANCE = Mappers.getMapper(ApplicationMapper.class);
 
-    @Mapping(source = "id", target = "applicationId")
+    @Mapping(source = "application.id", target = "applicationId")
+    @Mapping(source = "application.createdAt", target = "createdAt")
     @Mapping(source = "applicationSession", target = "session", qualifiedByName = "applicationSessionToSession")
     ApplicationDto applicationAndSessionEntityToDto(ApplicationEntity application, ApplicationSessionEntity applicationSession);
 

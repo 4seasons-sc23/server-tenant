@@ -1,9 +1,11 @@
 package com.instream.tenant.domain.application.model.specification;
 
 import com.instream.tenant.domain.application.domain.entity.ApplicationSessionEntity;
+import com.instream.tenant.domain.application.domain.entity.QApplicationEntity;
 import com.instream.tenant.domain.application.domain.entity.QApplicationSessionEntity;
 import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
+import com.instream.tenant.domain.common.infra.enums.Status;
 import com.instream.tenant.domain.common.model.DynamicQueryBuilder;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;

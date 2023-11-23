@@ -2,7 +2,6 @@ package com.instream.tenant.security.filter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.instream.tenant.domain.error.domain.response.ErrorResponse;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.infra.enums.HttpErrorCode;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -22,11 +21,12 @@ public abstract class CustomWebFilter implements WebFilter {
     }
 
     protected Mono<Void> exchangeUnauthroizedErrorResponse(ServerWebExchange exchange) {
+        HttpErrorCode httpErrorCode = CommonHttpErrorCode.UNAUTHORIZED;
+
         exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
 
         try {
-            ErrorResponse errorResponse = makeErrorResponse(CommonHttpErrorCode.UNAUTHORIZED);
-            String json = objectMapper.writeValueAsString(errorResponse);
+            String json = objectMapper.writeValueAsString(httpErrorCode);
             DataBuffer dataBuffer = exchange.getResponse().bufferFactory().wrap(json.getBytes(StandardCharsets.UTF_8));
 
             exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
@@ -34,9 +34,5 @@ public abstract class CustomWebFilter implements WebFilter {
         } catch (JsonProcessingException e) {
             return exchange.getResponse().setComplete();
         }
-    }
-
-    private ErrorResponse makeErrorResponse(HttpErrorCode errorCode) {
-        return new ErrorResponse(errorCode.getCode(), errorCode.getMessage());
     }
 }
