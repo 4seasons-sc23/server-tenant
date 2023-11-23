@@ -21,8 +21,8 @@ public enum IsAnswered {
     }
 
     @JsonCreator
-    public static Status fromCode(String code) {
-        return Arrays.stream(Status.values())
+    public static IsAnswered fromCode(String code) {
+        return Arrays.stream(IsAnswered.values())
             .filter(v -> v.getCode().equals(code))
             .findAny()
             .orElseThrow(() -> new IllegalArgumentException(String.format("답변여부에 %s가 존재하지 않습니다.", code)));

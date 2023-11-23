@@ -4,6 +4,8 @@ import com.instream.tenant.domain.application.infra.converter.applicationType.Ap
 import com.instream.tenant.domain.application.infra.converter.applicationType.ApplicationTypeWriteConverter;
 import com.instream.tenant.domain.common.infra.converter.uuid.UUIDReadConverter;
 import com.instream.tenant.domain.common.infra.converter.uuid.UUIDWriteConverter;
+import com.instream.tenant.domain.serviceError.infra.converter.IsAnsweredReadConverter;
+import com.instream.tenant.domain.serviceError.infra.converter.IsAnsweredWriteConverter;
 import com.instream.tenant.domain.tenant.infra.converter.StatusReadConverter;
 import com.instream.tenant.domain.tenant.infra.converter.StatusWriteConverter;
 import org.springframework.context.annotation.Bean;
@@ -19,7 +21,8 @@ public class R2dbcConfig {
     private final List<Converter<?, ?>> converters = List.of(
             new StatusWriteConverter(), new StatusReadConverter(),
             new UUIDReadConverter(), new UUIDWriteConverter(),
-            new ApplicationTypeReadConverter(), new ApplicationTypeWriteConverter()
+            new ApplicationTypeReadConverter(), new ApplicationTypeWriteConverter(),
+            new IsAnsweredReadConverter(), new IsAnsweredWriteConverter()
     );
 
     @Bean
