@@ -12,10 +12,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 public class HostServiceErrorConfig {
     @Bean
     public RouterFunction<ServerResponse> v1ServiceErrorFunction(ServiceErrorHandler serviceErrorHandler) {
-        return RouterFunctions.route(RequestPredicates.GET("/v1/errors/{errorId}"), serviceErrorHandler::getService);
-//            .andRoute(RequestPredicates.GET("/services"), handler::getServices)
-//            .andRoute(RequestPredicates.POST("/service"), handler::createService)
-//            .andRoute(RequestPredicates.PUT("/service/{id}"), handler::updateService)
-//            .andRoute(RequestPredicates.DELETE("/service/{id}"), handler::deleteService);
+        return RouterFunctions.route(RequestPredicates.GET("/v1/errors/{errorId}"), serviceErrorHandler::getServiceError)
+            .andRoute(RequestPredicates.POST("/v1/errors"), serviceErrorHandler::postServiceError);
     }
 }
