@@ -4,7 +4,7 @@ import com.instream.tenant.domain.common.infra.enums.Status;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.serviceError.domain.entity.ServiceErrorAnswerEntity;
 import com.instream.tenant.domain.serviceError.domain.entity.ServiceErrorEntity;
-import com.instream.tenant.domain.serviceError.domain.request.ServiceErrorCreateRequest;
+import com.instream.tenant.domain.serviceError.domain.request.ServiceErrorCreateRequestDto;
 import com.instream.tenant.domain.serviceError.domain.response.ServiceErrorAnswerDto;
 import com.instream.tenant.domain.serviceError.domain.response.ServiceErrorCreateResponseDto;
 import com.instream.tenant.domain.serviceError.domain.response.ServiceErrorDetailDto;
@@ -13,7 +13,6 @@ import com.instream.tenant.domain.serviceError.infra.enums.IsAnswered;
 import com.instream.tenant.domain.serviceError.infra.enums.ServiceErrorErrorCode;
 import com.instream.tenant.domain.serviceError.repository.ServiceErrorAnswerRepository;
 import com.instream.tenant.domain.serviceError.repository.ServiceErrorRepository;
-import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -101,7 +100,7 @@ public class ServiceErrorService {
 //            ));
 
 
-    public Mono<ServiceErrorCreateResponseDto> postServiceError(ServiceErrorCreateRequest request) {
+    public Mono<ServiceErrorCreateResponseDto> postServiceError(ServiceErrorCreateRequestDto request) {
         return serviceErrorRepository.save(
                 ServiceErrorEntity.builder()
                     .content(request.content())
