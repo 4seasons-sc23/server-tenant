@@ -67,38 +67,6 @@ public class ServiceErrorService {
                     .build();
             });
     }
-//            .flatMap(serviceError -> Mono.just(ServiceErrorQuestionDto.builder()
-//                .errorId(serviceError.getErrorId())
-//                .title(serviceError.getTitle())
-//                .content(serviceError.getContent())
-//                .tenantId(serviceError.getTenantId())
-//                .isAnswered(serviceError.getIsAnswered())
-//                .status(serviceError.getStatus())
-//                .createdAt(serviceError.getCreatedAt())
-//                .updatedAt(serviceError.getUpdatedAt())
-//                .build())
-//                )
-//            .switchIfEmpty(
-//                Mono.error(new RestApiException(ServiceErrorErrorCode.SERVICE_ERROR_NOT_FOUND)));
-//
-//        // Function 기반 Mono
-//        Function<Long, Mono<ServiceErrorAnswerDto>> serviceErrorEntityMonoFunction
-//            = serviceErrorId -> serviceErrorAnswerRepository.findByErrorId(serviceErrorId)
-//            .flatMap(serviceErrorAnswerEntity -> Mono.just(ServiceErrorAnswerDto.builder().build()));
-//
-//        // 위에 체인 기반 Mono
-//        Mono<ServiceErrorDetailDto> serviceErrorAnswerDtoMono = questionDtoMono
-//            .flatMap(serviceErrorDetailDto -> serviceErrorAnswerRepository.findByErrorId(errorId)
-//            .flatMap(answerEntity -> Mono.just(ServiceErrorAnswerDto.builder()
-//                    .answerId(answerEntity.getAnswerId())
-//                    .content(answerEntity.getContent())
-//                    .status(answerEntity.getStatus())
-//                    .createdAt(answerEntity.getCreatedAt())
-//                    .updatedAt(answerEntity.getUpdatedAt())
-//                    .build()
-//                )
-//            ));
-
 
     public Mono<ServiceErrorCreateResponseDto> postServiceError(ServiceErrorCreateRequestDto request) {
         return serviceErrorRepository.save(
