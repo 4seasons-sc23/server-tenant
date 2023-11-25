@@ -21,7 +21,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 @Configuration
 public class HostServiceErrorConfig {
     @Bean
-    public RouterFunction<ServerResponse> v1ServiceErrorFunction(
+    public RouterFunction<ServerResponse> v1HostServiceErrorFunction(
         ServiceErrorHandler serviceErrorHandler) {
         return route().nest(RequestPredicates.path("/v1/hosts/{hostId}/errors"),
             builder -> {

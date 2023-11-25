@@ -2,9 +2,11 @@ package com.instream.tenant.domain.serviceError.service;
 
 import com.instream.tenant.domain.common.infra.enums.Status;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
+import com.instream.tenant.domain.serviceError.domain.dto.ServiceErrorDto;
 import com.instream.tenant.domain.serviceError.domain.entity.ServiceErrorAnswerEntity;
 import com.instream.tenant.domain.serviceError.domain.entity.ServiceErrorEntity;
 import com.instream.tenant.domain.serviceError.domain.request.ServiceErrorCreateRequestDto;
+import com.instream.tenant.domain.serviceError.domain.request.ServiceErrorPatchRequestDto;
 import com.instream.tenant.domain.serviceError.domain.response.ServiceErrorAnswerDto;
 import com.instream.tenant.domain.serviceError.domain.response.ServiceErrorCreateResponseDto;
 import com.instream.tenant.domain.serviceError.domain.response.ServiceErrorDetailDto;
@@ -16,6 +18,7 @@ import com.instream.tenant.domain.serviceError.repository.ServiceErrorRepository
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -54,7 +57,7 @@ public class ServiceErrorService {
                     .createdAt(question.getCreatedAt())
                     .build();
 
-                ServiceErrorAnswerDto answerDto = "Y".equals(question.getIsAnswered()) ? null :
+                ServiceErrorAnswerDto answerDto = IsAnswered.ANSWERED.equals(question.getIsAnswered()) ? null :
                     ServiceErrorAnswerDto.builder()
                         .content(answer.getContent())
                         .status(answer.getStatus())
@@ -84,5 +87,22 @@ public class ServiceErrorService {
                 .tenantId(savedServiceError.getTenantId())
                 .build())
             );
+    }
+
+    public Mono<ServiceErrorCreateResponseDto> patchServiceError(Long errorId, ServiceErrorPatchRequestDto patchDto) {
+        return serviceErrorRepository.findByErrorId(errorId)
+            .switchIfEmpty(Mono.error(new RestApiException(ServiceErrorErrorCode.SERVICE_ERROR_NOT_FOUND)))
+            .flatMap(serviceError -> {
+                serviceError.setContent(patchDto.content());
+                serviceError.setTitle(patchDto.title());
+                return serviceErrorRepository.save(serviceError)
+                    .flatMap(savedServiceError -> Mono.just(ServiceErrorCreateResponseDto.builder()
+                        .errorId(savedServiceError.getErrorId())
+                        .content(savedServiceError.getContent())
+                        .title(savedServiceError.getTitle())
+                        .tenantId(savedServiceError.getTenantId())
+                        .build())
+                    );
+            });
     }
 }
