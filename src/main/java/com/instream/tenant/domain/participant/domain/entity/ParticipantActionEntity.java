@@ -1,9 +1,7 @@
 package com.instream.tenant.domain.participant.domain.entity;
 
-import com.instream.tenant.domain.common.infra.enums.Status;
 import com.instream.tenant.domain.participant.infra.enums.ParticipantActionTypeCode;
 import com.instream.tenant.domain.redis.domain.entity.RedisEntity;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.springframework.data.annotation.Id;
@@ -11,7 +9,7 @@ import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
+import java.util.*;
 
 @Table(name = "participant_actions")
 @Setter

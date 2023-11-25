@@ -211,22 +211,24 @@ public class ApplicationService {
                 .then(getApplicationSessionAfterSave.get());
     }
 
-    public Mono<UUID> endApplicationSession(UUID applicationId) {
-        return applicationRepository.findById(applicationId)
-                .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
-                .flatMap(this::validationForApplicationSession)
-                .thenMany(applicationSessionRepository.findByApplicationIdAndDeletedAtIsNull(applicationId))
+    public Mono<ApplicationSessionDto> endApplicationSession(UUID applicationId) {
+        Supplier<Flux<ApplicationSessionEntity>> endRemainApplicationSessions = () -> applicationSessionRepository.findByApplicationIdAndDeletedAtIsNull(applicationId)
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationSessionErrorCode.APPLICATION_SESSION_NOT_FOUND)))
                 .flatMap(applicationSession -> {
                     applicationSession.setDeletedAt(LocalDateTime.now());
                     return applicationSessionRepository.save(applicationSession);
-                })
+                });
+
+        return applicationRepository.findById(applicationId)
+                .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
+                .flatMap(this::validationForApplicationSession)
+                .thenMany(endRemainApplicationSessions.get())
                 .flatMap(applicationSession -> participantJoinRepository
                         .updateAllParticipantJoinsBySessionId(applicationSession.getId())
                         .thenReturn(applicationSession))
                 .sort((session1, session2) -> session2.getCreatedAt().compareTo(session1.getCreatedAt())) // createdAt으로 정렬
                 .next()
-                .map(ApplicationSessionEntity::getId);
+                .flatMap(applicationSession -> Mono.just(ApplicationSessionMapper.INSTANCE.entityToDto(applicationSession)));
     }
 
     @NotNull

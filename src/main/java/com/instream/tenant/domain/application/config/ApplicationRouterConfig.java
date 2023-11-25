@@ -1,9 +1,11 @@
 package com.instream.tenant.domain.application.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
 import com.instream.tenant.domain.application.domain.dto.ApplicationSessionDto;
 import com.instream.tenant.domain.application.handler.ApplicationHandler;
 import com.instream.tenant.domain.application.infra.enums.ApplicationErrorCode;
+import com.instream.tenant.domain.application.infra.enums.ApplicationSessionErrorCode;
 import com.instream.tenant.domain.common.infra.enums.SwaggerErrorResponseBuilderTemplate;
 import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
@@ -70,7 +72,7 @@ public class ApplicationRouterConfig {
     private RouterFunction<ServerResponse> startApplicationSession(ApplicationHandler applicationHandler) {
         return route().PATCH("/start",
                 applicationHandler::startApplicationSession,
-                this::getStartApplicationSessionSwagger
+                this::buildStartApplicationSessionSwagger
         ).build();
     }
 
@@ -78,24 +80,7 @@ public class ApplicationRouterConfig {
         return route().PATCH(
                         "/end",
                         applicationHandler::endApplicationSession,
-                        ops -> ops.operationId("endApplicationSession")
-                                .summary("어플리케이션 세션 종료 API")
-                                .description("""
-                                        어플리케이션 세션을 종료합니다. 어플리케이션이 활성화되어 있어야 합니다.
-                                        라이브 스트리밍 어플리케이션은 지원하지 않습니다. <POST> /v1/medias/end를 호출해주세요.
-                                        """)
-                                .tag(v1ApplicationSessionsRoutesTag)
-                                .parameter(parameterBuilder()
-                                        .name(InstreamHttpHeaders.API_KEY)
-                                        .description("API Key")
-                                        .in(ParameterIn.HEADER)
-                                        .required(true)
-                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                                .parameter(parameterBuilder()
-                                        .name("applicationId")
-                                        .in(ParameterIn.PATH)
-                                        .required(true)
-                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                        this::buildEndApplicationSessionSwagger
                 )
                 .build();
     }
@@ -104,23 +89,7 @@ public class ApplicationRouterConfig {
         return route().PATCH(
                         "/start",
                         applicationHandler::startApplication,
-                        ops -> ops.operationId("startApplication")
-                                .summary("어플리케이션 활성화 API")
-                                .description("""
-                                        어플리케이션을 활성화합니다. 관리자에 의해 해당 어플리케이션이 정지된 경우에는 활성화되지 않습니다.
-                                        """)
-                                .tag(v1ApplicationRoutesTag)
-                                .parameter(parameterBuilder()
-                                        .name(InstreamHttpHeaders.API_KEY)
-                                        .description("API Key")
-                                        .in(ParameterIn.HEADER)
-                                        .required(true)
-                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                                .parameter(parameterBuilder()
-                                        .name("applicationId")
-                                        .in(ParameterIn.PATH)
-                                        .required(true)
-                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                        this::buildStartApplicationSwagger
                 )
                 .build();
     }
@@ -129,23 +98,7 @@ public class ApplicationRouterConfig {
         return route().PATCH(
                         "/end",
                         applicationHandler::endApplication,
-                        ops -> ops.operationId("endApplication")
-                                .summary("어플리케이션 비활성화 API")
-                                .description("""
-                                        어플리케이션을 비활성화합니다. 관리자에 의해 해당 어플리케이션이 정지된 경우에는 활성화되지 않습니다.
-                                        """)
-                                .tag(v1ApplicationRoutesTag)
-                                .parameter(parameterBuilder()
-                                        .name(InstreamHttpHeaders.API_KEY)
-                                        .description("API Key")
-                                        .in(ParameterIn.HEADER)
-                                        .required(true)
-                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                                .parameter(parameterBuilder()
-                                        .name("applicationId")
-                                        .in(ParameterIn.PATH)
-                                        .required(true)
-                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                        this::buildEndApplicationSwagger
                 )
                 .build();
     }
@@ -155,36 +108,24 @@ public class ApplicationRouterConfig {
                 .DELETE(
                         "",
                         applicationHandler::deleteApplication,
-                        ops -> ops.operationId("deleteApplication")
-                                .summary("어플리케이션 삭제 API")
-                                .description("""
-                                        어플리케이션을 삭제합니다. 관리자에 의해 해당 어플리케이션이 정지된 경우에는 활성화되지 않습니다.
-                                        """)
-                                .tag(v1ApplicationRoutesTag)
-                                .parameter(parameterBuilder()
-                                        .name(InstreamHttpHeaders.API_KEY)
-                                        .description("API Key")
-                                        .in(ParameterIn.HEADER)
-                                        .required(true)
-                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                                .parameter(parameterBuilder()
-                                        .name("applicationId")
-                                        .in(ParameterIn.PATH)
-                                        .required(true)
-                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                        this::buildDeleteApplicationSwagger
                 )
                 .build();
     }
 
-    private void getStartApplicationSessionSwagger(Builder ops) {
+    private void buildHttpErrorResponse(Builder ops, List<HttpErrorCode> httpErrorCodeList) {
+        httpErrorCodeList.forEach(httpErrorCode -> ops.response(SwaggerErrorResponseBuilderTemplate.basic.getTemplateFunction().apply(httpErrorCode, objectMapper)));
+    }
+
+    private void buildStartApplicationSessionSwagger(Builder ops) {
         List<HttpErrorCode> httpErrorCodeList = new ArrayList<>(Arrays.asList(
                 CommonHttpErrorCode.UNAUTHORIZED,
                 CommonHttpErrorCode.BAD_REQUEST,
                 ApplicationErrorCode.APPLICATION_NOT_FOUND,
-                CommonHttpErrorCode.SERVICE_UNAVAILABLE
+                CommonHttpErrorCode.INTERNAL_SERVER_ERROR
         ));
 
-        httpErrorCodeList.forEach(httpErrorCode -> ops.response(SwaggerErrorResponseBuilderTemplate.basic.getTemplateFunction().apply(httpErrorCode, objectMapper)));
+        buildHttpErrorResponse(ops, httpErrorCodeList);
 
         ops.operationId("startApplicationSession")
                 .summary("어플리케이션 세션 시작 API")
@@ -210,4 +151,125 @@ public class ApplicationRouterConfig {
                 );
     }
 
+    private void buildEndApplicationSessionSwagger(Builder ops) {
+        List<HttpErrorCode> httpErrorCodeList = new ArrayList<>(Arrays.asList(
+                CommonHttpErrorCode.UNAUTHORIZED,
+                CommonHttpErrorCode.BAD_REQUEST,
+                ApplicationErrorCode.APPLICATION_NOT_FOUND,
+                ApplicationSessionErrorCode.APPLICATION_SESSION_NOT_FOUND,
+                CommonHttpErrorCode.INTERNAL_SERVER_ERROR
+        ));
+
+        buildHttpErrorResponse(ops, httpErrorCodeList);
+
+
+        ops.operationId("endApplicationSession")
+                .summary("어플리케이션 세션 종료 API")
+                .description("""
+                        어플리케이션 세션을 종료합니다. 어플리케이션이 활성화되어 있어야 합니다.
+                        라이브 스트리밍 어플리케이션은 지원하지 않습니다. <POST> /v1/medias/end를 호출해주세요.
+                        """)
+                .tag(v1ApplicationSessionsRoutesTag)
+                .parameter(parameterBuilder()
+                        .name(InstreamHttpHeaders.API_KEY)
+                        .description("API Key")
+                        .in(ParameterIn.HEADER)
+                        .required(true)
+                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                .parameter(parameterBuilder()
+                        .name("applicationId")
+                        .in(ParameterIn.PATH)
+                        .required(true)
+                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                .response(responseBuilder()
+                        .responseCode("200")
+                        .content(contentBuilder().schema(schemaBuilder().implementation(ApplicationSessionDto.class)))
+                );
+    }
+
+    private void buildStartApplicationSwagger(Builder ops) {
+        List<HttpErrorCode> httpErrorCodeList = new ArrayList<>(Arrays.asList(
+                CommonHttpErrorCode.UNAUTHORIZED,
+                CommonHttpErrorCode.BAD_REQUEST,
+                ApplicationErrorCode.APPLICATION_NOT_FOUND,
+                CommonHttpErrorCode.INTERNAL_SERVER_ERROR
+        ));
+
+        buildHttpErrorResponse(ops, httpErrorCodeList);
+
+        ops.operationId("startApplication")
+                .summary("어플리케이션 활성화 API")
+                .description("""
+                        어플리케이션을 활성화합니다. 관리자에 의해 해당 어플리케이션이 정지된 경우에는 활성화되지 않습니다.
+                        """)
+                .tag(v1ApplicationRoutesTag)
+                .parameter(parameterBuilder()
+                        .name(InstreamHttpHeaders.API_KEY)
+                        .description("API Key")
+                        .in(ParameterIn.HEADER)
+                        .required(true)
+                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                .parameter(parameterBuilder()
+                        .name("applicationId")
+                        .in(ParameterIn.PATH)
+                        .required(true)
+                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                .response(responseBuilder()
+                        .responseCode("200")
+                        .content(contentBuilder().schema(schemaBuilder().implementation(ApplicationDto.class))));
+    }
+
+    private void buildEndApplicationSwagger(Builder ops) {
+        List<HttpErrorCode> httpErrorCodeList = new ArrayList<>(Arrays.asList(
+                CommonHttpErrorCode.UNAUTHORIZED,
+                CommonHttpErrorCode.BAD_REQUEST,
+                ApplicationErrorCode.APPLICATION_NOT_FOUND,
+                CommonHttpErrorCode.INTERNAL_SERVER_ERROR
+        ));
+
+        buildHttpErrorResponse(ops, httpErrorCodeList);
+
+        ops.operationId("endApplication")
+                .summary("어플리케이션 비활성화 API")
+                .description("""
+                        어플리케이션을 비활성화합니다. 관리자에 의해 해당 어플리케이션이 정지된 경우에는 활성화되지 않습니다.
+                        """)
+                .tag(v1ApplicationRoutesTag)
+                .parameter(parameterBuilder()
+                        .name(InstreamHttpHeaders.API_KEY)
+                        .description("API Key")
+                        .in(ParameterIn.HEADER)
+                        .required(true)
+                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                .parameter(parameterBuilder()
+                        .name("applicationId")
+                        .in(ParameterIn.PATH)
+                        .required(true)
+                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                .response(responseBuilder()
+                        .responseCode("200")
+                        .content(contentBuilder().schema(schemaBuilder().implementation(ApplicationDto.class))));
+    }
+
+    private void buildDeleteApplicationSwagger(Builder ops) {
+        ops.operationId("deleteApplication")
+                .summary("어플리케이션 삭제 API")
+                .description("""
+                        어플리케이션을 삭제합니다. 관리자에 의해 해당 어플리케이션이 정지된 경우에는 활성화되지 않습니다.
+                        """)
+                .tag(v1ApplicationRoutesTag)
+                .parameter(parameterBuilder()
+                        .name(InstreamHttpHeaders.API_KEY)
+                        .description("API Key")
+                        .in(ParameterIn.HEADER)
+                        .required(true)
+                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                .parameter(parameterBuilder()
+                        .name("applicationId")
+                        .in(ParameterIn.PATH)
+                        .required(true)
+                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                .response(responseBuilder()
+                        .responseCode("200"));
+    }
 }
