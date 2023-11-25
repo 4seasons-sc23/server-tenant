@@ -9,6 +9,7 @@ import com.instream.tenant.domain.application.domain.request.ApplicationSearchPa
 import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.infra.enums.ApplicationErrorCode;
 import com.instream.tenant.domain.application.infra.enums.ApplicationSessionErrorCode;
+import com.instream.tenant.domain.application.infra.enums.ApplicationType;
 import com.instream.tenant.domain.application.infra.mapper.ApplicationMapper;
 import com.instream.tenant.domain.application.infra.mapper.ApplicationSessionMapper;
 import com.instream.tenant.domain.application.model.specification.ApplicationSessionQueryBuilder;
@@ -21,6 +22,7 @@ import com.instream.tenant.domain.application.repository.ApplicationSessionRepos
 import com.instream.tenant.domain.common.domain.dto.*;
 import com.instream.tenant.domain.common.infra.enums.Status;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
+import com.instream.tenant.domain.media.domain.request.NginxRtmpRequest;
 import com.instream.tenant.domain.participant.repository.ParticipantJoinRepository;
 import com.instream.tenant.domain.redis.model.factory.ReactiveRedisTemplateFactory;
 import com.querydsl.core.types.OrderSpecifier;
@@ -37,7 +39,6 @@ import reactor.core.publisher.Mono;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 @Service
 @Slf4j
@@ -197,36 +198,34 @@ public class ApplicationService {
     }
 
     public Mono<ApplicationSessionDto> startApplicationSession(UUID applicationId) {
-        Supplier<Mono<ApplicationSessionDto>> getApplicationSessionAfterSave = () -> {
-            ApplicationSessionEntity applicationSessionEntity = ApplicationSessionEntity.builder()
-                    .applicationId(applicationId)
-                    .build();
-            return endRemainApplicationSessions(applicationId)
-                    .next()
-                    .then(applicationSessionRepository.save(applicationSessionEntity))
-                    .thenMany(applicationSessionRepository.findByApplicationIdAndDeletedAtIsNull(applicationId))
-                    .next()
-                    .flatMap(retrievedApplicationSession -> Mono.just(ApplicationSessionMapper.INSTANCE.entityToDto(retrievedApplicationSession)));
-        };
         return applicationRepository.findById(applicationId)
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
+                .flatMap(application -> validationForNginxRtmp(application, false))
                 .flatMap(this::validationForApplicationSession)
-                .then(getApplicationSessionAfterSave.get());
+                .flatMap(this::startApplicationSession);
     }
 
     public Mono<ApplicationSessionDto> endApplicationSession(UUID applicationId) {
-
-
         return applicationRepository.findById(applicationId)
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
                 .flatMap(this::validationForApplicationSession)
-                .thenMany(endRemainApplicationSessions(applicationId))
-                .flatMap(applicationSession -> participantJoinRepository
-                        .updateAllParticipantJoinsBySessionId(applicationSession.getId())
-                        .thenReturn(applicationSession))
-                .sort((session1, session2) -> session2.getCreatedAt().compareTo(session1.getCreatedAt())) // createdAt으로 정렬
-                .next()
-                .flatMap(applicationSession -> Mono.just(ApplicationSessionMapper.INSTANCE.entityToDto(applicationSession)));
+                .flatMap(this::endApplicationSession);
+    }
+
+    public Mono<ApplicationSessionDto> startApplicationSession(NginxRtmpRequest nginxRtmpRequest) {
+        return applicationRepository.findByApiKey(nginxRtmpRequest.name())
+                .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
+                .flatMap(application -> validationForNginxRtmp(application, true))
+                .flatMap(this::validationForApplicationSession)
+                .flatMap(this::startApplicationSession);
+    }
+
+    public Mono<ApplicationSessionDto> endApplicationSession(NginxRtmpRequest nginxRtmpRequest) {
+        return applicationRepository.findByApiKey(nginxRtmpRequest.name())
+                .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
+                .flatMap(application -> validationForNginxRtmp(application, true))
+                .flatMap(this::validationForApplicationSession)
+                .flatMap(this::endApplicationSession);
     }
 
     @NotNull
@@ -257,5 +256,40 @@ public class ApplicationService {
 
         application.setStatus(saveStatus);
         return applicationRepository.save(application).thenReturn(application);
+    }
+
+    @NotNull
+    private Mono<ApplicationSessionDto> startApplicationSession(ApplicationEntity application) {
+        ApplicationSessionEntity applicationSessionEntity = ApplicationSessionEntity.builder()
+                .applicationId(application.getId())
+                .build();
+        return endRemainApplicationSessions(application.getId())
+                .next()
+                .then(applicationSessionRepository.save(applicationSessionEntity))
+                .thenMany(applicationSessionRepository.findByApplicationIdAndDeletedAtIsNull(application.getId()))
+                .next()
+                .flatMap(retrievedApplicationSession -> Mono.just(ApplicationSessionMapper.INSTANCE.entityToDto(retrievedApplicationSession)));
+    }
+
+    @NotNull
+    private Mono<ApplicationSessionDto> endApplicationSession(ApplicationEntity application) {
+        return endRemainApplicationSessions(application.getId())
+                .flatMap(applicationSession -> participantJoinRepository
+                        .updateAllParticipantJoinsBySessionId(applicationSession.getId())
+                        .thenReturn(applicationSession))
+                .sort((session1, session2) -> session2.getCreatedAt().compareTo(session1.getCreatedAt()))
+                .next()
+                .flatMap(applicationSession -> Mono.just(ApplicationSessionMapper.INSTANCE.entityToDto(applicationSession)));
+    }
+
+    @NotNull
+    private Mono<ApplicationEntity> validationForNginxRtmp(ApplicationEntity application, boolean isNginxRtmp) {
+        if (isNginxRtmp && application.getType() != ApplicationType.STREAMING) {
+            return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_SUPPORTED));
+        }
+        if (!isNginxRtmp && application.getType() == ApplicationType.STREAMING) {
+            return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_SUPPORTED));
+        }
+        return Mono.just(application);
     }
 }

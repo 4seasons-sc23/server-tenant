@@ -7,6 +7,7 @@ import com.instream.tenant.domain.application.domain.request.ApplicationSessionS
 import com.instream.tenant.domain.application.handler.ApplicationHandler;
 import com.instream.tenant.domain.application.infra.enums.ApplicationErrorCode;
 import com.instream.tenant.domain.application.infra.enums.ApplicationSessionErrorCode;
+import com.instream.tenant.domain.common.config.RouterConfig;
 import com.instream.tenant.domain.common.infra.enums.SwaggerErrorResponseBuilderTemplate;
 import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
@@ -32,16 +33,14 @@ import static org.springdoc.webflux.core.fn.SpringdocRouteBuilder.route;
 
 
 @Configuration
-public class ApplicationRouterConfig {
+public class ApplicationRouterConfig extends RouterConfig {
     private final String v1ApplicationRoutesTag = "v1-application-routes";
 
     private final String v1ApplicationSessionsRoutesTag = "v1-application-session-routes";
 
-    private final ObjectMapper objectMapper;
-
     @Autowired
     public ApplicationRouterConfig(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+        super(objectMapper);
     }
 
     @Bean
@@ -124,10 +123,6 @@ public class ApplicationRouterConfig {
                 .build();
     }
 
-    private void buildHttpErrorResponse(Builder ops, List<HttpErrorCode> httpErrorCodeList) {
-        httpErrorCodeList.forEach(httpErrorCode -> ops.response(SwaggerErrorResponseBuilderTemplate.basic.getTemplateFunction().apply(httpErrorCode, objectMapper)));
-    }
-
     private void buildSearchApplicationSwagger(Builder ops) {
         List<HttpErrorCode> httpErrorCodeList = new ArrayList<>(Arrays.asList(
                 CommonHttpErrorCode.UNAUTHORIZED,
@@ -171,6 +166,7 @@ public class ApplicationRouterConfig {
         List<HttpErrorCode> httpErrorCodeList = new ArrayList<>(Arrays.asList(
                 CommonHttpErrorCode.UNAUTHORIZED,
                 CommonHttpErrorCode.BAD_REQUEST,
+                ApplicationErrorCode.APPLICATION_NOT_SUPPORTED,
                 ApplicationErrorCode.APPLICATION_NOT_FOUND,
                 CommonHttpErrorCode.INTERNAL_SERVER_ERROR
         ));
@@ -217,7 +213,7 @@ public class ApplicationRouterConfig {
                 .summary("어플리케이션 세션 종료 API")
                 .description("""
                         어플리케이션 세션을 종료합니다. 어플리케이션이 활성화되어 있어야 합니다.
-                        라이브 스트리밍 어플리케이션은 지원하지 않습니다. <POST> /v1/medias/end를 호출해주세요.
+                        라이브 스트리밍 어플리케이션도 지원합니다. OBS Studio 장애에 대비해서 세션 종료는 라이브 스트리밍도 지원하도록 했습니다.
                         """)
                 .tag(v1ApplicationSessionsRoutesTag)
                 .parameter(parameterBuilder()

@@ -10,7 +10,7 @@ import java.util.function.BiFunction;
 
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.content.Builder.contentBuilder;
-import static org.springdoc.core.fn.builders.schema.Builder.schemaBuilder;
+import static org.springdoc.core.fn.builders.exampleobject.Builder.exampleOjectBuilder;
 
 @Getter
 public enum SwaggerErrorResponseBuilderTemplate {
@@ -18,7 +18,7 @@ public enum SwaggerErrorResponseBuilderTemplate {
         try {
             return responseBuilder()
                     .responseCode(String.valueOf(httpErrorCode.getHttpStatus().value()))
-                    .content(contentBuilder().schema(schemaBuilder().example(objectMapper.writeValueAsString(httpErrorCode))));
+                    .content(contentBuilder().example(exampleOjectBuilder().name(httpErrorCode.getCode()).value(objectMapper.writeValueAsString(httpErrorCode))));
         } catch (JsonProcessingException e) {
             return responseBuilder().responseCode(httpErrorCode.getCode());
         }

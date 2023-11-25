@@ -2,28 +2,17 @@ package com.instream.tenant.domain.media.handler;
 
 import static org.springframework.web.reactive.function.server.ServerResponse.ok;
 
+import com.instream.tenant.domain.application.service.ApplicationService;
 import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.media.domain.request.MediaUploadRequestDto;
+import com.instream.tenant.domain.media.domain.request.NginxRtmpRequest;
 import com.instream.tenant.domain.media.service.MediaService;
 import com.instream.tenant.domain.minio.MinioService;
-import io.minio.MinioClient;
-import io.minio.errors.ErrorResponseException;
-import io.minio.errors.InsufficientDataException;
-import io.minio.errors.InternalException;
-import io.minio.errors.InvalidResponseException;
-import io.minio.errors.MinioException;
-import io.minio.errors.ServerException;
-import io.minio.errors.XmlParserException;
 
-import java.io.IOException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.http.codec.multipart.Part;
 import org.springframework.stereotype.Component;
@@ -35,33 +24,27 @@ import reactor.core.publisher.Mono;
 @Component
 public class MediaHandler {
     private final MediaService mediaService;
+
+    private final ApplicationService applicationService;
     private final MinioService minioService;
 
 
-    public MediaHandler(MediaService mediaService, MinioService minioService) {
+    public MediaHandler(MediaService mediaService, ApplicationService applicationService, MinioService minioService) {
         this.mediaService = mediaService;
+        this.applicationService = applicationService;
         this.minioService = minioService;
     }
 
     public Mono<ServerResponse> startNginxRtmpStream(ServerRequest request) {
-        String apiKey = request.headers().firstHeader(InstreamHttpHeaders.API_KEY);
-
-        if (apiKey == null || apiKey.isEmpty()) {
-            return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
-        }
-
-        // return request.bodyToMono(ApplicationCreateRequest.class);
-        return Mono.defer(() -> ServerResponse.ok().build());
+        return request.bodyToMono(NginxRtmpRequest.class)
+                .flatMap(applicationService::startApplicationSession)
+                .flatMap(applicationSessionDto -> ServerResponse.ok().bodyValue(applicationSessionDto));
     }
 
     public Mono<ServerResponse> endNginxRtmpStream(ServerRequest request) {
-        String apiKey = request.headers().firstHeader(InstreamHttpHeaders.API_KEY);
-
-        if (apiKey == null || apiKey.isEmpty()) {
-            return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
-        }
-
-        return Mono.defer(() -> ServerResponse.ok().build());
+        return request.bodyToMono(NginxRtmpRequest.class)
+                .flatMap(applicationService::endApplicationSession)
+                .flatMap(applicationSessionDto -> ServerResponse.ok().bodyValue(applicationSessionDto));
     }
 
     public Mono<ServerResponse> uploadMedia(ServerRequest request) {

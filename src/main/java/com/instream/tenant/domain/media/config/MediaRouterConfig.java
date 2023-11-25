@@ -1,27 +1,43 @@
 package com.instream.tenant.domain.media.config;
 
+import static org.springdoc.core.fn.builders.externaldocumentation.Builder.externalDocumentationBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 import static org.springdoc.webflux.core.fn.SpringdocRouteBuilder.route;
-import static org.springframework.web.reactive.function.server.RequestPredicates.GET;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.domain.request.NginxRtmpStreamEvent;
-import com.instream.tenant.domain.application.handler.ApplicationHandler;
+import com.instream.tenant.domain.application.infra.enums.ApplicationErrorCode;
+import com.instream.tenant.domain.common.config.RouterConfig;
 import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
+import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
+import com.instream.tenant.domain.error.infra.enums.HttpErrorCode;
 import com.instream.tenant.domain.media.domain.request.MediaUploadRequestDto;
 import com.instream.tenant.domain.media.handler.MediaHandler;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 
+import org.springdoc.core.fn.builders.operation.Builder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.server.RequestPredicates;
 import org.springframework.web.reactive.function.server.RouterFunction;
-import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 @Configuration
-public class MediaRouterConfig {
+public class MediaRouterConfig extends RouterConfig {
+    private final String v1MediaRoutesTag = "v1-media-routes";
+
+    @Autowired
+    public MediaRouterConfig(ObjectMapper objectMapper) {
+        super(objectMapper);
+    }
+
     @Bean
     public RouterFunction<ServerResponse> v1MediaRoutes(MediaHandler mediaHandler) {
         return route().nest(RequestPredicates.path("/v1/medias"),
@@ -30,7 +46,8 @@ public class MediaRouterConfig {
                     builder.add(endNginxRtmpStream(mediaHandler));
                     builder.add(uploadHlsFiles(mediaHandler));
                 },
-                ops -> ops.operationId("123")
+                ops -> ops.operationId("v1-media-routes")
+                        .tag(v1MediaRoutesTag)
         ).build();
     }
 
@@ -38,14 +55,7 @@ public class MediaRouterConfig {
         return route().POST(
                         "/start",
                         mediaHandler::startNginxRtmpStream,
-                        ops -> ops.operationId("123")
-                                .parameter(parameterBuilder()
-                                        .name(InstreamHttpHeaders.API_KEY)
-                                        .description("API Key")
-                                        .in(ParameterIn.HEADER)
-                                        .required(true)
-                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                                .requestBody(requestBodyBuilder().implementation(NginxRtmpStreamEvent.class).required(true).description("Nginx publishing request"))
+                        this::buildStartNginxRtmpStreamSwagger
                 )
                 .build();
     }
@@ -54,14 +64,7 @@ public class MediaRouterConfig {
         return route().POST(
                         "/end",
                         mediaHandler::endNginxRtmpStream,
-                        ops -> ops.operationId("123")
-                                .parameter(parameterBuilder()
-                                        .name(InstreamHttpHeaders.API_KEY)
-                                        .description("API Key")
-                                        .in(ParameterIn.HEADER)
-                                        .required(true)
-                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                                .requestBody(requestBodyBuilder().implementation(NginxRtmpStreamEvent.class).required(true).description("Nginx publishing request"))
+                        this::buildEndNginxRtmpStreamSwagger
                 )
                 .build();
     }
@@ -80,5 +83,94 @@ public class MediaRouterConfig {
                                 .requestBody(requestBodyBuilder().implementation(MediaUploadRequestDto.class).required(true).description("Hls Files"))
                 )
                 .build();
+    }
+
+    private void buildStartNginxRtmpStreamSwagger(Builder ops) {
+        List<HttpErrorCode> httpErrorCodeList = new ArrayList<>(Arrays.asList(
+                CommonHttpErrorCode.UNAUTHORIZED,
+                CommonHttpErrorCode.BAD_REQUEST,
+                ApplicationErrorCode.APPLICATION_NOT_SUPPORTED,
+                ApplicationErrorCode.APPLICATION_NOT_FOUND,
+                CommonHttpErrorCode.INTERNAL_SERVER_ERROR
+        ));
+
+        buildHttpErrorResponse(ops, httpErrorCodeList);
+
+        ops.operationId("startNginxRtmpStreamSwagger")
+                .summary("Nginx RTMP 기반 어플리케이션 세션 시작")
+                .description("""
+                        Request Body은 Nginx RTMP 명세에 따라 작성하였습니다.
+                        
+                        call=connect
+                        
+                        addr - client IP address
+                        
+                        app - application name
+                        
+                        flashVer - client flash version
+                        
+                        swfUrl - client swf url
+                        
+                        tcUrl - tcUrl
+                        
+                        pageUrl - client page url 
+                        
+                        name - stream name (이부분이 API KEY)
+                        """)
+                .externalDocs(externalDocumentationBuilder().url("https://github.com/arut/nginx-rtmp-module/wiki/Directives#on_play").description("Nginx RTMP 명세; Request Body 내용"))
+                .externalDocs(externalDocumentationBuilder().url("https://github.com/arut/nginx-rtmp-module/wiki/Directives#on_publish").description("Nginx RTMP 명세; 실제 사용하는 옵션"))
+                .tag(v1MediaRoutesTag)
+                .parameter(parameterBuilder()
+                        .name(InstreamHttpHeaders.API_KEY)
+                        .description("API Key")
+                        .in(ParameterIn.PATH)
+                        .required(true)
+                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                .requestBody(requestBodyBuilder().implementation(NginxRtmpStreamEvent.class).required(true).description("Nginx publishing request"));
+
+    }
+
+    private void buildEndNginxRtmpStreamSwagger(Builder ops) {
+        List<HttpErrorCode> httpErrorCodeList = new ArrayList<>(Arrays.asList(
+                CommonHttpErrorCode.UNAUTHORIZED,
+                CommonHttpErrorCode.BAD_REQUEST,
+                ApplicationErrorCode.APPLICATION_NOT_SUPPORTED,
+                ApplicationErrorCode.APPLICATION_NOT_FOUND,
+                CommonHttpErrorCode.INTERNAL_SERVER_ERROR
+        ));
+
+        buildHttpErrorResponse(ops, httpErrorCodeList);
+
+        ops.operationId("endNginxRtmpStreamSwagger")
+                .summary("Nginx RTMP 기반 어플리케이션 세션 종료")
+                .description("""
+                        Request Body은 Nginx RTMP 명세에 따라 작성하였습니다.
+                        
+                        call=connect
+                        
+                        addr - client IP address
+                        
+                        app - application name
+                        
+                        flashVer - client flash version
+                        
+                        swfUrl - client swf url
+                        
+                        tcUrl - tcUrl
+                        
+                        pageUrl - client page url
+                        
+                        name - stream name (이부분이 API KEY)
+                        """)
+                .externalDocs(externalDocumentationBuilder().url("https://github.com/arut/nginx-rtmp-module/wiki/Directives#on_play").description("Nginx RTMP 명세; Request Body 내용"))
+                .externalDocs(externalDocumentationBuilder().url("https://github.com/arut/nginx-rtmp-module/wiki/Directives#on_publish").description("Nginx RTMP 명세; 실제 사용하는 옵션"))
+                .tag(v1MediaRoutesTag)
+                .parameter(parameterBuilder()
+                        .name(InstreamHttpHeaders.API_KEY)
+                        .description("API Key")
+                        .in(ParameterIn.PATH)
+                        .required(true)
+                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                .requestBody(requestBodyBuilder().implementation(NginxRtmpStreamEvent.class).required(true).description("Nginx publishing request"));
     }
 }

@@ -2,8 +2,10 @@ package com.instream.tenant.domain.media.service;
 
 import com.instream.tenant.domain.application.domain.entity.ApplicationEntity;
 import com.instream.tenant.domain.application.domain.entity.ApplicationSessionEntity;
+import com.instream.tenant.domain.application.infra.enums.ApplicationErrorCode;
 import com.instream.tenant.domain.application.repository.ApplicationRepository;
 import com.instream.tenant.domain.application.repository.ApplicationSessionRepository;
+import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.media.domain.request.MediaUploadRequestDto;
 import com.instream.tenant.domain.minio.MinioService;
 
@@ -44,6 +46,7 @@ public class MediaService {
         this.applicationSessionRepository = applicationSessionRepository;
         this.minioService = minioService;
     }
+
 
     public Mono<UUID> getSessionIdByApplicationId(UUID applicationId) {
         return applicationRepository.findById(applicationId)

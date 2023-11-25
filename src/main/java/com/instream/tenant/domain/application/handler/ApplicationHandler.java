@@ -97,12 +97,12 @@ public class ApplicationHandler {
     public Mono<ServerResponse> startApplicationSession(ServerRequest request) {
         return HandlerHelper.getUUIDFromPathVariable(request, "applicationId")
                 .flatMap(applicationService::startApplicationSession)
-                .flatMap(applicationSessionId -> ServerResponse.ok().bodyValue(applicationSessionId));
+                .flatMap(applicationSessionDto -> ServerResponse.ok().bodyValue(applicationSessionDto));
     }
 
     public Mono<ServerResponse> endApplicationSession(ServerRequest request) {
         return HandlerHelper.getUUIDFromPathVariable(request, "applicationId")
                 .flatMap(applicationService::endApplicationSession)
-                .flatMap(applicationSessionId -> ServerResponse.ok().bodyValue(applicationSessionId));
+                .flatMap(applicationSessionDto -> ServerResponse.ok().bodyValue(applicationSessionDto));
     }
 }
