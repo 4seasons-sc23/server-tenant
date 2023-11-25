@@ -6,6 +6,7 @@ import com.instream.tenant.domain.common.infra.enums.SortOption;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.ToString;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.util.MultiValueMap;
@@ -17,6 +18,7 @@ import java.util.stream.IntStream;
 
 @Getter
 @AllArgsConstructor
+@ToString
 public class PaginationOptionRequest {
     @Schema(description = "현재 페이지")
     private final int page;
@@ -39,6 +41,10 @@ public class PaginationOptionRequest {
         List<SortOptionRequest> sortOptionRequestList = new ArrayList<>();
         List<String> sortNameList = queryParams.get("sort[name]");
         List<String> sortOptionList = queryParams.get("sort[option]");
+
+
+        System.out.println(sortNameList);
+        System.out.println(sortOptionList);
 
         if (!sortNameList.isEmpty() && !sortOptionList.isEmpty()) {
             if (sortNameList.size() != sortOptionList.size()) {

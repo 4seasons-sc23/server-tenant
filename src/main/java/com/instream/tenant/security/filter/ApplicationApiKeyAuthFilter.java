@@ -2,6 +2,7 @@ package com.instream.tenant.security.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.instream.tenant.domain.application.repository.ApplicationRepository;
+import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
@@ -13,8 +14,8 @@ import java.util.regex.Pattern;
 
 public class ApplicationApiKeyAuthFilter extends CustomWebFilter {
     private final List<Pattern> API_BLACK_LIST = new ArrayList<>(Arrays.asList(
-            Pattern.compile("/api/v1/medias.*"),
-            Pattern.compile("/api/v1/applications.*")
+            Pattern.compile("/api/v1/medias/.*"),
+            Pattern.compile("/api/v1/applications/.*")
     ));
     private final ApplicationRepository applicationRepository;
 
@@ -31,8 +32,7 @@ public class ApplicationApiKeyAuthFilter extends CustomWebFilter {
             return chain.filter(exchange);
         }
 
-
-        String apiKey = exchange.getRequest().getHeaders().getFirst("ApiKey");
+        String apiKey = exchange.getRequest().getHeaders().getFirst(InstreamHttpHeaders.API_KEY);
 
         if (apiKey == null || apiKey.isEmpty()) {
             return super.exchangeUnauthroizedErrorResponse(exchange);

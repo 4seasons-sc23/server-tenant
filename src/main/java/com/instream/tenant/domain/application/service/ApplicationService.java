@@ -201,8 +201,11 @@ public class ApplicationService {
             ApplicationSessionEntity applicationSessionEntity = ApplicationSessionEntity.builder()
                     .applicationId(applicationId)
                     .build();
-            return applicationSessionRepository.save(applicationSessionEntity)
-                    .then(applicationSessionRepository.findById(applicationSessionEntity.getId()))
+            return endRemainApplicationSessions(applicationId)
+                    .next()
+                    .then(applicationSessionRepository.save(applicationSessionEntity))
+                    .thenMany(applicationSessionRepository.findByApplicationIdAndDeletedAtIsNull(applicationId))
+                    .next()
                     .flatMap(retrievedApplicationSession -> Mono.just(ApplicationSessionMapper.INSTANCE.entityToDto(retrievedApplicationSession)));
         };
         return applicationRepository.findById(applicationId)
@@ -212,23 +215,28 @@ public class ApplicationService {
     }
 
     public Mono<ApplicationSessionDto> endApplicationSession(UUID applicationId) {
-        Supplier<Flux<ApplicationSessionEntity>> endRemainApplicationSessions = () -> applicationSessionRepository.findByApplicationIdAndDeletedAtIsNull(applicationId)
-                .switchIfEmpty(Mono.error(new RestApiException(ApplicationSessionErrorCode.APPLICATION_SESSION_NOT_FOUND)))
-                .flatMap(applicationSession -> {
-                    applicationSession.setDeletedAt(LocalDateTime.now());
-                    return applicationSessionRepository.save(applicationSession);
-                });
+
 
         return applicationRepository.findById(applicationId)
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
                 .flatMap(this::validationForApplicationSession)
-                .thenMany(endRemainApplicationSessions.get())
+                .thenMany(endRemainApplicationSessions(applicationId))
                 .flatMap(applicationSession -> participantJoinRepository
                         .updateAllParticipantJoinsBySessionId(applicationSession.getId())
                         .thenReturn(applicationSession))
                 .sort((session1, session2) -> session2.getCreatedAt().compareTo(session1.getCreatedAt())) // createdAt으로 정렬
                 .next()
                 .flatMap(applicationSession -> Mono.just(ApplicationSessionMapper.INSTANCE.entityToDto(applicationSession)));
+    }
+
+    @NotNull
+    private Flux<ApplicationSessionEntity> endRemainApplicationSessions(UUID applicationId) {
+        return applicationSessionRepository.findByApplicationIdAndDeletedAtIsNull(applicationId)
+                .switchIfEmpty(Mono.error(new RestApiException(ApplicationSessionErrorCode.APPLICATION_SESSION_NOT_FOUND)))
+                .flatMap(applicationSession -> {
+                    applicationSession.setDeletedAt(LocalDateTime.now());
+                    return applicationSessionRepository.save(applicationSession);
+                });
     }
 
     @NotNull

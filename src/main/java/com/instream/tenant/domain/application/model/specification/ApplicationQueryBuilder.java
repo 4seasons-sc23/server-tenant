@@ -8,6 +8,7 @@ import com.instream.tenant.domain.common.model.DynamicQueryBuilder;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.*;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.StringExpression;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -17,7 +18,7 @@ public class ApplicationQueryBuilder extends DynamicQueryBuilder<ApplicationEnti
     public Predicate getPredicate(ApplicationSearchPaginationOptionRequest applicationSearchPaginationOptionRequest, UUID hostId) {
         BooleanBuilder builder = new BooleanBuilder();
 
-        builder.and(QApplicationEntity.applicationEntity.status.eq(Expressions.constant(Status.FORCE_STOPPED)));
+        builder.and(QApplicationEntity.applicationEntity.status.ne(Expressions.constant(Status.FORCE_STOPPED.getCode())));
         builder.and(QApplicationEntity.applicationEntity.tenantId.eq(Expressions.constant(hostId.toString())));
 
         if (applicationSearchPaginationOptionRequest.getType() != null) {

@@ -20,6 +20,7 @@ public interface ApplicationMapper {
     @Mapping(source = "applicationSession", target = "session", qualifiedByName = "applicationSessionToSession")
     ApplicationDto applicationAndSessionEntityToDto(ApplicationEntity application, ApplicationSessionEntity applicationSession);
 
+    @Mapping(source = "application.id", target = "applicationId")
     @Mapping(source = "application.createdAt", target = "createdAt")
     @Mapping(source = "applicationSession", target = "session", qualifiedByName = "applicationSessionToSession")
     ApplicationWithApiKeyDto applicationAndSessionEntityToWithApiKeyDto(ApplicationEntity application, ApplicationSessionEntity applicationSession);

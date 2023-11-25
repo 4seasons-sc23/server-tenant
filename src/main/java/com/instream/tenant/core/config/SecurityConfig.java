@@ -25,10 +25,7 @@ public class SecurityConfig {
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
         http
-                .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/api/protected/**").authenticated()
-                        .anyExchange().permitAll()
-                )
+                .authorizeExchange(exchanges -> exchanges.anyExchange().permitAll())
                 .addFilterAt(applicationApiKeyAuthFilter, SecurityWebFiltersOrder.AUTHENTICATION)
                 .csrf().disable()
                 .cors().disable();

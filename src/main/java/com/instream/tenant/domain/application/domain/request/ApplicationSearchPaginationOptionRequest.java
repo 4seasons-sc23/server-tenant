@@ -10,6 +10,7 @@ import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.MultiValueMap;
 import reactor.core.publisher.Mono;
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Getter
-@Slf4j
+@ToString(callSuper = true)
 public class ApplicationSearchPaginationOptionRequest extends PaginationOptionRequest {
     @Schema(description = "어플리케이션 종류")
     private final ApplicationType type;
@@ -66,7 +67,6 @@ public class ApplicationSearchPaginationOptionRequest extends PaginationOptionRe
 
             return Mono.just(searchParams);
         } catch (Exception e) {
-            log.warn(e.toString());
             return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
         }
     }

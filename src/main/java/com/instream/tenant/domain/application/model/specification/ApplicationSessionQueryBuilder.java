@@ -45,6 +45,7 @@ public class ApplicationSessionQueryBuilder extends DynamicQueryBuilder<Applicat
     }
 
     public OrderSpecifier[] getOrderSpecifier(ApplicationSessionSearchPaginationOptionRequest applicationSessionSearchPaginationOptionRequest) {
+        System.out.println(applicationSessionSearchPaginationOptionRequest);
         return super.getOrderSpecifier(QApplicationSessionEntity.applicationSessionEntity, applicationSessionSearchPaginationOptionRequest.getSort());
     }
 }
