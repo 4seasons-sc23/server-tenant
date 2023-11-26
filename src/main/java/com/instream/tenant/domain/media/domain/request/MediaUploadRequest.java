@@ -13,7 +13,7 @@ public record MediaUploadRequest(
 
         FilePart ts,
 
-        String quality
+        int quality
 ) {
     @Builder
     public MediaUploadRequest {

@@ -189,7 +189,7 @@ public class MediaRouterConfig extends RouterConfig {
                                                 
                         m3u8 파일의 Content-type은 application/vnd.apple.mpegurl
                                                 
-                        ts 파일의 Content-type은 video/MP2T"
+                        ts 파일의 Content-type은 video/MP2T
                                                 
                         이렇게 설정해주셔야 합니다.
                         """)
