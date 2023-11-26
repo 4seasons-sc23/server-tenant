@@ -45,6 +45,7 @@ public class HostApplicationRouterConfig {
                         ops -> ops.operationId(String.format("pagination_%s", ApplicationWithApiKeyDto.class.getSimpleName()))
                                 .parameter(parameterBuilder().name("hostId").in(ParameterIn.PATH).required(true).example("80bd6328-76a7-11ee-b720-0242ac130003"))
                                 .parameter(parameterBuilder().in(ParameterIn.QUERY).name("option").implementation(ApplicationSearchPaginationOptionRequest.class))
+                                .response(responseBuilder().implementation(ApplicationWithApiKeyDto.class))
                 )
                 .build();
     }

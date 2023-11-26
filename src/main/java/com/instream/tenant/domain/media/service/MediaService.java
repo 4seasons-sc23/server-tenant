@@ -1,12 +1,8 @@
 package com.instream.tenant.domain.media.service;
 
-import com.instream.tenant.domain.application.domain.entity.ApplicationEntity;
-import com.instream.tenant.domain.application.domain.entity.ApplicationSessionEntity;
-import com.instream.tenant.domain.application.infra.enums.ApplicationErrorCode;
 import com.instream.tenant.domain.application.repository.ApplicationRepository;
 import com.instream.tenant.domain.application.repository.ApplicationSessionRepository;
-import com.instream.tenant.domain.error.model.exception.RestApiException;
-import com.instream.tenant.domain.media.domain.request.MediaUploadRequestDto;
+import com.instream.tenant.domain.media.domain.request.MediaUploadRequest;
 import com.instream.tenant.domain.minio.MinioService;
 
 import java.io.File;
@@ -15,7 +11,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -56,7 +51,7 @@ public class MediaService {
                 .flatMap(applicationSessionEntity -> Mono.just(applicationSessionEntity.getId()));
     }
 
-    public Mono<String> uploadMedia(MediaUploadRequestDto uploadRequest, String apiKey) {
+    public Mono<String> uploadMedia(MediaUploadRequest uploadRequest, String apiKey) {
         return applicationRepository.findByApiKey(apiKey)
                 .flatMap(
                         applicationEntity -> this.getSessionIdByApplicationId(applicationEntity.getId()))

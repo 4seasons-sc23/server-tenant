@@ -201,7 +201,7 @@ public class ParticipantService {
                                                     .createdAt(participant.getCreatedAt())
                                                     .build())
                                             .application(ApplicationDto.builder()
-                                                    .applicationId(application.getId())
+                                                    .id(application.getId())
                                                     .type(application.getType())
                                                     .status(application.getStatus())
                                                     .createdAt(application.getCreatedAt())

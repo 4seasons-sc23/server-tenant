@@ -5,7 +5,6 @@ import com.instream.tenant.domain.application.domain.request.ApplicationSearchPa
 import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.service.ApplicationService;
 import com.instream.tenant.domain.common.infra.model.HandlerHelper;
-import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,8 +38,7 @@ public class ApplicationHandler {
         return ApplicationSearchPaginationOptionRequest.fromQueryParams(request.queryParams())
                 .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
                 .flatMap((applicationSearchPaginationOptionRequest -> applicationService.search(applicationSearchPaginationOptionRequest, hostId)))
-                .flatMap(applicationPaginationDto -> ServerResponse.ok()
-                        .bodyValue(applicationPaginationDto));
+                .flatMap(applicationPaginationDto -> ServerResponse.ok().bodyValue(applicationPaginationDto));
     }
 
     public Mono<ServerResponse> createApplication(ServerRequest request) {
@@ -55,25 +53,25 @@ public class ApplicationHandler {
         return request.bodyToMono(ApplicationCreateRequest.class)
                 .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
                 .flatMap((applicationCreateRequest -> applicationService.createApplication(applicationCreateRequest, hostId)))
-                .flatMap(applicationDto -> ServerResponse.created(URI.create(String.format("/%s/info", applicationDto.applicationId())))
+                .flatMap(applicationDto -> ServerResponse.created(URI.create(String.format("/%s/info", applicationDto.id())))
                         .bodyValue(applicationDto));
     }
 
     public Mono<ServerResponse> startApplication(ServerRequest request) {
-        return HandlerHelper.getUUIDFromPathVariable(request, "applicationId")
+        return HandlerHelper.getUUIDFromPathVariable(request, "id")
                 .flatMap(applicationService::startApplication)
                 .flatMap(applicationDto -> ServerResponse.ok().bodyValue(applicationDto));
     }
 
     public Mono<ServerResponse> endApplication(ServerRequest request) {
-        return HandlerHelper.getUUIDFromPathVariable(request, "applicationId")
+        return HandlerHelper.getUUIDFromPathVariable(request, "id")
                 .flatMap(applicationService::endApplication)
                 .flatMap(applicationDto -> ServerResponse.ok().bodyValue(applicationDto));
     }
 
 
     public Mono<ServerResponse> deleteApplication(ServerRequest request) {
-        return HandlerHelper.getUUIDFromPathVariable(request, "applicationId")
+        return HandlerHelper.getUUIDFromPathVariable(request, "id")
                 .flatMap(applicationService::deleteApplication)
                 .then(Mono.defer(() -> ServerResponse.ok().build()));
     }
@@ -82,7 +80,7 @@ public class ApplicationHandler {
         UUID applicationId;
 
         try {
-            applicationId = UUID.fromString(request.pathVariable("applicationId"));
+            applicationId = UUID.fromString(request.pathVariable("id"));
         } catch (IllegalArgumentException illegalArgumentException) {
             return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
         }
@@ -95,13 +93,13 @@ public class ApplicationHandler {
     }
 
     public Mono<ServerResponse> startApplicationSession(ServerRequest request) {
-        return HandlerHelper.getUUIDFromPathVariable(request, "applicationId")
+        return HandlerHelper.getUUIDFromPathVariable(request, "id")
                 .flatMap(applicationService::startApplicationSession)
-                .flatMap(applicationSessionDto -> ServerResponse.ok().bodyValue(applicationSessionDto));
+                .flatMap(applicationSessionDto ->  ServerResponse.created(URI.create("")).bodyValue(applicationSessionDto));
     }
 
     public Mono<ServerResponse> endApplicationSession(ServerRequest request) {
-        return HandlerHelper.getUUIDFromPathVariable(request, "applicationId")
+        return HandlerHelper.getUUIDFromPathVariable(request, "id")
                 .flatMap(applicationService::endApplicationSession)
                 .flatMap(applicationSessionDto -> ServerResponse.ok().bodyValue(applicationSessionDto));
     }

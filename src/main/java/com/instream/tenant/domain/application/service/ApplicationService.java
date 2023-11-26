@@ -115,7 +115,7 @@ public class ApplicationService {
                 .set(String.valueOf(application.genRedisKey()), application)
                 .thenReturn(application);
         Function<ApplicationEntity, Mono<ApplicationWithApiKeyDto>> result = savedApplication -> Mono.just(ApplicationWithApiKeyDto.builder()
-                .applicationId(savedApplication.getId())
+                .id(savedApplication.getId())
                 .type(savedApplication.getType())
                 .status(savedApplication.getStatus())
                 .createdAt(savedApplication.getCreatedAt())

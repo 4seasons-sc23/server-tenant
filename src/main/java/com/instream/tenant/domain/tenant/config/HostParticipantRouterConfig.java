@@ -47,7 +47,7 @@ public class HostParticipantRouterConfig {
                                         .required(true)
                                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
                                 .parameter(parameterBuilder()
-                                        .name("applicationId")
+                                        .name("id")
                                         .in(ParameterIn.PATH)
                                         .required(true)
                                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
