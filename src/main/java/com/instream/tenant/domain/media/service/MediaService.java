@@ -60,11 +60,11 @@ public class MediaService {
                     String mainM3u8SavedPath = savedPath + "/index.m3u8";
                     String m3u8SavedPath = savedPath + "/" + uploadRequest.quality() + "/index.m3u8";
                     String tsSavedPath = savedPath + "/" + uploadRequest.quality() + "/" + uploadRequest.ts().filename();
-                    Mono<ObjectWriteResponse> uploadMainM3u8 = convertMainM3u8ToFile(uploadRequest.m3u8Main(), apiKey, savedPath)
+                    Mono<ObjectWriteResponse> uploadMainM3u8 = createTempFileFromMainM3u8Part(uploadRequest.m3u8Main(), savedPath, apiKey)
                             .flatMap(file -> minioService.uploadFile(mainM3u8SavedPath, file, m3u8ContentType));
-                    Mono<ObjectWriteResponse> uploadM3u8 = convertToFile(uploadRequest.m3u8(), savedPath)
+                    Mono<ObjectWriteResponse> uploadM3u8 = createTempFileFromPart(uploadRequest.m3u8(), savedPath)
                             .flatMap(file -> minioService.uploadFile(m3u8SavedPath, file, m3u8ContentType));
-                    Mono<ObjectWriteResponse> uploadTs = convertToFile(uploadRequest.ts(), savedPath)
+                    Mono<ObjectWriteResponse> uploadTs = createTempFileFromPart(uploadRequest.ts(), savedPath)
                             .flatMap(file -> minioService.uploadFile(tsSavedPath, file, tsContentType));
 
                     return Mono.zip(uploadMainM3u8, uploadM3u8, uploadTs);
@@ -82,83 +82,61 @@ public class MediaService {
     }
 
     @NotNull
-    private  Mono<ApplicationEntity> validationStreamingApplication(ApplicationEntity application) {
-        if(application.getType() != ApplicationType.STREAMING) {
+    private Mono<ApplicationEntity> validationStreamingApplication(ApplicationEntity application) {
+        if (application.getType() != ApplicationType.STREAMING) {
             return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_SUPPORTED));
         }
-        if(application.getStatus() != Status.USE) {
+        if (application.getStatus() != Status.USE) {
             return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_ON));
         }
         return Mono.just(application);
     }
 
-    private Mono<File> convertToFile(FilePart filePart, String sessionId) {
-        if (filePart == null) {
-            return Mono.empty();
-        }
+    public Mono<File> createTempFileFromPart(FilePart filePart, String sessionId) {
         return Mono.create(sink -> {
             try {
-                // 임시 파일 생성
-                File tempFile = File.createTempFile(String.format("temp_%s", sessionId), filePart.filename());
-                WritableByteChannel channel = Channels.newChannel(new FileOutputStream(tempFile));
-
-                // FilePart의 내용을 임시 파일에 쓴다
-                filePart.content().subscribe(dataBuffer -> {
-                    try {
-                        byte[] bytes = new byte[dataBuffer.readableByteCount()];
-                        dataBuffer.read(bytes);
-                        channel.write(ByteBuffer.wrap(bytes));
-                    } catch (IOException e) {
-                        sink.error(e);
-                    } finally {
-                        DataBufferUtils.release(dataBuffer);
-                    }
-                }, sink::error, () -> {
-                    try {
-                        channel.close();
-                        sink.success(tempFile);
-                    } catch (IOException e) {
-                        sink.error(e);
-                    }
-                });
+                File tempFile = createTempFile(sessionId, filePart.filename());
+                writePartToFile(filePart, tempFile).subscribe(sink::success, sink::error);
             } catch (IOException e) {
                 sink.error(e);
             }
         });
     }
 
-    private Mono<File> convertMainM3u8ToFile(FilePart filePart, String apiKey, String sessionId) {
-        if (filePart == null) {
-            return Mono.empty();
-        }
+    public Mono<File> createTempFileFromMainM3u8Part(FilePart filePart, String sessionId, String apiKey) {
         return Mono.create(sink -> {
             try {
-                // 임시 파일 생성
-                File tempFile = File.createTempFile(String.format("temp_main_%s", sessionId), ".m3u8");
-
-                // FilePart의 내용을 임시 파일에 쓴다
-                filePart.content()
-                        .map(dataBuffer -> {
-                            byte[] bytes = new byte[dataBuffer.readableByteCount()];
-                            dataBuffer.read(bytes);
-                            DataBufferUtils.release(dataBuffer);
-                            return ByteBuffer.wrap(bytes);
-                        })
-                        .collectList()
-                        .flatMap(list -> Mono.fromCallable(() -> {
-                            try (WritableByteChannel channel = Channels.newChannel(new FileOutputStream(tempFile))) {
-                                for (ByteBuffer byteBuffer : list) {
-                                    channel.write(byteBuffer);
-                                }
-                            }
-                            return tempFile;
-                        }))
+                File tempFile = createTempFile(sessionId, filePart.filename());
+                writePartToFile(filePart, tempFile)
                         .flatMap(file -> replaceTextInFile(file, String.format("%s_", apiKey), String.format("/%s/%s/", bucketName, sessionId)))
                         .subscribe(sink::success, sink::error);
             } catch (IOException e) {
                 sink.error(e);
             }
         });
+    }
+
+    private File createTempFile(String sessionId, String filename) throws IOException {
+        return File.createTempFile(String.format("temp_%s", sessionId), filename);
+    }
+
+    private Mono<File> writePartToFile(FilePart filePart, File file) {
+        return filePart.content()
+                .map(dataBuffer -> {
+                    byte[] bytes = new byte[dataBuffer.readableByteCount()];
+                    dataBuffer.read(bytes);
+                    DataBufferUtils.release(dataBuffer);
+                    return ByteBuffer.wrap(bytes);
+                })
+                .collectList()
+                .flatMap(list -> Mono.fromCallable(() -> {
+                    try (WritableByteChannel channel = Channels.newChannel(new FileOutputStream(file))) {
+                        for (ByteBuffer byteBuffer : list) {
+                            channel.write(byteBuffer);
+                        }
+                    }
+                    return file;
+                }));
     }
 
     /**
