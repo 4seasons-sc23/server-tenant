@@ -1,4 +1,4 @@
-package com.instream.tenant.domain.application.model.specification;
+package com.instream.tenant.domain.application.model.queryBuilder;
 
 import com.instream.tenant.domain.application.domain.entity.ApplicationEntity;
 import com.instream.tenant.domain.application.domain.entity.QApplicationEntity;
@@ -8,7 +8,6 @@ import com.instream.tenant.domain.common.model.DynamicQueryBuilder;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.*;
 import com.querydsl.core.types.dsl.Expressions;
-import com.querydsl.core.types.dsl.StringExpression;
 import org.springframework.stereotype.Component;
 
 import java.util.*;

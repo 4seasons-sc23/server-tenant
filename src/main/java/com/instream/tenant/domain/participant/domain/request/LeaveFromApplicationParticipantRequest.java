@@ -6,6 +6,6 @@ import java.util.UUID;
 
 public record LeaveFromApplicationParticipantRequest(
         @NotNull
-        UUID applicationSessionId
+        String participantId
 ) {
 }

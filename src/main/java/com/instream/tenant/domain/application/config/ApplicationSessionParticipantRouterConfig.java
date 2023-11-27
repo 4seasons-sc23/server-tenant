@@ -1,16 +1,16 @@
 package com.instream.tenant.domain.application.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
 import com.instream.tenant.domain.application.domain.dto.ApplicationSessionDto;
 import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
-import com.instream.tenant.domain.application.handler.ApplicationHandler;
 import com.instream.tenant.domain.application.infra.enums.ApplicationErrorCode;
 import com.instream.tenant.domain.application.infra.enums.ApplicationSessionErrorCode;
 import com.instream.tenant.domain.common.config.RouterConfig;
 import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.infra.enums.HttpErrorCode;
+import com.instream.tenant.domain.participant.domain.dto.ParticipantJoinDto;
+import com.instream.tenant.domain.participant.domain.request.ParticipantJoinSearchPaginationOptionRequest;
 import com.instream.tenant.domain.participant.handler.ParticipantHandler;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import org.springdoc.core.fn.builders.operation.Builder;
@@ -34,17 +34,17 @@ import static org.springdoc.webflux.core.fn.SpringdocRouteBuilder.route;
 
 
 @Configuration
-public class ApplicationSessionRouterConfig extends RouterConfig {
-    private final String v1ApplicationSessionsRoutesTag = "v1-application-session-routes";
+public class ApplicationSessionParticipantRouterConfig extends RouterConfig {
+    private final String v1ApplicationSessionsRoutesTag = "v1-application-session-participant-routes";
 
     @Autowired
-    public ApplicationSessionRouterConfig(ObjectMapper objectMapper) {
+    public ApplicationSessionParticipantRouterConfig(ObjectMapper objectMapper) {
         super(objectMapper);
     }
 
     @Bean
     public RouterFunction<ServerResponse> v1ApplicationSessionRoutes(ParticipantHandler participantHandler) {
-        return route().nest(RequestPredicates.path("/v1/applications/{applicationId}"),
+        return route().nest(RequestPredicates.path("/v1/applications/sessions/{sessionId}/participants"),
                 builder -> {
                     builder.add(searchParticipants(participantHandler));
                     builder.add(enter(participantHandler));
@@ -59,29 +59,29 @@ public class ApplicationSessionRouterConfig extends RouterConfig {
         return route()
                 .GET(
                         "",
-                        participantHandler::searchParticipantJoinWithApplicationSession,
-                        this::buildSearchApplicationSessionSwagger
+                        participantHandler::searchParticipantJoinWithSession,
+                        this::buildSearchParticipantsSwagger
                 )
                 .build();
     }
 
     private RouterFunction<ServerResponse> enter(ParticipantHandler participantHandler) {
-        return route().PATCH("/start",
+        return route().POST("/enter",
                 participantHandler::enterToApplication,
-                this::buildStartApplicationSessionSwagger
+                this::buildEnterParticipantSwagger
         ).build();
     }
 
     private RouterFunction<ServerResponse> leave(ParticipantHandler participantHandler) {
-        return route().PATCH(
-                        "/end",
+        return route().POST(
+                        "/leave",
                         participantHandler::leaveFromApplication,
                         this::buildEndApplicationSessionSwagger
                 )
                 .build();
     }
 
-    private void buildSearchApplicationSessionSwagger(Builder ops) {
+    private void buildSearchParticipantsSwagger(Builder ops) {
         List<HttpErrorCode> httpErrorCodeList = new ArrayList<>(Arrays.asList(
                 CommonHttpErrorCode.UNAUTHORIZED,
                 CommonHttpErrorCode.BAD_REQUEST,
@@ -90,10 +90,10 @@ public class ApplicationSessionRouterConfig extends RouterConfig {
 
         buildHttpErrorResponse(ops, httpErrorCodeList);
 
-        ops.operationId(String.format("pagination_%s", ApplicationSessionDto.class.getSimpleName()))
-                .summary("어플리케이션 세션 검색 API")
+        ops.operationId(String.format("pagination_%s", ParticipantJoinDto.class.getSimpleName()))
+                .summary("해당 어플리케이션 세션의 참가자 세션 검색 API")
                 .description("""
-                        어플리케이션 세션을 검색합니다.
+                        해당 어플리케이션 세션의 참가자 세션을 검색합니다.
                                                 
                         정렬은 sort에서 원하는 옵션과 ASC(오름차순), DESC(내림차순)을 입력하시면 됩니다. name 항목은 DB 컬럼 기준 CamelCase로 입력받고 있습니다. 자세한 항목은 ErdCloud 참고해주세요.
                                                 
@@ -101,7 +101,7 @@ public class ApplicationSessionRouterConfig extends RouterConfig {
                                                 
                         전체 페이지 및 데이터 개수가 필요할 때만 firstView를 true로, 아니라면 false로 호출해주세요. SQL 성능 차이가 납니다.
                                                 
-                        현재 세션 기간별 조회 옵션을 지원합니다.
+                        현재 참가자 세션 기간별 조회 옵션을 지원합니다.
                                                 
                         추가적인 옵션을 원할 경우 백엔드 팀한테 문의해주세요!
                         """)
@@ -113,29 +113,34 @@ public class ApplicationSessionRouterConfig extends RouterConfig {
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
                 .parameter(parameterBuilder()
-                        .name("id")
+                        .name("sessionId")
                         .in(ParameterIn.PATH)
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                .parameter(parameterBuilder().in(ParameterIn.QUERY).name("option").implementation(ApplicationSessionSearchPaginationOptionRequest.class));
+                .parameter(parameterBuilder().in(ParameterIn.QUERY).name("option").implementation(ParticipantJoinSearchPaginationOptionRequest.class))
+                .response(responseBuilder().implementation(ParticipantJoinDto.class));
     }
 
-    private void buildStartApplicationSessionSwagger(Builder ops) {
+    private void buildEnterParticipantSwagger(Builder ops) {
         List<HttpErrorCode> httpErrorCodeList = new ArrayList<>(Arrays.asList(
                 CommonHttpErrorCode.UNAUTHORIZED,
                 CommonHttpErrorCode.BAD_REQUEST,
                 ApplicationErrorCode.APPLICATION_NOT_SUPPORTED,
                 ApplicationErrorCode.APPLICATION_NOT_FOUND,
+                ApplicationSessionErrorCode.APPLICATION_SESSION_ALREADY_ENDED,
+                ApplicationSessionErrorCode.APPLICATION_SESSION_NOT_FOUND,
                 CommonHttpErrorCode.INTERNAL_SERVER_ERROR
         ));
 
         buildHttpErrorResponse(ops, httpErrorCodeList);
 
-        ops.operationId("startApplicationSession")
-                .summary("어플리케이션 세션 시작 API")
+        ops.operationId("enterParticipant")
+                .summary("참가자의 어플리케이션 입장 API")
                 .description("""
-                        어플리케이션 세션을 시작합니다. 어플리케이션이 활성화되어 있어야 합니다.
-                        라이브 스트리밍 어플리케이션은 지원하지 않습니다. <POST> /v1/medias/start를 호출해주세요.
+                        참가자가 어플리케이션에 입장합니다.
+                        어플리케이션과 세션이 모두 활성화되어 있어야 합니다.
+                        
+                        입장 시 참가자의 닉네임과 프로필 이미지를 저장 또는 업데이트 합니다.
                         """)
                 .tag(v1ApplicationSessionsRoutesTag)
                 .parameter(parameterBuilder()
@@ -145,13 +150,13 @@ public class ApplicationSessionRouterConfig extends RouterConfig {
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
                 .parameter(parameterBuilder()
-                        .name("id")
+                        .name("sessionId")
                         .in(ParameterIn.PATH)
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
                 .response(responseBuilder()
                         .responseCode(String.valueOf(HttpStatus.CREATED.value()))
-                        .content(contentBuilder().schema(schemaBuilder().implementation(ApplicationSessionDto.class)))
+                        .content(contentBuilder().schema(schemaBuilder().implementation(ParticipantJoinDto.class)))
                 );
     }
 
@@ -159,7 +164,9 @@ public class ApplicationSessionRouterConfig extends RouterConfig {
         List<HttpErrorCode> httpErrorCodeList = new ArrayList<>(Arrays.asList(
                 CommonHttpErrorCode.UNAUTHORIZED,
                 CommonHttpErrorCode.BAD_REQUEST,
+                ApplicationErrorCode.APPLICATION_NOT_SUPPORTED,
                 ApplicationErrorCode.APPLICATION_NOT_FOUND,
+                ApplicationSessionErrorCode.APPLICATION_SESSION_ALREADY_ENDED,
                 ApplicationSessionErrorCode.APPLICATION_SESSION_NOT_FOUND,
                 CommonHttpErrorCode.INTERNAL_SERVER_ERROR
         ));
@@ -167,11 +174,11 @@ public class ApplicationSessionRouterConfig extends RouterConfig {
         buildHttpErrorResponse(ops, httpErrorCodeList);
 
 
-        ops.operationId("endApplicationSession")
-                .summary("어플리케이션 세션 종료 API")
+        ops.operationId("leaveParticipant")
+                .summary("참가자의 어플리케이션 퇴장 API")
                 .description("""
-                        어플리케이션 세션을 종료합니다. 어플리케이션이 활성화되어 있어야 합니다.
-                        라이브 스트리밍 어플리케이션도 지원합니다. OBS Studio 장애에 대비해서 세션 종료는 라이브 스트리밍도 지원하도록 했습니다.
+                        참가자가 어플리케이션에 퇴장합니다.
+                        어플리케이션과 세션이 모두 활성화되어 있어야 합니다.
                         """)
                 .tag(v1ApplicationSessionsRoutesTag)
                 .parameter(parameterBuilder()
@@ -181,13 +188,13 @@ public class ApplicationSessionRouterConfig extends RouterConfig {
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
                 .parameter(parameterBuilder()
-                        .name("id")
+                        .name("sessionId")
                         .in(ParameterIn.PATH)
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
                 .response(responseBuilder()
-                        .responseCode(String.valueOf(HttpStatus.OK.value()))
-                        .content(contentBuilder().schema(schemaBuilder().implementation(ApplicationSessionDto.class)))
+                        .responseCode(String.valueOf(HttpStatus.CREATED.value()))
+                        .content(contentBuilder().schema(schemaBuilder().implementation(ParticipantJoinDto.class)))
                 );
     }
 }

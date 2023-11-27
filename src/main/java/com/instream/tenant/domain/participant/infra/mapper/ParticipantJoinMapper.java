@@ -24,17 +24,12 @@ public interface ParticipantJoinMapper {
     @Mapping(source = "participantJoin.id", target = "id")
     @Mapping(source = "participantJoin.createdAt", target = "createdAt")
     @Mapping(source = "participantJoin.updatedAt", target = "updatedAt")
-    @Mapping(source = "participantJoin", target = "participant", qualifiedByName = "participantEntityToDto")
-    @Mapping(source = "application", target = "application", qualifiedByName = "applicationEntityToApplication")
-    ParticipantJoinDto participantAndParticipantJoinToDto(ParticipantEntity participant, ParticipantJoinEntity participantJoin, ApplicationEntity application);
+    @Mapping(source = "participant", target = "participant", qualifiedByName = "participantEntityToDto")
+    @Mapping(source = "application", target = "application")
+    ParticipantJoinDto participantAndParticipantJoinAndApplicationToDto(ParticipantEntity participant, ParticipantJoinEntity participantJoin, ApplicationDto application);
 
     @Named("participantEntityToDto")
     default ParticipantDto participantEntityToDto(ParticipantEntity participant) {
         return ParticipantMapper.INSTANCE.entityToDto(participant);
-    }
-
-    @Named("applicationEntityToApplication")
-    default ApplicationDto applicationEntityToApplication(ApplicationEntity application) {
-        return ApplicationMapper.INSTANCE.applicationAndSessionEntityToDto(application, null);
     }
 }
