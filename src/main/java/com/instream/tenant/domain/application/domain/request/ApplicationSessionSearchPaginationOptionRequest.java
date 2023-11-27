@@ -1,20 +1,27 @@
 package com.instream.tenant.domain.application.domain.request;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.instream.tenant.domain.common.domain.request.PaginationOptionRequest;
+import com.instream.tenant.domain.common.domain.request.SortOptionRequest;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.util.MultiValueMap;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 @Getter
-@ToString
+@ToString(callSuper = true)
 public class ApplicationSessionSearchPaginationOptionRequest extends PaginationOptionRequest {
     @Schema(description = "생성 날짜 기준 조회 시작 날짜")
     private final LocalDateTime createdStartAt;
@@ -29,8 +36,8 @@ public class ApplicationSessionSearchPaginationOptionRequest extends PaginationO
     private final LocalDateTime deletedEndAt;
 
 
-    public ApplicationSessionSearchPaginationOptionRequest(int page, int size, boolean firstView, LocalDateTime createdStartAt, LocalDateTime createdEndAt, LocalDateTime deletedStartAt, LocalDateTime deletedEndAt) {
-        super(page, size, firstView);
+    public ApplicationSessionSearchPaginationOptionRequest(int page, int size, List<SortOptionRequest> sort, boolean firstView, LocalDateTime createdStartAt, LocalDateTime createdEndAt, LocalDateTime deletedStartAt, LocalDateTime deletedEndAt) {
+        super(page, size, sort, firstView);
         this.createdStartAt = createdStartAt;
         this.createdEndAt = createdEndAt;
         this.deletedStartAt = deletedStartAt;
@@ -51,12 +58,12 @@ public class ApplicationSessionSearchPaginationOptionRequest extends PaginationO
             LocalDateTime createdEndAt = parseDateTime(queryParams.getFirst("createdEndAt"));
             LocalDateTime deletedStartAt = parseDateTime(queryParams.getFirst("deletedStartAt"));
             LocalDateTime deletedEndAt = parseDateTime(queryParams.getFirst("deletedEndAt"));
+            List<SortOptionRequest> sortOptionRequestList = getSortOptionRequestList(queryParams);
 
-            ApplicationSessionSearchPaginationOptionRequest searchParams = new ApplicationSessionSearchPaginationOptionRequest(page, size, firstView, createdStartAt, createdEndAt, deletedStartAt, deletedEndAt);
+            ApplicationSessionSearchPaginationOptionRequest searchParams = new ApplicationSessionSearchPaginationOptionRequest(page, size, sortOptionRequestList, firstView, createdStartAt, createdEndAt, deletedStartAt, deletedEndAt);
 
             return Mono.just(searchParams);
         } catch (Exception e) {
-
             return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
         }
     }

@@ -5,15 +5,13 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 import java.util.Arrays;
 
-public enum Status {
-    USE("N"),
-    DELETED("Y"),
-    PENDING("P"),
-    FORCE_STOPPED("F");
+public enum SortOption {
+    ASC("ASC"),
+    DESC("DESC");
 
     private final String code;
 
-    Status(String code) {
+    SortOption(String code) {
         this.code = code;
     }
 
@@ -23,11 +21,10 @@ public enum Status {
     }
 
     @JsonCreator
-    public static Status fromCode(String code) {
-        return Arrays.stream(Status.values())
+    public static SortOption fromCode(String code) {
+        return Arrays.stream(SortOption.values())
                 .filter(v -> v.getCode().equals(code))
                 .findAny()
-                .orElseThrow(() -> new IllegalArgumentException(String.format("상태에 %s가 존재하지 않습니다.", code)));
+                .orElseThrow(() -> new IllegalArgumentException(String.format("정렬 옵션에 %s가 존재하지 않습니다.", code)));
     }
 }
-

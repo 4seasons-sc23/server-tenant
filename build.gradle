@@ -29,6 +29,9 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.projectreactor:reactor-test'
 
+	// security
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+
 	// db
 	implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
@@ -51,6 +54,11 @@ dependencies {
 
 	// minio object storage
 	implementation 'io.minio:minio:8.5.2'
+
+	// mapstruct
+	implementation 'org.mapstruct:mapstruct:1.4.2.Final'
+	annotationProcessor 'org.mapstruct:mapstruct-processor:1.4.2.Final'
+	annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
 }
 
 tasks.named('test') {

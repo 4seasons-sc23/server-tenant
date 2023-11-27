@@ -237,7 +237,7 @@ public class ParticipantService {
                         return PaginationInfoDto.<CollectionDto<ParticipantJoinDto>>builder()
                                 .totalElementCount(totalElementCount)
                                 .pageCount(pageCount)
-                                .currentPage(participantJoinSearchPaginationOptionRequest.getPage())
+                                .currentPage(participantJoinSearchPaginationOptionRequest.getPageable().getPageNumber())
                                 .data(CollectionDto.<ParticipantJoinDto>builder()
                                         .data(participantJoinDtoList)
                                         .build())
@@ -246,7 +246,7 @@ public class ParticipantService {
         }
 
         return applicationSessionDtoListMono.map(participantJoinDtoList -> PaginationDto.<CollectionDto<ParticipantJoinDto>>builder()
-                .currentPage(participantJoinSearchPaginationOptionRequest.getPage())
+                .currentPage(participantJoinSearchPaginationOptionRequest.getPageable().getPageNumber())
                 .data(CollectionDto.<ParticipantJoinDto>builder()
                         .data(participantJoinDtoList)
                         .build())
@@ -320,7 +320,7 @@ public class ParticipantService {
                         return PaginationInfoDto.<CollectionDto<ParticipantJoinDto>>builder()
                                 .totalElementCount(totalElementCount)
                                 .pageCount(pageCount)
-                                .currentPage(participantJoinSearchPaginationOptionRequest.getPage())
+                                .currentPage(participantJoinSearchPaginationOptionRequest.getPageable().getPageNumber())
                                 .data(CollectionDto.<ParticipantJoinDto>builder()
                                         .data(participantJoinDtoList)
                                         .build())
@@ -329,7 +329,7 @@ public class ParticipantService {
         }
 
         return applicationSessionDtoListMono.map(participantJoinDtoList -> PaginationDto.<CollectionDto<ParticipantJoinDto>>builder()
-                .currentPage(participantJoinSearchPaginationOptionRequest.getPage())
+                .currentPage(participantJoinSearchPaginationOptionRequest.getPageable().getPageNumber())
                 .data(CollectionDto.<ParticipantJoinDto>builder()
                         .data(participantJoinDtoList)
                         .build())

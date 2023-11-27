@@ -1,16 +1,22 @@
 package com.instream.tenant.domain.participant.domain.request;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.instream.tenant.domain.common.domain.request.PaginationOptionRequest;
+import com.instream.tenant.domain.common.domain.request.SortOptionRequest;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.ToString;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.util.MultiValueMap;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 @Getter
@@ -32,8 +38,8 @@ public class ParticipantJoinSearchPaginationOptionRequest extends PaginationOpti
     private final LocalDateTime deletedEndAt;
 
 
-    public ParticipantJoinSearchPaginationOptionRequest(int page, int size, boolean firstView, String nickname, LocalDateTime createdStartAt, LocalDateTime createdEndAt, LocalDateTime deletedStartAt, LocalDateTime deletedEndAt) {
-        super(page, size, firstView);
+    public ParticipantJoinSearchPaginationOptionRequest(int page, int size, List<SortOptionRequest> sort, boolean firstView, String nickname, LocalDateTime createdStartAt, LocalDateTime createdEndAt, LocalDateTime deletedStartAt, LocalDateTime deletedEndAt) {
+        super(page, size, sort, firstView);
         this.nickname = nickname;
         this.createdStartAt = createdStartAt;
         this.createdEndAt = createdEndAt;
@@ -56,8 +62,16 @@ public class ParticipantJoinSearchPaginationOptionRequest extends PaginationOpti
             LocalDateTime createdEndAt = parseDateTime(queryParams.getFirst("createdEndAt"));
             LocalDateTime deletedStartAt = parseDateTime(queryParams.getFirst("deletedStartAt"));
             LocalDateTime deletedEndAt = parseDateTime(queryParams.getFirst("deletedEndAt"));
+            List<SortOptionRequest> sortOptions = new ArrayList<>();
+            String sortJson = queryParams.getFirst("sort");
 
-            ParticipantJoinSearchPaginationOptionRequest searchParams = new ParticipantJoinSearchPaginationOptionRequest(page, size, firstView, nickname, createdStartAt, createdEndAt, deletedStartAt, deletedEndAt);
+            if (sortJson != null) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                SortOptionRequest[] sortArray = objectMapper.readValue(sortJson, SortOptionRequest[].class);
+                Collections.addAll(sortOptions, sortArray);
+            }
+
+            ParticipantJoinSearchPaginationOptionRequest searchParams = new ParticipantJoinSearchPaginationOptionRequest(page, size, sortOptions, firstView, nickname, createdStartAt, createdEndAt, deletedStartAt, deletedEndAt);
 
             return Mono.just(searchParams);
         } catch (Exception e) {

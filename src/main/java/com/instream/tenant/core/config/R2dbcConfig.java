@@ -8,6 +8,7 @@ import com.instream.tenant.domain.serviceError.infra.converter.IsAnsweredReadCon
 import com.instream.tenant.domain.serviceError.infra.converter.IsAnsweredWriteConverter;
 import com.instream.tenant.domain.tenant.infra.converter.StatusReadConverter;
 import com.instream.tenant.domain.tenant.infra.converter.StatusWriteConverter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
@@ -18,6 +19,14 @@ import java.util.List;
 
 @Configuration
 public class R2dbcConfig {
+
+    private final List<Converter<?, ?>> converters;
+
+    @Autowired
+    public R2dbcConfig(List<Converter<?, ?>> converters) {
+        this.converters = converters;
+    }
+  
     private final List<Converter<?, ?>> converters = List.of(
             new StatusWriteConverter(), new StatusReadConverter(),
             new UUIDReadConverter(), new UUIDWriteConverter(),

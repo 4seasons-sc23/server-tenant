@@ -5,7 +5,9 @@ import org.springframework.http.HttpStatus;
 
 public enum ApplicationErrorCode implements HttpErrorCode {
     APPLICATION_NOT_FOUND("어플리케이션을 찾지 못 했습니다.", HttpStatus.NOT_FOUND),
-    APPLICATION_NOT_SUPPORTED("해당 어플리케이션 종류는 지원하지 않습니다.", HttpStatus.BAD_REQUEST);
+    APPLICATION_NOT_SUPPORTED("해당 어플리케이션 종류는 지원하지 않습니다.", HttpStatus.BAD_REQUEST),
+    APPLICATION_NOT_ON("해당 어플리케이션이 활성화 되어있지 않습니다.", HttpStatus.BAD_REQUEST),
+    APPLICATION_CAN_NOT_MODIFY("해당 어플리케이션 활성화 / 비활성화가 불가능합니다.", HttpStatus.BAD_REQUEST);
 
     private final String message;
     private final HttpStatus httpStatus;

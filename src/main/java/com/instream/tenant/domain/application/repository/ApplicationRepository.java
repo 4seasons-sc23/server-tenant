@@ -23,4 +23,6 @@ public interface ApplicationRepository extends QuerydslR2dbcRepository<Applicati
     Mono<Void> deleteByIdAndTenantId(UUID id, UUID tenantId);
 
     Mono<Long> count(Predicate predicate);
+
+    Mono<Boolean> existsByApiKey(String apiKey);
 }

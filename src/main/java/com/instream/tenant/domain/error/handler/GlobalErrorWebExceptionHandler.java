@@ -1,7 +1,6 @@
 package com.instream.tenant.domain.error.handler;
 
 import com.instream.tenant.domain.error.model.exception.RestApiException;
-import com.instream.tenant.domain.error.domain.response.ErrorResponse;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.infra.enums.HttpErrorCode;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +9,7 @@ import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.codec.EncodingException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.HttpMessageWriter;
 import org.springframework.http.codec.ServerCodecConfigurer;
@@ -53,10 +53,9 @@ public class GlobalErrorWebExceptionHandler implements ErrorWebExceptionHandler 
 
     private Mono<Void> writeResponse(HttpErrorCode httpErrorCode, ServerWebExchange exchange) {
         return Mono.defer(() -> {
-            ErrorResponse errorResponse = makeErrorResponse(httpErrorCode);
-            ResolvableType elementType = ResolvableType.forInstance(errorResponse);
+            ResolvableType elementType = ResolvableType.forInstance(httpErrorCode);
             @SuppressWarnings("unchecked")
-            HttpMessageWriter<ErrorResponse> messageWriter = (HttpMessageWriter<ErrorResponse>) this.messageWriters.stream()
+            HttpMessageWriter<HttpErrorCode> messageWriter = (HttpMessageWriter<HttpErrorCode>) this.messageWriters.stream()
                     .filter(writer -> writer.canWrite(elementType, MediaType.APPLICATION_JSON))
                     .findFirst()
                     .orElseThrow(() -> new EncodingException("No suitable HttpMessageWriter found"));
@@ -64,16 +63,31 @@ public class GlobalErrorWebExceptionHandler implements ErrorWebExceptionHandler 
             exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
             exchange.getResponse().setStatusCode(httpErrorCode.getHttpStatus());
 
-            return messageWriter.write(Mono.just(errorResponse), elementType, MediaType.APPLICATION_JSON, exchange.getResponse(), Collections.emptyMap());
+            return messageWriter.write(Mono.just(httpErrorCode), elementType, MediaType.APPLICATION_JSON, exchange.getResponse(), Collections.emptyMap());
         });
     }
 
     private Mono<Void> writeResponse(ResponseStatusException responseStatusException, ServerWebExchange exchange) {
         return Mono.defer(() -> {
-            ErrorResponse errorResponse = new ErrorResponse(responseStatusException.getMessage(), responseStatusException.getReason());
-            ResolvableType elementType = ResolvableType.forInstance(errorResponse);
+            HttpErrorCode httpErrorCode = new HttpErrorCode() {
+                @Override
+                public HttpStatus getHttpStatus() {
+                    return HttpStatus.valueOf(responseStatusException.getStatusCode().value());
+                }
+
+                @Override
+                public String getCode() {
+                    return responseStatusException.getMessage();
+                }
+
+                @Override
+                public String getMessage() {
+                    return responseStatusException.getReason();
+                }
+            };
+            ResolvableType elementType = ResolvableType.forInstance(httpErrorCode);
             @SuppressWarnings("unchecked")
-            HttpMessageWriter<ErrorResponse> messageWriter = (HttpMessageWriter<ErrorResponse>) this.messageWriters.stream()
+            HttpMessageWriter<HttpErrorCode> messageWriter = (HttpMessageWriter<HttpErrorCode>) this.messageWriters.stream()
                     .filter(writer -> writer.canWrite(elementType, MediaType.APPLICATION_JSON))
                     .findFirst()
                     .orElseThrow(() -> new EncodingException("No suitable HttpMessageWriter found"));
@@ -81,12 +95,7 @@ public class GlobalErrorWebExceptionHandler implements ErrorWebExceptionHandler 
             exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
             exchange.getResponse().setStatusCode(responseStatusException.getStatusCode());
 
-            return messageWriter.write(Mono.just(errorResponse), elementType, MediaType.APPLICATION_JSON, exchange.getResponse(), Collections.emptyMap());
+            return messageWriter.write(Mono.just(httpErrorCode), elementType, MediaType.APPLICATION_JSON, exchange.getResponse(), Collections.emptyMap());
         });
-    }
-
-
-    private ErrorResponse makeErrorResponse(HttpErrorCode errorCode) {
-        return new ErrorResponse(errorCode.getCode(), errorCode.getMessage());
     }
 }
