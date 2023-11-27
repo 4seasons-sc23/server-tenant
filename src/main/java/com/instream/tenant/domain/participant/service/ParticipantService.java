@@ -68,6 +68,7 @@ public class ParticipantService {
         // TODO: 참가자 ID 암호화 로직 결정
         // TODO: participantId로 사용된 로직 추후 encryptedParticipantId로 수정
 
+
         return getApplicationEntityMonoFromApiKeyAndSessionId(apiKey, sessionId)
                 .flatMap(application -> saveOrUpdateParticipant(enterToApplicationParticipantRequest, application)
                         .flatMap(participant -> participantRepository.findById(participant.getId()))
@@ -104,11 +105,11 @@ public class ParticipantService {
     public Mono<PaginationDto<CollectionDto<ParticipantJoinDto>>> searchParticipantJoin(ParticipantJoinSearchPaginationOptionRequest participantJoinSearchPaginationOptionRequest, UUID hostId, UUID sessionId) {
         Pageable pageable = participantJoinSearchPaginationOptionRequest.getPageable();
         Predicate predicate = participantJoinQueryBuilder.getPredicate(participantJoinSearchPaginationOptionRequest, hostId, sessionId);
-
         Flux<ParticipantJoinEntity> participantJoinFlux = participantJoinRepository.query(sqlQuery -> sqlQuery
                 .select(QParticipantJoinEntity.participantJoinEntity)
                 .from(QParticipantJoinEntity.participantJoinEntity)
                 .where(predicate)
+                .orderBy(QParticipantJoinEntity.participantJoinEntity.createdAt.desc())
                 .limit(pageable.getPageSize())
                 .offset(pageable.getOffset())
         ).all();
@@ -141,6 +142,7 @@ public class ParticipantService {
                                         .build());
                             }));
         }
+
         return participantJoinDtoFlux.collectList()
                 .flatMap(participantJoinDtoList -> Mono.just(PaginationInfoDto.<CollectionDto<ParticipantJoinDto>>builder()
                         .currentPage(participantJoinSearchPaginationOptionRequest.getPageable().getPageNumber())
