@@ -7,6 +7,7 @@ import com.instream.tenant.domain.serviceError.domain.request.ServiceErrorPatchR
 import com.instream.tenant.domain.serviceError.service.ServiceErrorService;
 import java.net.URI;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -45,5 +46,11 @@ public class ServiceErrorHandler {
             .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
             .flatMap(patchRequestDto -> serviceErrorService.patchServiceError(errorId, patchRequestDto))
             .flatMap(serviceError -> ServerResponse.ok().bodyValue(serviceError));
+    }
+
+    public Mono<ServerResponse> deleteServiceError(ServerRequest request) {
+        Long errorId = Long.valueOf(request.pathVariable("errorId"));
+        return serviceErrorService.deleteServiceError(errorId)
+            .then(ServerResponse.ok().build());
     }
 }

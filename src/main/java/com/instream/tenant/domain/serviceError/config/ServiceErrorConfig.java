@@ -28,6 +28,7 @@ public class ServiceErrorConfig {
                 builder.add(getServiceError(serviceErrorHandler));
                 builder.add(postServiceError(serviceErrorHandler));
                 builder.add(patchServiceError(serviceErrorHandler));
+                builder.add(deleteServiceError(serviceErrorHandler));
             },
             ops -> ops.operationId("919")
         ).build();
@@ -68,6 +69,17 @@ public class ServiceErrorConfig {
                     .requestBody(requestBodyBuilder().implementation(ServiceErrorPatchRequestDto.class).required(true))
                     .response(responseBuilder().responseCode(HttpStatus.OK.name()).implementation(
                         ServiceErrorCreateResponseDto.class))
+            ).build();
+    }
+
+    private RouterFunction<ServerResponse> deleteServiceError(ServiceErrorHandler serviceErrorHandler) {
+        return route()
+            .PATCH(
+                "/{errorId}/delete",
+                (serviceErrorHandler::deleteServiceError),
+                ops -> ops.operationId("919")
+                    .parameter(parameterBuilder().name("errorId").in(ParameterIn.PATH).required(true).example("1"))
+                    .response(responseBuilder().responseCode(HttpStatus.OK.name()))
             ).build();
     }
 

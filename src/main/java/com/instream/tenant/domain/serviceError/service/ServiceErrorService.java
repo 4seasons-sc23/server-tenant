@@ -109,4 +109,18 @@ public class ServiceErrorService {
                     );
             });
     }
+
+    public Mono<Void> deleteServiceError(Long errorId) {
+        return serviceErrorRepository.findByErrorId(errorId)
+            .switchIfEmpty(Mono.error(new RestApiException(ServiceErrorErrorCode.SERVICE_ERROR_NOT_FOUND)))
+            .flatMap(serviceError -> {
+                if(serviceError.getIsAnswered().equals(IsAnswered.ANSWERED)) {
+                    return Mono.error(
+                        new RestApiException(ServiceErrorErrorCode.SERVICE_ERROR_CANNOT_DELETE));
+                }
+                serviceError.setStatus(Status.DELETED);
+                return serviceErrorRepository.save(serviceError);
+            })
+            .then();
+    }
 }
