@@ -3,6 +3,7 @@ package com.instream.tenant.domain.participant.service;
 import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
 import com.instream.tenant.domain.application.domain.dto.ApplicationSessionDto;
 import com.instream.tenant.domain.application.domain.entity.ApplicationEntity;
+import com.instream.tenant.domain.application.infra.enums.ApplicationErrorCode;
 import com.instream.tenant.domain.application.infra.enums.ApplicationSessionErrorCode;
 import com.instream.tenant.domain.application.repository.ApplicationRepository;
 import com.instream.tenant.domain.application.repository.ApplicationSessionRepository;
@@ -14,6 +15,7 @@ import com.instream.tenant.domain.participant.domain.dto.MessageDto;
 import com.instream.tenant.domain.participant.domain.entity.QParticipantJoinEntity;
 import com.instream.tenant.domain.participant.domain.request.ParticipantJoinSearchPaginationOptionRequest;
 import com.instream.tenant.domain.participant.domain.request.SendMessageParticipantRequest;
+import com.instream.tenant.domain.participant.infra.mapper.ParticipantJoinMapper;
 import com.instream.tenant.domain.participant.repository.ParticipantActionRepository;
 import com.instream.tenant.domain.participant.specification.ParticipantJoinSpecification;
 import com.instream.tenant.domain.tenant.infra.enums.TenantErrorCode;
@@ -30,6 +32,7 @@ import com.instream.tenant.domain.participant.repository.ParticipantJoinReposito
 import com.instream.tenant.domain.participant.repository.ParticipantRepository;
 import com.querydsl.core.types.Predicate;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -65,57 +68,21 @@ public class ParticipantService {
         this.participantActionRepository = participantActionRepository;
     }
 
-    public Mono<ParticipantJoinDto> enterToApplication(String apiKey, UUID tenantId, String participantId, EnterToApplicationParticipantRequest enterToApplicationParticipantRequest) {
+    public Mono<ParticipantJoinDto> enterToApplication(String apiKey, UUID sessionId, EnterToApplicationParticipantRequest enterToApplicationParticipantRequest) {
         // TODO: 참가자 ID 암호화 로직 결정
         // TODO: participantId로 사용된 로직 추후 encryptedParticipantId로 수정
-        // TODO: 현재 Reactive chain이 너무 길어지는 문제 발생. 검증 로직은 Validator로 구현하고, ReactiveValidator는 Validator랑 composite하는 형태로 구현하기
 
-        return tenantRepository.existsById(tenantId).flatMap(exists -> {
-            if (!exists) {
-                return Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND));
-            }
-
-            return applicationSessionRepository.findById(enterToApplicationParticipantRequest.applicationSessionId())
-                    .switchIfEmpty(Mono.error(new RestApiException(ApplicationSessionErrorCode.APPLICATION_SESSION_NOT_FOUND)))
-                    .flatMap(applicationSession -> {
-                        if (applicationSession.getDeletedAt() != null) {
-                            return Mono.error(new RestApiException(ApplicationSessionErrorCode.APPLICATION_SESSION_ALREADY_ENDED));
-                        }
-                        return participantRepository.findById(participantId)
-                                .flatMap(savedParticipant -> {
-                                    savedParticipant.setNickname(enterToApplicationParticipantRequest.nickname());
-                                    savedParticipant.setProfileImgUrl(enterToApplicationParticipantRequest.profileImgUrl());
-                                    return participantRepository.save(savedParticipant);
-                                })
-                                .switchIfEmpty(participantRepository.insert(ParticipantEntity.builder()
-                                        .id(participantId)
-                                        .tenantId(tenantId)
-                                        .nickname(enterToApplicationParticipantRequest.nickname())
-                                        .profileImgUrl(enterToApplicationParticipantRequest.profileImgUrl())
+        return getApplicationEntityMonoFromApiKeyAndSessionId(apiKey, sessionId)
+                .flatMap(application -> saveOrUpdateParticipant(enterToApplicationParticipantRequest, application)
+                        .flatMap(participant -> participantRepository.findById(participant.getId()))
+                        .flatMap(participant -> deleteRemainParticipantSession(sessionId, application, participant)
+                                .then(participantJoinRepository.save(ParticipantJoinEntity.builder()
+                                        .tenantId(application.getTenantId())
+                                        .participantId(participant.getId())
+                                        .applicationSessionId(sessionId)
                                         .build()))
-                                .flatMap(participant -> participantRepository.findById(participantId))
-                                .flatMap(participant -> participantJoinRepository.findByTenantIdAndParticipantIdAndApplicationSessionId(tenantId, participantId, enterToApplicationParticipantRequest.applicationSessionId())
-                                        .switchIfEmpty(participantJoinRepository.save(ParticipantJoinEntity.builder()
-                                                        .tenantId(tenantId)
-                                                        .participantId(participantId)
-                                                        .applicationSessionId(enterToApplicationParticipantRequest.applicationSessionId())
-                                                        .build())
-                                                .flatMap(participantJoin -> participantJoinRepository.findById(participantJoin.getId()))
-                                        )
-                                        .flatMap(participantJoin -> Mono.just(ParticipantJoinDto.builder()
-                                                .id(participantJoin.getId())
-                                                .createdAt(participantJoin.getCreatedAt())
-                                                .updatedAt(participantJoin.getUpdatedAt())
-                                                .participant(ParticipantDto.builder()
-                                                        .id(participant.getId())
-                                                        .tenantId(participant.getTenantId())
-                                                        .nickname(participant.getNickname())
-                                                        .profileImgUrl(participant.getProfileImgUrl())
-                                                        .createdAt(participant.getCreatedAt())
-                                                        .build())
-                                                .build())));
-                    });
-        });
+                                .flatMap(participantJoin -> participantJoinRepository.findById(participantJoin.getId()))
+                                .flatMap(participantJoin -> Mono.just(ParticipantJoinMapper.INSTANCE.participantAndParticipantJoinToDto(participant, participantJoin, null)))));
     }
 
     public Mono<ParticipantJoinDto> leaveFromApplication(String apiKey, UUID tenantId, String
@@ -312,5 +279,45 @@ public class ParticipantService {
 
     public Mono<MessageDto> sendMessage(String apiKey, UUID tenantId, String participantId, SendMessageParticipantRequest sendMessageParticipantRequest) {
         return Mono.just(MessageDto.builder().build());
+    }
+
+    @NotNull
+    private Mono<ApplicationEntity> getApplicationEntityMonoFromApiKeyAndSessionId(String apiKey, UUID sessionId) {
+        return applicationSessionRepository.findById(sessionId)
+                .switchIfEmpty(Mono.error(new RestApiException(ApplicationSessionErrorCode.APPLICATION_SESSION_NOT_FOUND)))
+                .flatMap(applicationSession -> {
+                    if (applicationSession.isDeleted()) {
+                        return Mono.error(new RestApiException(ApplicationSessionErrorCode.APPLICATION_SESSION_NOT_FOUND));
+                    }
+                    return applicationRepository.findById(applicationSession.getApplicationId());
+                })
+                .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
+                .flatMap(application -> application.validateApiKey(apiKey))
+                .flatMap(ApplicationEntity::toMonoWhenIsOn);
+    }
+
+    @NotNull
+    private Mono<ParticipantEntity> saveOrUpdateParticipant(EnterToApplicationParticipantRequest enterToApplicationParticipantRequest, ApplicationEntity application) {
+        return participantRepository.findById(enterToApplicationParticipantRequest.participantId())
+                .flatMap(savedParticipant -> {
+                    savedParticipant.setNickname(enterToApplicationParticipantRequest.nickname());
+                    savedParticipant.setProfileImgUrl(enterToApplicationParticipantRequest.profileImgUrl());
+                    return participantRepository.save(savedParticipant);
+                })
+                .switchIfEmpty(participantRepository.insert(ParticipantEntity.builder()
+                        .id(enterToApplicationParticipantRequest.participantId())
+                        .tenantId(application.getTenantId())
+                        .nickname(enterToApplicationParticipantRequest.nickname())
+                        .profileImgUrl(enterToApplicationParticipantRequest.profileImgUrl())
+                        .build()));
+    }
+
+    @NotNull
+    private Flux<ParticipantJoinEntity> deleteRemainParticipantSession(UUID sessionId, ApplicationEntity application, ParticipantEntity participant) {
+        return participantJoinRepository.findByTenantIdAndParticipantIdAndApplicationSessionIdAndUpdatedAtIsNull(application.getTenantId(), participant.getId(), sessionId)
+                .flatMap(participantJoin -> {
+                    participantJoin.setUpdatedAt(LocalDateTime.now());
+                    return participantJoinRepository.save(participantJoin);
+                });
     }
 }

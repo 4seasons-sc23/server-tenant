@@ -7,7 +7,7 @@ import java.util.UUID;
 
 public record EnterToApplicationParticipantRequest (
         @NotNull
-        UUID applicationSessionId,
+        String participantId,
 
         @NotBlank
         String nickname,

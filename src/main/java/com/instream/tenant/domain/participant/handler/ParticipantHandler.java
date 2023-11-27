@@ -1,5 +1,6 @@
 package com.instream.tenant.domain.participant.handler;
 
+import com.instream.tenant.domain.common.infra.model.HandlerHelper;
 import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
@@ -27,24 +28,11 @@ public class ParticipantHandler {
 
     public Mono<ServerResponse> enterToApplication(ServerRequest request) {
         String apiKey = request.headers().firstHeader(InstreamHttpHeaders.API_KEY);
-
-        if (apiKey == null || apiKey.isEmpty()) {
-            return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
-        }
-
-        UUID hostId;
-        String participantId;
-
-        try {
-            hostId = UUID.fromString(request.pathVariable("hostId"));
-            participantId = request.pathVariable("participantId");
-        } catch (IllegalArgumentException illegalArgumentException) {
-            return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
-        }
-
-        return request.bodyToMono(EnterToApplicationParticipantRequest.class)
+        Mono<UUID> sessionIdMono = HandlerHelper.getUUIDFromPathVariable(request, "sessionId");
+        Mono<EnterToApplicationParticipantRequest> enterRequesetMono = request.bodyToMono(EnterToApplicationParticipantRequest.class);
+        return Mono.zip(sessionIdMono, enterRequesetMono)
                 .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
-                .flatMap(enterToApplicationParticipantRequest -> participantService.enterToApplication(apiKey, hostId, participantId, enterToApplicationParticipantRequest))
+                .flatMap(tuple -> participantService.enterToApplication(apiKey, tuple.getT1(), tuple.getT2()))
                 .flatMap(participantJoinDto -> ServerResponse.ok().bodyValue(participantJoinDto));
     }
 
