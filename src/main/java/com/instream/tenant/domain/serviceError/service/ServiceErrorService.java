@@ -93,6 +93,10 @@ public class ServiceErrorService {
         return serviceErrorRepository.findByErrorId(errorId)
             .switchIfEmpty(Mono.error(new RestApiException(ServiceErrorErrorCode.SERVICE_ERROR_NOT_FOUND)))
             .flatMap(serviceError -> {
+                if(serviceError.getIsAnswered().equals(IsAnswered.ANSWERED)) {
+                    return Mono.error(
+                        new RestApiException(ServiceErrorErrorCode.SERVICE_ERROR_CANNOT_MODIFY));
+                }
                 serviceError.setContent(patchDto.content());
                 serviceError.setTitle(patchDto.title());
                 return serviceErrorRepository.save(serviceError)
