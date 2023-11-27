@@ -12,8 +12,8 @@ import com.instream.tenant.domain.application.infra.enums.ApplicationSessionErro
 import com.instream.tenant.domain.application.infra.enums.ApplicationType;
 import com.instream.tenant.domain.application.infra.mapper.ApplicationMapper;
 import com.instream.tenant.domain.application.infra.mapper.ApplicationSessionMapper;
-import com.instream.tenant.domain.application.model.specification.ApplicationSessionQueryBuilder;
-import com.instream.tenant.domain.application.model.specification.ApplicationQueryBuilder;
+import com.instream.tenant.domain.application.model.queryBuilder.ApplicationSessionQueryBuilder;
+import com.instream.tenant.domain.application.model.queryBuilder.ApplicationQueryBuilder;
 import com.instream.tenant.domain.application.repository.ApplicationRepository;
 import com.instream.tenant.domain.application.domain.dto.ApplicationWithApiKeyDto;
 import com.instream.tenant.domain.application.domain.entity.ApplicationEntity;

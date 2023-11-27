@@ -1,5 +1,6 @@
 package com.instream.tenant.domain.participant.handler;
 
+import com.instream.tenant.domain.common.infra.model.HandlerHelper;
 import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
@@ -8,6 +9,7 @@ import com.instream.tenant.domain.participant.domain.request.LeaveFromApplicatio
 import com.instream.tenant.domain.participant.domain.request.ParticipantJoinSearchPaginationOptionRequest;
 import com.instream.tenant.domain.participant.domain.request.SendMessageParticipantRequest;
 import com.instream.tenant.domain.participant.service.ParticipantService;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -27,86 +29,42 @@ public class ParticipantHandler {
 
     public Mono<ServerResponse> enterToApplication(ServerRequest request) {
         String apiKey = request.headers().firstHeader(InstreamHttpHeaders.API_KEY);
-
-        if (apiKey == null || apiKey.isEmpty()) {
-            return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
-        }
-
-        UUID hostId;
-        String participantId;
-
-        try {
-            hostId = UUID.fromString(request.pathVariable("hostId"));
-            participantId = request.pathVariable("participantId");
-        } catch (IllegalArgumentException illegalArgumentException) {
-            return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
-        }
-
-        return request.bodyToMono(EnterToApplicationParticipantRequest.class)
+        Mono<UUID> sessionIdMono = HandlerHelper.getUUIDFromPathVariable(request, "sessionId");
+        Mono<EnterToApplicationParticipantRequest> enterRequesetMono = request.bodyToMono(EnterToApplicationParticipantRequest.class);
+        return Mono.zip(sessionIdMono, enterRequesetMono)
                 .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
-                .flatMap(enterToApplicationParticipantRequest -> participantService.enterToApplication(hostId, participantId, enterToApplicationParticipantRequest))
+                .flatMap(tuple -> participantService.enterToApplication(apiKey, tuple.getT1(), tuple.getT2()))
                 .flatMap(participantJoinDto -> ServerResponse.ok().bodyValue(participantJoinDto));
     }
 
     public Mono leaveFromApplication(ServerRequest request) {
         String apiKey = request.headers().firstHeader(InstreamHttpHeaders.API_KEY);
+        Mono<UUID> sessionIdMono = HandlerHelper.getUUIDFromPathVariable(request, "sessionId");
+        Mono<LeaveFromApplicationParticipantRequest> leaveRequesetMono = request.bodyToMono(LeaveFromApplicationParticipantRequest.class);
 
-        if (apiKey == null || apiKey.isEmpty()) {
-            return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
-        }
-
-        UUID hostId;
-        String participantId;
-
-        try {
-            hostId = UUID.fromString(request.pathVariable("hostId"));
-            participantId = request.pathVariable("participantId");
-        } catch (IllegalArgumentException illegalArgumentException) {
-            return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
-        }
-
-        return request.bodyToMono(LeaveFromApplicationParticipantRequest.class)
+        return Mono.zip(sessionIdMono, leaveRequesetMono)
                 .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
-                .flatMap(applicationSessionId -> participantService.leaveFromApplication(apiKey, hostId, participantId, applicationSessionId))
+                .flatMap(tuple -> participantService.leaveFromApplication(apiKey, tuple.getT1(), tuple.getT2()))
                 .flatMap(participantJoinDto -> ServerResponse.ok().bodyValue(participantJoinDto));
     }
 
-    public Mono<ServerResponse> searchParticipantJoin(ServerRequest request) {
-        UUID hostId;
-
-        try {
-            hostId = UUID.fromString(request.pathVariable("hostId"));
-        } catch (IllegalArgumentException illegalArgumentException) {
-            return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
-        }
-
-        return ParticipantJoinSearchPaginationOptionRequest.fromQueryParams(request.queryParams())
-                .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
-                .flatMap((participantJoinSearchPaginationOptionRequest -> participantService.searchParticipantJoin(participantJoinSearchPaginationOptionRequest, hostId)))
-                .flatMap(applicationSessionPaginationDto -> ServerResponse.ok()
-                        .bodyValue(applicationSessionPaginationDto));
+    public Mono<ServerResponse> searchParticipantJoinWithTenant(ServerRequest request) {
+        Mono<UUID> hostIdMono = HandlerHelper.getUUIDFromPathVariable(request, "hostId");
+        Mono<ParticipantJoinSearchPaginationOptionRequest> participantJoinSearchPaginationOptionRequestMono = ParticipantJoinSearchPaginationOptionRequest.fromQueryParams(request.queryParams());
+        return searchParticipantJoin(null, hostIdMono, participantJoinSearchPaginationOptionRequestMono);
     }
 
-    public Mono<ServerResponse> searchParticipantJoinWithApplicationSession(ServerRequest request) {
-        String apiKey = request.headers().firstHeader(InstreamHttpHeaders.API_KEY);
+    public Mono<ServerResponse> searchParticipantJoinWithSession(ServerRequest request) {
+        Mono<UUID> sessionIdMono = HandlerHelper.getUUIDFromPathVariable(request, "sessionId");
+        Mono<ParticipantJoinSearchPaginationOptionRequest> participantJoinSearchPaginationOptionRequestMono = ParticipantJoinSearchPaginationOptionRequest.fromQueryParams(request.queryParams());
+        return searchParticipantJoin(null, sessionIdMono, participantJoinSearchPaginationOptionRequestMono);
+    }
 
-        if (apiKey == null || apiKey.isEmpty()) {
-            return Mono.error(new RestApiException(CommonHttpErrorCode.UNAUTHORIZED));
-        }
-
-        UUID hostId;
-        UUID applicationSessionId;
-
-        try {
-            hostId = UUID.fromString(request.pathVariable("hostId"));
-            applicationSessionId = UUID.fromString(request.pathVariable("sessionId"));
-        } catch (IllegalArgumentException illegalArgumentException) {
-            return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
-        }
-
-        return ParticipantJoinSearchPaginationOptionRequest.fromQueryParams(request.queryParams())
+    @NotNull
+    private Mono<ServerResponse> searchParticipantJoin(Mono<UUID> hostIdMono, Mono<UUID> sessionIdMono, Mono<ParticipantJoinSearchPaginationOptionRequest> participantJoinSearchPaginationOptionRequestMono) {
+        return Mono.zip(participantJoinSearchPaginationOptionRequestMono, hostIdMono, sessionIdMono)
                 .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
-                .flatMap((participantJoinSearchPaginationOptionRequest -> participantService.searchParticipantJoinWithApplication(participantJoinSearchPaginationOptionRequest, hostId, applicationSessionId)))
+                .flatMap((tuple -> participantService.searchParticipantJoin(tuple.getT1(), tuple.getT2(), tuple.getT3())))
                 .flatMap(applicationSessionPaginationDto -> ServerResponse.ok()
                         .bodyValue(applicationSessionPaginationDto));
     }

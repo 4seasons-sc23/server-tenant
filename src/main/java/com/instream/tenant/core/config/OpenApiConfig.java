@@ -2,6 +2,7 @@ package com.instream.tenant.core.config;
 
 import com.instream.tenant.domain.application.domain.dto.ApplicationSessionDto;
 import com.instream.tenant.domain.application.domain.dto.ApplicationWithApiKeyDto;
+import com.instream.tenant.domain.participant.domain.dto.ParticipantJoinDto;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.media.*;
 import io.swagger.v3.oas.models.responses.ApiResponse;
@@ -36,7 +37,9 @@ public class OpenApiConfig {
      * .build();
      * ```
      */
-    private final List<Class<?>> customizeDtoSchemaList = List.of(ApplicationWithApiKeyDto.class, ApplicationSessionDto.class);
+    private final List<Class<?>> customizeDtoSchemaList = List.of(
+            ApplicationWithApiKeyDto.class, ApplicationSessionDto.class, ParticipantJoinDto.class
+    );
 
     @Bean
     public OpenApiCustomizer customizeCollectionDtoSchema() {

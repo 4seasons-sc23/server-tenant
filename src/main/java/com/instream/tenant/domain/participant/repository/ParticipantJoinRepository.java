@@ -10,8 +10,6 @@ import reactor.core.publisher.Mono;
 import java.util.UUID;
 
 public interface ParticipantJoinRepository extends QuerydslR2dbcRepository<ParticipantJoinEntity, UUID> {
-    Flux<ParticipantJoinEntity> findByTenantIdAndParticipantIdAndApplicationSessionIdAndUpdatedAtIsNullOrderByCreatedAtDesc(UUID tenantId, String participantId, UUID applicationSessionId);
-
     @Query("UPDATE participant_joins SET updated_at = NOW() WHERE application_session_id = :applicationSessionId")
     Mono<Integer> updateAllParticipantJoinsBySessionId(@Param("applicationSessionId") UUID applicationSessionId);
 }

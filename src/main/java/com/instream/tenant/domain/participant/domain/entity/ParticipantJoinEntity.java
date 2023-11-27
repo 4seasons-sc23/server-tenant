@@ -35,4 +35,8 @@ public class ParticipantJoinEntity implements RedisEntity {
     public String genRedisKey() {
         return getClass().getSimpleName() + "_" + id;
     }
+
+    public boolean isDeleted () {
+        return this.updatedAt != null;
+    }
 }

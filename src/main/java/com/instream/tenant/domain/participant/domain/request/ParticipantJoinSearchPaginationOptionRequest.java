@@ -62,16 +62,9 @@ public class ParticipantJoinSearchPaginationOptionRequest extends PaginationOpti
             LocalDateTime createdEndAt = parseDateTime(queryParams.getFirst("createdEndAt"));
             LocalDateTime deletedStartAt = parseDateTime(queryParams.getFirst("deletedStartAt"));
             LocalDateTime deletedEndAt = parseDateTime(queryParams.getFirst("deletedEndAt"));
-            List<SortOptionRequest> sortOptions = new ArrayList<>();
-            String sortJson = queryParams.getFirst("sort");
+            List<SortOptionRequest> sortOptionRequestList = getSortOptionRequestList(queryParams);
 
-            if (sortJson != null) {
-                ObjectMapper objectMapper = new ObjectMapper();
-                SortOptionRequest[] sortArray = objectMapper.readValue(sortJson, SortOptionRequest[].class);
-                Collections.addAll(sortOptions, sortArray);
-            }
-
-            ParticipantJoinSearchPaginationOptionRequest searchParams = new ParticipantJoinSearchPaginationOptionRequest(page, size, sortOptions, firstView, nickname, createdStartAt, createdEndAt, deletedStartAt, deletedEndAt);
+            ParticipantJoinSearchPaginationOptionRequest searchParams = new ParticipantJoinSearchPaginationOptionRequest(page, size, sortOptionRequestList, firstView, nickname, createdStartAt, createdEndAt, deletedStartAt, deletedEndAt);
 
             return Mono.just(searchParams);
         } catch (Exception e) {

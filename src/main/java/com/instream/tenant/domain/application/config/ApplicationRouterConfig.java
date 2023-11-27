@@ -37,8 +37,6 @@ import static org.springdoc.webflux.core.fn.SpringdocRouteBuilder.route;
 public class ApplicationRouterConfig extends RouterConfig {
     private final String v1ApplicationRoutesTag = "v1-application-routes";
 
-    private final String v1ApplicationSessionsRoutesTag = "v1-application-session-routes";
-
     @Autowired
     public ApplicationRouterConfig(ObjectMapper objectMapper) {
         super(objectMapper);
@@ -66,7 +64,7 @@ public class ApplicationRouterConfig extends RouterConfig {
                     builder.add(endApplicationSession(applicationHandler));
                 },
                 ops -> ops.operationId("v1ApplicationSessionsRoutes")
-                        .tag(v1ApplicationSessionsRoutesTag)
+                        .tag(v1ApplicationRoutesTag)
         ).build();
     }
 
@@ -148,7 +146,7 @@ public class ApplicationRouterConfig extends RouterConfig {
                                                 
                         추가적인 옵션을 원할 경우 백엔드 팀한테 문의해주세요!
                         """)
-                .tag(v1ApplicationSessionsRoutesTag)
+                .tag(v1ApplicationRoutesTag)
                 .parameter(parameterBuilder()
                         .name(InstreamHttpHeaders.API_KEY)
                         .description("API Key")
@@ -180,7 +178,7 @@ public class ApplicationRouterConfig extends RouterConfig {
                         어플리케이션 세션을 시작합니다. 어플리케이션이 활성화되어 있어야 합니다.
                         라이브 스트리밍 어플리케이션은 지원하지 않습니다. <POST> /v1/medias/start를 호출해주세요.
                         """)
-                .tag(v1ApplicationSessionsRoutesTag)
+                .tag(v1ApplicationRoutesTag)
                 .parameter(parameterBuilder()
                         .name(InstreamHttpHeaders.API_KEY)
                         .description("API Key")
@@ -216,7 +214,7 @@ public class ApplicationRouterConfig extends RouterConfig {
                         어플리케이션 세션을 종료합니다. 어플리케이션이 활성화되어 있어야 합니다.
                         라이브 스트리밍 어플리케이션도 지원합니다. OBS Studio 장애에 대비해서 세션 종료는 라이브 스트리밍도 지원하도록 했습니다.
                         """)
-                .tag(v1ApplicationSessionsRoutesTag)
+                .tag(v1ApplicationRoutesTag)
                 .parameter(parameterBuilder()
                         .name(InstreamHttpHeaders.API_KEY)
                         .description("API Key")

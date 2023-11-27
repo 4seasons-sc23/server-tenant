@@ -26,13 +26,6 @@ public class R2dbcConfig {
     public R2dbcConfig(List<Converter<?, ?>> converters) {
         this.converters = converters;
     }
-  
-    private final List<Converter<?, ?>> converters = List.of(
-            new StatusWriteConverter(), new StatusReadConverter(),
-            new UUIDReadConverter(), new UUIDWriteConverter(),
-            new ApplicationTypeReadConverter(), new ApplicationTypeWriteConverter(),
-            new IsAnsweredReadConverter(), new IsAnsweredWriteConverter()
-    );
 
     @Bean
     public R2dbcCustomConversions r2dbcCustomConversions() {

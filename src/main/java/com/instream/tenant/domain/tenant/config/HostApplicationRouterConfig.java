@@ -71,7 +71,7 @@ public class HostApplicationRouterConfig {
         return route()
                 .GET(
                         "sessions/{sessionId}/participants",
-                        participantHandler::searchParticipantJoinWithApplicationSession,
+                        participantHandler::searchParticipantJoinWithSession,
                         ops -> ops.operationId("123")
                                 .parameter(parameterBuilder()
                                         .name(InstreamHttpHeaders.API_KEY)

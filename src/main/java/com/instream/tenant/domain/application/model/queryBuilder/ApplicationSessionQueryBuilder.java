@@ -1,11 +1,8 @@
-package com.instream.tenant.domain.application.model.specification;
+package com.instream.tenant.domain.application.model.queryBuilder;
 
 import com.instream.tenant.domain.application.domain.entity.ApplicationSessionEntity;
-import com.instream.tenant.domain.application.domain.entity.QApplicationEntity;
 import com.instream.tenant.domain.application.domain.entity.QApplicationSessionEntity;
-import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
-import com.instream.tenant.domain.common.infra.enums.Status;
 import com.instream.tenant.domain.common.model.DynamicQueryBuilder;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
@@ -46,7 +43,6 @@ public class ApplicationSessionQueryBuilder extends DynamicQueryBuilder<Applicat
     }
 
     public OrderSpecifier[] getOrderSpecifier(ApplicationSessionSearchPaginationOptionRequest applicationSessionSearchPaginationOptionRequest) {
-        System.out.println(applicationSessionSearchPaginationOptionRequest);
         return super.getOrderSpecifier(QApplicationSessionEntity.applicationSessionEntity, applicationSessionSearchPaginationOptionRequest.getSort());
     }
 }
