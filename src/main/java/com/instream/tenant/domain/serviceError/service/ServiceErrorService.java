@@ -36,7 +36,7 @@ public class ServiceErrorService {
     }
 
     public Mono<ServiceErrorDetailDto> getServiceErrorById(Long errorId) {
-        Mono<ServiceErrorEntity> errorEntityMono = serviceErrorRepository.findByErrorId(errorId)
+        Mono<ServiceErrorEntity> errorEntityMono = serviceErrorRepository.findByErrorIdAndStatus(errorId, Status.USE)
             .switchIfEmpty(Mono.error(new RestApiException(ServiceErrorErrorCode.SERVICE_ERROR_NOT_FOUND)));
 
         Mono<ServiceErrorAnswerEntity> answerEntityMono = serviceErrorAnswerRepository.findByErrorId(errorId)
@@ -90,7 +90,7 @@ public class ServiceErrorService {
     }
 
     public Mono<ServiceErrorCreateResponseDto> patchServiceError(Long errorId, ServiceErrorPatchRequestDto patchDto) {
-        return serviceErrorRepository.findByErrorId(errorId)
+        return serviceErrorRepository.findByErrorIdAndStatus(errorId, Status.USE)
             .switchIfEmpty(Mono.error(new RestApiException(ServiceErrorErrorCode.SERVICE_ERROR_NOT_FOUND)))
             .flatMap(serviceError -> {
                 if(serviceError.getIsAnswered().equals(IsAnswered.ANSWERED)) {
@@ -111,7 +111,7 @@ public class ServiceErrorService {
     }
 
     public Mono<Void> deleteServiceError(Long errorId) {
-        return serviceErrorRepository.findByErrorId(errorId)
+        return serviceErrorRepository.findByErrorIdAndStatus(errorId, Status.USE)
             .switchIfEmpty(Mono.error(new RestApiException(ServiceErrorErrorCode.SERVICE_ERROR_NOT_FOUND)))
             .flatMap(serviceError -> {
                 if(serviceError.getIsAnswered().equals(IsAnswered.ANSWERED)) {
