@@ -7,12 +7,16 @@ import com.instream.tenant.domain.participant.domain.request.ParticipantJoinSear
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.StringPath;
 
 import java.util.UUID;
 
 public class ParticipantJoinSpecification {
-    public static Predicate with(ParticipantJoinSearchPaginationOptionRequest participantJoinSearchPaginationOptionRequest) {
+    public static Predicate with(ParticipantJoinSearchPaginationOptionRequest participantJoinSearchPaginationOptionRequest, UUID hostId) {
         BooleanBuilder builder = new BooleanBuilder();
+
+        StringPath stringPath = Expressions.stringPath("tenant_id");
+        builder.and(stringPath.eq(String.valueOf(hostId)));
 
         if (participantJoinSearchPaginationOptionRequest.getCreatedStartAt() != null) {
             builder.and(QParticipantJoinEntity.participantJoinEntity.createdAt.goe(participantJoinSearchPaginationOptionRequest.getCreatedStartAt()));
@@ -33,12 +37,17 @@ public class ParticipantJoinSpecification {
         return builder;
     }
 
-    public static Predicate with(ParticipantJoinSearchPaginationOptionRequest participantJoinSearchPaginationOptionRequest, UUID applicationSessionId) {
+    public static Predicate with(ParticipantJoinSearchPaginationOptionRequest participantJoinSearchPaginationOptionRequest, UUID hostId, UUID applicationSessionId) {
         assert (applicationSessionId != null);
 
         BooleanBuilder builder = new BooleanBuilder();
 
-        builder.and(QParticipantJoinEntity.participantJoinEntity.applicationSessionId.eq(Expressions.constant(applicationSessionId.toString())));
+        StringPath tenantPath = Expressions.stringPath("tenant_id");
+        builder.and(tenantPath.eq(String.valueOf(hostId)));
+
+        StringPath applicationSessionPath = Expressions.stringPath("application_session_id");
+        builder.and(applicationSessionPath.eq(String.valueOf(applicationSessionId)));
+
 
         if (participantJoinSearchPaginationOptionRequest.getCreatedStartAt() != null) {
             builder.and(QParticipantJoinEntity.participantJoinEntity.createdAt.goe(participantJoinSearchPaginationOptionRequest.getCreatedStartAt()));

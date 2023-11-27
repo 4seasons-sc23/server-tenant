@@ -12,8 +12,8 @@ import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.dsl.Expressions;
 import org.springframework.stereotype.Component;
+import com.querydsl.core.types.dsl.StringPath;
 
-import java.util.List;
 import java.util.UUID;
 
 @Component
@@ -23,7 +23,8 @@ public class ApplicationSessionQueryBuilder extends DynamicQueryBuilder<Applicat
 
         BooleanBuilder builder = new BooleanBuilder();
 
-        builder.and(QApplicationSessionEntity.applicationSessionEntity.applicationId.eq(Expressions.constant(applicationId.toString())));
+        StringPath stringPath = Expressions.stringPath("application_id");
+        builder.and(stringPath.eq(String.valueOf(applicationId)));
 
         if (applicationSessionSearchPaginationOptionRequest.getCreatedStartAt() != null) {
             builder.and(QApplicationSessionEntity.applicationSessionEntity.createdAt.goe(applicationSessionSearchPaginationOptionRequest.getCreatedStartAt()));
