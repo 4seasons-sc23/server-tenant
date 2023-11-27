@@ -1,8 +1,13 @@
 package com.instream.tenant.domain.serviceError.service;
 
+import com.instream.tenant.domain.common.domain.dto.CollectionDto;
+import com.instream.tenant.domain.common.domain.dto.PaginationDto;
+import com.instream.tenant.domain.common.domain.dto.PaginationInfoDto;
+import com.instream.tenant.domain.common.domain.request.PaginationOptionRequest;
 import com.instream.tenant.domain.common.infra.enums.Status;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.serviceError.domain.dto.ServiceErrorDto;
+import com.instream.tenant.domain.serviceError.domain.entity.QServiceErrorEntity;
 import com.instream.tenant.domain.serviceError.domain.entity.ServiceErrorAnswerEntity;
 import com.instream.tenant.domain.serviceError.domain.entity.ServiceErrorEntity;
 import com.instream.tenant.domain.serviceError.domain.request.ServiceErrorCreateRequestDto;
@@ -15,10 +20,17 @@ import com.instream.tenant.domain.serviceError.infra.enums.IsAnswered;
 import com.instream.tenant.domain.serviceError.infra.enums.ServiceErrorErrorCode;
 import com.instream.tenant.domain.serviceError.repository.ServiceErrorAnswerRepository;
 import com.instream.tenant.domain.serviceError.repository.ServiceErrorRepository;
+import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.Predicate;
+import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.StringPath;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -36,10 +48,13 @@ public class ServiceErrorService {
     }
 
     public Mono<ServiceErrorDetailDto> getServiceErrorById(Long errorId) {
-        Mono<ServiceErrorEntity> errorEntityMono = serviceErrorRepository.findByErrorIdAndStatus(errorId, Status.USE)
-            .switchIfEmpty(Mono.error(new RestApiException(ServiceErrorErrorCode.SERVICE_ERROR_NOT_FOUND)));
+        Mono<ServiceErrorEntity> errorEntityMono = serviceErrorRepository.findByErrorIdAndStatus(
+                errorId, Status.USE)
+            .switchIfEmpty(
+                Mono.error(new RestApiException(ServiceErrorErrorCode.SERVICE_ERROR_NOT_FOUND)));
 
-        Mono<ServiceErrorAnswerEntity> answerEntityMono = serviceErrorAnswerRepository.findByErrorId(errorId)
+        Mono<ServiceErrorAnswerEntity> answerEntityMono = serviceErrorAnswerRepository.findByErrorId(
+                errorId)
             .switchIfEmpty(Mono.just(ServiceErrorAnswerEntity.builder().build()));
 
         return Mono.zip(errorEntityMono, answerEntityMono)
@@ -57,12 +72,13 @@ public class ServiceErrorService {
                     .createdAt(question.getCreatedAt())
                     .build();
 
-                ServiceErrorAnswerDto answerDto = IsAnswered.ANSWERED.equals(question.getIsAnswered()) ? null :
-                    ServiceErrorAnswerDto.builder()
-                        .content(answer.getContent())
-                        .status(answer.getStatus())
-                        .createdAt(answer.getCreatedAt())
-                        .build();
+                ServiceErrorAnswerDto answerDto =
+                    IsAnswered.ANSWERED.equals(question.getIsAnswered()) ? null :
+                        ServiceErrorAnswerDto.builder()
+                            .content(answer.getContent())
+                            .status(answer.getStatus())
+                            .createdAt(answer.getCreatedAt())
+                            .build();
 
                 return ServiceErrorDetailDto.builder()
                     .question(questionDto)
@@ -71,7 +87,8 @@ public class ServiceErrorService {
             });
     }
 
-    public Mono<ServiceErrorCreateResponseDto> postServiceError(ServiceErrorCreateRequestDto request) {
+    public Mono<ServiceErrorCreateResponseDto> postServiceError(
+        ServiceErrorCreateRequestDto request) {
         return serviceErrorRepository.save(
                 ServiceErrorEntity.builder()
                     .content(request.content())
@@ -89,11 +106,13 @@ public class ServiceErrorService {
             );
     }
 
-    public Mono<ServiceErrorCreateResponseDto> patchServiceError(Long errorId, ServiceErrorPatchRequestDto patchDto) {
+    public Mono<ServiceErrorCreateResponseDto> patchServiceError(Long errorId,
+        ServiceErrorPatchRequestDto patchDto) {
         return serviceErrorRepository.findByErrorIdAndStatus(errorId, Status.USE)
-            .switchIfEmpty(Mono.error(new RestApiException(ServiceErrorErrorCode.SERVICE_ERROR_NOT_FOUND)))
+            .switchIfEmpty(
+                Mono.error(new RestApiException(ServiceErrorErrorCode.SERVICE_ERROR_NOT_FOUND)))
             .flatMap(serviceError -> {
-                if(serviceError.getIsAnswered().equals(IsAnswered.ANSWERED)) {
+                if (serviceError.getIsAnswered().equals(IsAnswered.ANSWERED)) {
                     return Mono.error(
                         new RestApiException(ServiceErrorErrorCode.SERVICE_ERROR_CANNOT_MODIFY));
                 }
@@ -112,9 +131,10 @@ public class ServiceErrorService {
 
     public Mono<Void> deleteServiceError(Long errorId) {
         return serviceErrorRepository.findByErrorIdAndStatus(errorId, Status.USE)
-            .switchIfEmpty(Mono.error(new RestApiException(ServiceErrorErrorCode.SERVICE_ERROR_NOT_FOUND)))
+            .switchIfEmpty(
+                Mono.error(new RestApiException(ServiceErrorErrorCode.SERVICE_ERROR_NOT_FOUND)))
             .flatMap(serviceError -> {
-                if(serviceError.getIsAnswered().equals(IsAnswered.ANSWERED)) {
+                if (serviceError.getIsAnswered().equals(IsAnswered.ANSWERED)) {
                     return Mono.error(
                         new RestApiException(ServiceErrorErrorCode.SERVICE_ERROR_CANNOT_DELETE));
                 }
@@ -122,5 +142,60 @@ public class ServiceErrorService {
                 return serviceErrorRepository.save(serviceError);
             })
             .then();
+    }
+
+    public Mono<PaginationDto<CollectionDto<ServiceErrorQuestionDto>>> getServiceErrorsByHostId(UUID hostId,
+        PaginationOptionRequest paginationOptionRequest) {
+        StringPath tenantIdPath = Expressions.stringPath("tenant_id");
+        Pageable pageable = paginationOptionRequest.getPageable();
+        Predicate predicate = tenantIdPath.eq(hostId.toString());
+
+        Flux<ServiceErrorEntity> serviceErrorEntityFlux = serviceErrorRepository.query(sqlQuery -> sqlQuery
+            .select(QServiceErrorEntity.serviceErrorEntity)
+            .from(QServiceErrorEntity.serviceErrorEntity)
+            .where(predicate)
+            .orderBy(QServiceErrorEntity.serviceErrorEntity.createdAt.desc())
+            .limit(pageable.getPageSize())
+            .offset(pageable.getOffset())
+        ).all();
+
+        Flux<ServiceErrorQuestionDto> serviceErrorDtoFlux = serviceErrorEntityFlux
+            .doOnNext(serviceError -> {
+                System.out.println("Mapping ServiceErrorEntity to ServiceErrorQuestionDto: " + serviceError);
+            })
+            .flatMap(serviceError -> Mono.just(ServiceErrorQuestionDto.builder()
+                .errorId(serviceError.getErrorId())
+                .title(serviceError.getTitle())
+                .tenantId(serviceError.getTenantId())
+                .content(serviceError.getContent())
+                .isAnswered(serviceError.getIsAnswered())
+                .status(serviceError.getStatus())
+                .createdAt(serviceError.getCreatedAt())
+                .build()));
+
+        if(paginationOptionRequest.isFirstView()) {
+            return serviceErrorDtoFlux.collectList()
+                .flatMap(serviceErrorDtoList -> serviceErrorRepository
+                    .count(predicate)
+                    .flatMap(count -> {
+                        int totalElementCount = (int) Math.ceil((double) count / pageable.getPageSize());
+                        return Mono.just(PaginationInfoDto.<CollectionDto<ServiceErrorQuestionDto>>builder()
+                            .totalElementCount(totalElementCount)
+                            .pageCount(Math.toIntExact(count))
+                            .currentPage(paginationOptionRequest.getPage())
+                            .data(CollectionDto.<ServiceErrorQuestionDto>builder()
+                                .data(serviceErrorDtoList)
+                                .build())
+                            .build());
+                    }));
+        }
+
+        return serviceErrorDtoFlux.collectList()
+            .flatMap(serviceErrorDtoList -> Mono.just(PaginationDto.<CollectionDto<ServiceErrorQuestionDto>>builder()
+                .currentPage(paginationOptionRequest.getPageable().getPageNumber())
+                .data(CollectionDto.<ServiceErrorQuestionDto>builder()
+                    .data(serviceErrorDtoList)
+                    .build())
+                .build()));
     }
 }

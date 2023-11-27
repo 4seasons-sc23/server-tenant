@@ -3,7 +3,10 @@ package com.instream.tenant.domain.common.domain.request;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.instream.tenant.domain.common.infra.enums.SortOption;
+import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
+import com.instream.tenant.domain.error.model.exception.RestApiException;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
@@ -15,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import reactor.core.publisher.Mono;
 
 @Getter
 @AllArgsConstructor
@@ -37,14 +41,30 @@ public class PaginationOptionRequest {
         return PageRequest.of(page, size);
     }
 
+    public static Mono<? extends PaginationOptionRequest> fromQueryParams(MultiValueMap<String, String> queryParams) {
+        try {
+            int page = Integer.parseInt(Objects.requireNonNull(queryParams.getFirst("page")));
+            int size = Integer.parseInt(Objects.requireNonNull(queryParams.getFirst("size")));
+
+            if (page < 0 || size <= 0) {
+                throw new IllegalArgumentException();
+            }
+
+            boolean firstView = Boolean.parseBoolean(queryParams.getFirst("firstView"));
+            List<SortOptionRequest> sortOptionRequestList = getSortOptionRequestList(queryParams);
+            PaginationOptionRequest searchParams = new PaginationOptionRequest(page, size, sortOptionRequestList, firstView);
+
+            return Mono.just(searchParams);
+        } catch (Exception e) {
+            return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
+        }
+    }
+
+
     protected static List<SortOptionRequest> getSortOptionRequestList(MultiValueMap<String, String> queryParams) {
         List<SortOptionRequest> sortOptionRequestList = new ArrayList<>();
         List<String> sortNameList = queryParams.get("sort[name]");
         List<String> sortOptionList = queryParams.get("sort[option]");
-
-
-        System.out.println(sortNameList);
-        System.out.println(sortOptionList);
 
         if (!sortNameList.isEmpty() && !sortOptionList.isEmpty()) {
             if (sortNameList.size() != sortOptionList.size()) {
