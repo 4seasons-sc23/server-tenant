@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record ApplicationDto(
-        UUID applicationId,
+        UUID id,
 
         ApplicationType type,
 
