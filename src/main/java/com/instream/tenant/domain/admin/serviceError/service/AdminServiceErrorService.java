@@ -1,13 +1,12 @@
 package com.instream.tenant.domain.admin.serviceError.service;
 
 import com.instream.tenant.domain.admin.serviceError.domain.request.ServiceErrorAnswerRequestDto;
+import com.instream.tenant.domain.admin.serviceError.infra.enums.ServiceErrorAnswerErrorCode;
 import com.instream.tenant.domain.common.infra.enums.Status;
+import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.serviceError.domain.entity.ServiceErrorAnswerEntity;
-import com.instream.tenant.domain.serviceError.domain.entity.ServiceErrorEntity;
-import com.instream.tenant.domain.serviceError.domain.request.ServiceErrorCreateRequestDto;
 import com.instream.tenant.domain.serviceError.domain.response.ServiceErrorAnswerDto;
-import com.instream.tenant.domain.serviceError.domain.response.ServiceErrorCreateResponseDto;
-import com.instream.tenant.domain.serviceError.infra.enums.IsAnswered;
+import com.instream.tenant.domain.serviceError.infra.enums.ServiceErrorErrorCode;
 import com.instream.tenant.domain.serviceError.repository.ServiceErrorAnswerRepository;
 import com.instream.tenant.domain.serviceError.repository.ServiceErrorRepository;
 import org.springframework.stereotype.Service;
@@ -38,5 +37,25 @@ public class AdminServiceErrorService {
                 .createdAt(savedServiceError.getCreatedAt())
                 .build())
             );
+    }
+
+    public Mono<ServiceErrorAnswerDto> patchServiceErrorAnswer(
+        ServiceErrorAnswerRequestDto request, Long errorId) {
+        return serviceErrorRepository.findByErrorIdAndStatus(errorId, Status.USE)
+            .switchIfEmpty(
+                Mono.error(new RestApiException(ServiceErrorErrorCode.SERVICE_ERROR_NOT_FOUND)))
+            .flatMap(serviceError -> serviceErrorAnswerRepository.findByErrorId(serviceError.getErrorId())
+                .switchIfEmpty(Mono.error(
+                    new RestApiException(ServiceErrorAnswerErrorCode.SERVICE_ERROR_ANSWER_NOT_FOUND))
+                ))
+            .flatMap(serviceErrorAnswer -> {
+                serviceErrorAnswer.setContent(request.answerContent());
+                return serviceErrorAnswerRepository.save(serviceErrorAnswer)
+                    .flatMap(modifiedAnswer -> Mono.just(ServiceErrorAnswerDto.builder()
+                        .content(modifiedAnswer.getContent())
+                        .status(modifiedAnswer.getStatus())
+                        .createdAt(modifiedAnswer.getCreatedAt())
+                        .build()));
+            });
     }
 }

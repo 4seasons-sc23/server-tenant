@@ -24,6 +24,7 @@ public class AdminServiceErrorConfig {
         return route().nest(RequestPredicates.path("/v1/admins/errors"),
             builder -> {
                 builder.add(postServiceErrorAnswer(adminServiceErrorHandler));
+                builder.add(patchServiceErrorAnswer(adminServiceErrorHandler));
             },
             ops -> ops.operationId("919")
         ).build();
@@ -32,8 +33,22 @@ public class AdminServiceErrorConfig {
     private RouterFunction<ServerResponse> postServiceErrorAnswer(AdminServiceErrorHandler adminServiceErrorHandler) {
         return route()
             .POST(
-                "/{errorId}",
+                "/{errorId}/answer",
                 adminServiceErrorHandler::postServiceErrorAnswer,
+                ops->ops.operationId("919")
+                    .parameter(parameterBuilder().name("errorId").in(ParameterIn.PATH).required(true).example("1"))
+                    .requestBody(requestBodyBuilder().implementation(ServiceErrorAnswerRequestDto.class).required(true))
+                    .response(responseBuilder().responseCode(HttpStatus.CREATED.name()).implementation(
+                        ServiceErrorAnswerDto.class))
+            )
+            .build();
+    }
+
+    private RouterFunction<ServerResponse> patchServiceErrorAnswer(AdminServiceErrorHandler adminServiceErrorHandler) {
+        return route()
+            .PATCH(
+                "/{errorId}/answer",
+                adminServiceErrorHandler::patchServiceErrorAnswer,
                 ops->ops.operationId("919")
                     .parameter(parameterBuilder().name("errorId").in(ParameterIn.PATH).required(true).example("1"))
                     .requestBody(requestBodyBuilder().implementation(ServiceErrorAnswerRequestDto.class).required(true))
