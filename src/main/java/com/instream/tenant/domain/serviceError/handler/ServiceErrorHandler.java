@@ -1,11 +1,14 @@
 package com.instream.tenant.domain.serviceError.handler;
 
+import com.instream.tenant.domain.common.domain.request.PaginationOptionRequest;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
+import com.instream.tenant.domain.participant.domain.request.ParticipantJoinSearchPaginationOptionRequest;
 import com.instream.tenant.domain.serviceError.domain.request.ServiceErrorCreateRequestDto;
 import com.instream.tenant.domain.serviceError.domain.request.ServiceErrorPatchRequestDto;
 import com.instream.tenant.domain.serviceError.service.ServiceErrorService;
 import java.net.URI;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -35,8 +38,9 @@ public class ServiceErrorHandler {
         return request.bodyToMono(ServiceErrorCreateRequestDto.class)
             .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
             .flatMap(serviceErrorService::postServiceError)
-            .flatMap(serviceErrorDto -> ServerResponse.created(URI.create(String.format("/errors/%s", serviceErrorDto.errorId())))
-            .bodyValue(serviceErrorDto));
+            .flatMap(serviceErrorDto -> ServerResponse.created(
+                    URI.create(String.format("/errors/%s", serviceErrorDto.errorId())))
+                .bodyValue(serviceErrorDto));
     }
 
     public Mono<ServerResponse> patchServiceError(ServerRequest request) {
@@ -44,7 +48,8 @@ public class ServiceErrorHandler {
 
         return request.bodyToMono(ServiceErrorPatchRequestDto.class)
             .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
-            .flatMap(patchRequestDto -> serviceErrorService.patchServiceError(errorId, patchRequestDto))
+            .flatMap(
+                patchRequestDto -> serviceErrorService.patchServiceError(errorId, patchRequestDto))
             .flatMap(serviceError -> ServerResponse.ok().bodyValue(serviceError));
     }
 
@@ -52,5 +57,19 @@ public class ServiceErrorHandler {
         Long errorId = Long.valueOf(request.pathVariable("errorId"));
         return serviceErrorService.deleteServiceError(errorId)
             .then(ServerResponse.ok().build());
+    }
+
+    public Mono<ServerResponse> getServiceErrorsByHostId(ServerRequest request) {
+        UUID hostId;
+        try {
+            hostId = UUID.fromString(request.pathVariable("hostId"));
+        } catch (IllegalArgumentException illegalArgumentException) {
+            return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
+        }
+        return PaginationOptionRequest.fromQueryParams(request.queryParams())
+            .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
+            .flatMap(paginationRequest -> serviceErrorService.getServiceErrorsByHostId(hostId,
+                paginationRequest))
+            .flatMap(serviceErrorListDto -> ServerResponse.ok().bodyValue(serviceErrorListDto));
     }
 }
