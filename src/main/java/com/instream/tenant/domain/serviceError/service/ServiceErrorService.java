@@ -73,7 +73,7 @@ public class ServiceErrorService {
                     .build();
 
                 ServiceErrorAnswerDto answerDto =
-                    IsAnswered.ANSWERED.equals(question.getIsAnswered()) ? null :
+                    IsAnswered.NOT_ANSWERED.equals(question.getIsAnswered()) ? null :
                         ServiceErrorAnswerDto.builder()
                             .content(answer.getContent())
                             .status(answer.getStatus())
