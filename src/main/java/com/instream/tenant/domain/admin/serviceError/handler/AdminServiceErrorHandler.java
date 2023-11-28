@@ -21,7 +21,6 @@ public class AdminServiceErrorHandler {
 
     public Mono<ServerResponse> postServiceErrorAnswer(ServerRequest request) {
         Long errorId = Long.valueOf(request.pathVariable("errorId"));
-        // TODO 문의내역 존재하는지 확인하는 로직 추가
         // TODO 관리자인지 확인하는 로직 추가
 
         return request.bodyToMono(ServiceErrorAnswerRequestDto.class)
@@ -33,7 +32,6 @@ public class AdminServiceErrorHandler {
 
     public Mono<ServerResponse> patchServiceErrorAnswer(ServerRequest request) {
         Long errorId = Long.valueOf(request.pathVariable("errorId"));
-        // TODO 문의내역 존재하는지 확인하는 로직 추가
         // TODO 관리자인지 확인하는 로직 추가
 
         return request.bodyToMono(ServiceErrorAnswerRequestDto.class)
