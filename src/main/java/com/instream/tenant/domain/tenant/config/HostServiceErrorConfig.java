@@ -23,7 +23,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 @Configuration
 public class HostServiceErrorConfig {
     @Bean
-    public RouterFunction<ServerResponse> v1HostServiceErrorFunction(
+    public RouterFunction<ServerResponse> v1HostServiceErrorRoutes(
         ServiceErrorHandler serviceErrorHandler) {
         return route().nest(RequestPredicates.path("/v1/hosts/{hostId}/errors"),
             builder -> {
@@ -41,7 +41,7 @@ public class HostServiceErrorConfig {
                 ops -> ops.operationId("919")
                     .parameter(
                         parameterBuilder().name("hostId").in(ParameterIn.PATH).required(true)
-                            .example("1"))
+                            .example("14d38654-89cb-11ee-9aae-0242ac140002"))
                     .parameter(parameterBuilder().in(ParameterIn.QUERY).name("option")
                         .implementation(PaginationOptionRequest.class))
                     .response(responseBuilder().responseCode(HttpStatus.OK.name()).implementation(
