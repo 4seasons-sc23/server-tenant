@@ -80,7 +80,7 @@ public class OpenApiConfig {
                                                 new MediaType().schema(new Schema<>().$ref(schemaName))
                                         )
                                 );
-                        operation.responses(new ApiResponses()._default(apiResponse));
+                        operation.responses(new ApiResponses().addApiResponse("200", apiResponse));
                     }
                 });
     }
