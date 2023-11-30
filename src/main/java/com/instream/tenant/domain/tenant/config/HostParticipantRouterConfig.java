@@ -7,7 +7,6 @@ import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.infra.enums.HttpErrorCode;
 import com.instream.tenant.domain.participant.domain.dto.ParticipantJoinDto;
 import com.instream.tenant.domain.participant.domain.request.ParticipantJoinSearchPaginationOptionRequest;
-import com.instream.tenant.domain.participant.domain.request.SendMessageParticipantRequest;
 import com.instream.tenant.domain.participant.handler.ParticipantHandler;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import org.springdoc.core.fn.builders.operation.Builder;
@@ -54,26 +53,6 @@ public class HostParticipantRouterConfig extends RouterConfig {
                         "/histories/join",
                         participantHandler::searchParticipantJoinWithTenant,
                         this::buildSearchParticipantsSwagger
-                )
-                .build();
-    }
-
-    private RouterFunction<ServerResponse> sendMessage(ParticipantHandler participantHandler) {
-        return route()
-                .POST(
-                        "/message",
-                        participantHandler::sendMessage,
-                        ops -> ops.operationId("123")
-                                .parameter(parameterBuilder()
-                                        .name(InstreamHttpHeaders.API_KEY)
-                                        .description("API Key")
-                                        .in(ParameterIn.HEADER)
-                                        .required(true)
-                                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                                .parameter(parameterBuilder().name("hostId").in(ParameterIn.PATH).required(true).example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                                .parameter(parameterBuilder().name("participantId").in(ParameterIn.PATH).required(true).example("123abc"))
-                                .requestBody(requestBodyBuilder().implementation(SendMessageParticipantRequest.class).required(true))
-                                .response(responseBuilder().responseCode(HttpStatus.OK.name()).implementation(ParticipantJoinDto.class))
                 )
                 .build();
     }

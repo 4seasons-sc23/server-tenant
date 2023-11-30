@@ -1,8 +1,8 @@
 package com.instream.tenant.domain.billing.handler;
 
-import com.instream.tenant.domain.application.domain.request.CreateApplicationRequest;
 import com.instream.tenant.domain.billing.domain.request.BillingSearchPaginationOptionRequest;
 import com.instream.tenant.domain.billing.domain.request.CreateBillingRequest;
+import com.instream.tenant.domain.billing.domain.request.CreateMinioBillingRequest;
 import com.instream.tenant.domain.billing.service.BillingService;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
@@ -56,13 +56,17 @@ public class BillingHandler {
     }
 
     public Mono<ServerResponse> createBilling(ServerRequest request) {
-        return request.bodyToMono(String.class)
-                .flatMap(s -> {
-                    log.info("createBilling request body {}", s);
-                    return Mono.just(s);
-                })
-                .then(request.bodyToMono(CreateBillingRequest.class))
+        return request.bodyToMono(CreateBillingRequest.class)
                 .flatMap(billingService::createBilling)
-                .flatMap(billingDto -> ServerResponse.ok().bodyValue(billingDto));
+                .then(ServerResponse.ok().build());
+    }
+
+    public Mono<ServerResponse> createMinioBilling(ServerRequest request) {
+        return request.bodyToMono(CreateMinioBillingRequest.class)
+                .flatMap(createMinioBillingRequest -> {
+                    String[] paths = createMinioBillingRequest.getKey().split("/", 3);
+                    return billingService.createMinioBilling(UUID.fromString(paths[1]));
+                })
+                .then(ServerResponse.ok().build());
     }
 }

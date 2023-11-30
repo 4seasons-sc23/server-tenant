@@ -1,9 +1,6 @@
 package com.instream.tenant.domain.billing.service;
 
 import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
-import com.instream.tenant.domain.application.domain.dto.ApplicationSessionDto;
-import com.instream.tenant.domain.application.domain.dto.QApplicationDto;
-import com.instream.tenant.domain.application.domain.dto.QApplicationSessionDto;
 import com.instream.tenant.domain.application.domain.entity.ApplicationEntity;
 import com.instream.tenant.domain.application.domain.entity.ApplicationSessionEntity;
 import com.instream.tenant.domain.application.domain.entity.QApplicationEntity;
@@ -17,7 +14,6 @@ import com.instream.tenant.domain.application.model.queryBuilder.ApplicationSess
 import com.instream.tenant.domain.application.repository.ApplicationRepository;
 import com.instream.tenant.domain.application.repository.ApplicationSessionRepository;
 import com.instream.tenant.domain.billing.domain.dto.BillingDto;
-import com.instream.tenant.domain.billing.domain.dto.QBillingDto;
 import com.instream.tenant.domain.billing.domain.entity.BillingEntity;
 import com.instream.tenant.domain.billing.domain.entity.QBillingEntity;
 import com.instream.tenant.domain.billing.domain.request.BillingSearchPaginationOptionRequest;
@@ -31,7 +27,6 @@ import com.instream.tenant.domain.common.domain.dto.PaginationInfoDto;
 import com.instream.tenant.domain.common.infra.enums.Status;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.Tuple;
 import com.querydsl.core.types.*;
 import com.querydsl.core.types.dsl.Expressions;
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +43,9 @@ import java.util.UUID;
 @Service
 @Slf4j
 public class BillingService {
+    private final double MINIO_BILLING_RATIO = 0.00005;
+
+    private final double CHAT_BILLING_RATIO = 0.001;
     private final BillingRepository billingRepository;
 
     private final ApplicationRepository applicationRepository;
@@ -151,12 +149,18 @@ public class BillingService {
         return Mono.empty();
     }
 
-    public Mono<BillingDto> createBilling(CreateBillingRequest createBillingRequest) {
+    public Mono<Void> createBilling(CreateBillingRequest createBillingRequest) {
         return applicationSessionRepository.findById(createBillingRequest.sessionId())
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationSessionErrorCode.APPLICATION_SESSION_NOT_FOUND)))
-                .flatMap(applicationSession -> saveBilling(createBillingRequest, applicationSession))
-                .then(billingRepository.findByApplicationSessionId(createBillingRequest.sessionId()))
-                .flatMap(billing -> Mono.just(BillingMapper.INSTANCE.billingAndApplicationToDto(billing, null)));
+                .flatMap(applicationSession -> saveBilling(applicationSession, createBillingRequest.count() * CHAT_BILLING_RATIO))
+                .then();
+    }
+
+    public Mono<Void> createMinioBilling(UUID sessionId) {
+        return applicationSessionRepository.findById(sessionId)
+                .switchIfEmpty(Mono.error(new RestApiException(ApplicationSessionErrorCode.APPLICATION_SESSION_NOT_FOUND)))
+                .flatMap(applicationSession -> saveBilling(applicationSession, MINIO_BILLING_RATIO))
+                .then();
     }
 
     private BooleanBuilder getApplicationSessionPredicate(BillingSearchPaginationOptionRequest billingSearchPaginationOptionRequest) {
@@ -189,17 +193,17 @@ public class BillingService {
     }
 
     @NotNull
-    private Mono<BillingEntity> saveBilling(CreateBillingRequest createBillingRequest, ApplicationSessionEntity applicationSession) {
+    private Mono<BillingEntity> saveBilling(ApplicationSessionEntity applicationSession, double cost) {
         Status billingStatus = applicationSession.isDeleted() ? Status.USE : Status.FORCE_STOPPED;
-        return billingRepository.findByApplicationSessionId(createBillingRequest.sessionId())
+        return billingRepository.findByApplicationSessionId(applicationSession.getId())
                 .switchIfEmpty(billingRepository.save(BillingEntity.builder()
-                        .applicationSessionId(createBillingRequest.sessionId())
+                        .applicationSessionId(applicationSession.getId())
                         .status(billingStatus)
-                        .cost(createBillingRequest.cost())
+                        .cost(cost)
                         .build()))
                 .flatMap(billing -> {
                     billing.setStatus(billingStatus);
-                    billing.setCost(billing.getCost() + createBillingRequest.cost());
+                    billing.setCost(billing.getCost() + cost);
                     return billingRepository.save(billing);
                 });
     }
