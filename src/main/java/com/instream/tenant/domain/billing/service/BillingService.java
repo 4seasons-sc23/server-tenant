@@ -199,7 +199,7 @@ public class BillingService {
                         .build()))
                 .flatMap(billing -> {
                     billing.setStatus(billingStatus);
-                    billing.setCost(createBillingRequest.cost());
+                    billing.setCost(billing.getCost() + createBillingRequest.cost());
                     return billingRepository.save(billing);
                 });
     }

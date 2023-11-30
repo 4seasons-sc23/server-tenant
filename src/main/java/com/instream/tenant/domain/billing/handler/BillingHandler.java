@@ -6,6 +6,7 @@ import com.instream.tenant.domain.billing.domain.request.CreateBillingRequest;
 import com.instream.tenant.domain.billing.service.BillingService;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -15,6 +16,7 @@ import reactor.core.publisher.Mono;
 import java.util.UUID;
 
 @Component
+@Slf4j
 public class BillingHandler {
     private final BillingService billingService;
 
@@ -54,6 +56,7 @@ public class BillingHandler {
     }
 
     public Mono<ServerResponse> createBilling(ServerRequest request) {
+        log.info("createBilling request body {}", request.bodyToMono(String.class).block());
         return request.bodyToMono(CreateBillingRequest.class)
                 .flatMap(billingService::createBilling)
                 .flatMap(billingDto -> ServerResponse.ok().bodyValue(billingDto));

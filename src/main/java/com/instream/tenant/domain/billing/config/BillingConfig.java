@@ -48,7 +48,7 @@ public class BillingConfig extends RouterConfig {
 
     private RouterFunction<ServerResponse> createBilling(BillingHandler billingHandler) {
         return route()
-                .PUT(
+                .POST(
                         "",
                         billingHandler::createBilling,
                         this::buildCreateBillingSwagger
