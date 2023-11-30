@@ -5,10 +5,12 @@ import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 import static org.springdoc.webflux.core.fn.SpringdocRouteBuilder.route;
 
+import com.instream.tenant.domain.common.domain.request.PaginationOptionRequest;
 import com.instream.tenant.domain.participant.domain.dto.ParticipantJoinDto;
 import com.instream.tenant.domain.serviceError.domain.request.ServiceErrorCreateRequestDto;
 import com.instream.tenant.domain.serviceError.domain.response.ServiceErrorCreateResponseDto;
 import com.instream.tenant.domain.serviceError.domain.response.ServiceErrorDetailDto;
+import com.instream.tenant.domain.serviceError.domain.response.ServiceErrorQuestionDto;
 import com.instream.tenant.domain.serviceError.handler.ServiceErrorHandler;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import org.springframework.context.annotation.Bean;
@@ -35,13 +37,15 @@ public class HostServiceErrorConfig {
         return route()
             .GET(
                 "",
-                serviceErrorHandler::getServiceError,
+                serviceErrorHandler::getServiceErrorsByHostId,
                 ops -> ops.operationId("919")
                     .parameter(
                         parameterBuilder().name("hostId").in(ParameterIn.PATH).required(true)
                             .example("1"))
+                    .parameter(parameterBuilder().in(ParameterIn.QUERY).name("option")
+                        .implementation(PaginationOptionRequest.class))
                     .response(responseBuilder().responseCode(HttpStatus.OK.name()).implementation(
-                        ServiceErrorDetailDto.class))
+                        ServiceErrorQuestionDto.class))
             )
             .build();
     }
