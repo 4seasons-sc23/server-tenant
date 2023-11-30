@@ -130,11 +130,11 @@ public class ParticipantService {
         if (participantJoinSearchPaginationOptionRequest.isFirstView()) {
             return participantJoinDtoFlux.collectList()
                     .flatMap(participantJoinDtoList -> participantJoinRepository.count(predicate)
-                            .flatMap(count -> {
-                                int totalElementCount = (int) Math.ceil((double) count / pageable.getPageSize());
+                            .flatMap(totalElementCount -> {
+                                long pageCount = (long) Math.ceil((double) totalElementCount / pageable.getPageSize());
                                 return Mono.just(PaginationInfoDto.<CollectionDto<ParticipantJoinDto>>builder()
                                         .totalElementCount(totalElementCount)
-                                        .pageCount(count)
+                                        .pageCount(pageCount)
                                         .currentPage(participantJoinSearchPaginationOptionRequest.getPageable().getPageNumber())
                                         .data(CollectionDto.<ParticipantJoinDto>builder()
                                                 .data(participantJoinDtoList)

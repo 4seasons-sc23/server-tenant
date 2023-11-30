@@ -1,9 +1,6 @@
 package com.instream.tenant.domain.tenant.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.instream.tenant.domain.application.domain.dto.ApplicationWithApiKeyDto;
-import com.instream.tenant.domain.application.domain.request.ApplicationCreateRequest;
-import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.handler.ApplicationHandler;
 import com.instream.tenant.domain.common.config.RouterConfig;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
@@ -25,7 +22,6 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;

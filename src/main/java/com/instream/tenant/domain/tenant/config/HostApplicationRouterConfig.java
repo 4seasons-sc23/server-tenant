@@ -2,13 +2,12 @@ package com.instream.tenant.domain.tenant.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.instream.tenant.domain.application.domain.dto.ApplicationWithApiKeyDto;
-import com.instream.tenant.domain.application.domain.request.ApplicationCreateRequest;
+import com.instream.tenant.domain.application.domain.request.CreateApplicationRequest;
 import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.handler.ApplicationHandler;
 import com.instream.tenant.domain.common.config.RouterConfig;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.infra.enums.HttpErrorCode;
-import com.instream.tenant.domain.tenant.handler.HostHandler;
 import com.instream.tenant.domain.tenant.infra.enums.TenantErrorCode;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import org.springdoc.core.fn.builders.operation.Builder;
@@ -120,7 +119,7 @@ public class HostApplicationRouterConfig extends RouterConfig {
                         .in(ParameterIn.PATH)
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                .requestBody(requestBodyBuilder().implementation(ApplicationCreateRequest.class))
+                .requestBody(requestBodyBuilder().implementation(CreateApplicationRequest.class))
                 .response(responseBuilder().responseCode("201").implementation(ApplicationWithApiKeyDto.class));
     }
 }

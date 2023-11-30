@@ -1,6 +1,9 @@
 package com.instream.tenant.domain.tenant.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.instream.tenant.domain.application.domain.dto.ApplicationWithApiKeyDto;
+import com.instream.tenant.domain.billing.domain.dto.BillingDto;
+import com.instream.tenant.domain.billing.domain.request.BillingSearchPaginationOptionRequest;
 import com.instream.tenant.domain.billing.handler.BillingHandler;
 import com.instream.tenant.domain.common.config.RouterConfig;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
@@ -79,7 +82,7 @@ public class HostBillingRouterConfig extends RouterConfig {
 
         buildHttpErrorResponse(ops, httpErrorCodeList);
 
-        ops.operationId("searchBilling")
+        ops.operationId(String.format("pagination_%s", BillingDto.class.getSimpleName()))
                 .tag(v1HostBillingRoutesTag)
                 .summary("Tenant 사용량 내역 검색 API")
                 .description("""
@@ -95,12 +98,9 @@ public class HostBillingRouterConfig extends RouterConfig {
                                                 
                         추가적인 옵션을 원할 경우 백엔드 팀한테 문의해주세요!
                         """)
-                .parameter(parameterBuilder()
-                        .name("hostId")
-                        .in(ParameterIn.PATH)
-                        .required(true)
-                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                .response(responseBuilder().responseCode("200").implementation(TenantDto.class));
+                .parameter(parameterBuilder().name("hostId").in(ParameterIn.PATH).required(true).example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                .parameter(parameterBuilder().name("option").in(ParameterIn.QUERY).required(true).implementation(BillingSearchPaginationOptionRequest.class))
+                .response(responseBuilder().responseCode("200").implementation(BillingDto.class));
     }
 
     private void buildGetBillingInfoSwagger(Builder ops) {
@@ -119,16 +119,8 @@ public class HostBillingRouterConfig extends RouterConfig {
                 .description("""
                         사용량 상세 내역 정보를 가져옵니다.
                         """)
-                .parameter(parameterBuilder()
-                        .name("hostId")
-                        .in(ParameterIn.PATH)
-                        .required(true)
-                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                .parameter(parameterBuilder()
-                        .name("billingId")
-                        .in(ParameterIn.PATH)
-                        .required(true)
-                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                .response(responseBuilder().implementation(TenantDto.class));
+                .parameter(parameterBuilder().name("hostId").in(ParameterIn.PATH).required(true).example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                .parameter(parameterBuilder().name("billingId").in(ParameterIn.PATH).required(true).example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                .response(responseBuilder().implementation(BillingDto.class));
     }
 }

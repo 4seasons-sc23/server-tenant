@@ -17,7 +17,7 @@ import com.instream.tenant.domain.application.model.queryBuilder.ApplicationQuer
 import com.instream.tenant.domain.application.repository.ApplicationRepository;
 import com.instream.tenant.domain.application.domain.dto.ApplicationWithApiKeyDto;
 import com.instream.tenant.domain.application.domain.entity.ApplicationEntity;
-import com.instream.tenant.domain.application.domain.request.ApplicationCreateRequest;
+import com.instream.tenant.domain.application.domain.request.CreateApplicationRequest;
 import com.instream.tenant.domain.application.repository.ApplicationSessionRepository;
 import com.instream.tenant.domain.common.domain.dto.*;
 import com.instream.tenant.domain.common.infra.enums.Status;
@@ -27,6 +27,7 @@ import com.instream.tenant.domain.participant.repository.ParticipantJoinReposito
 import com.instream.tenant.domain.redis.model.factory.ReactiveRedisTemplateFactory;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Predicate;
+import com.querydsl.core.types.dsl.Expressions;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,12 +68,12 @@ public class ApplicationService {
 
     public Mono<PaginationDto<CollectionDto<ApplicationWithApiKeyDto>>> search(ApplicationSearchPaginationOptionRequest applicationSearchPaginationOptionRequest, UUID hostId) {
         Pageable pageable = applicationSearchPaginationOptionRequest.getPageable();
-        Predicate predicate = applicationQueryBuilder.getPredicate(applicationSearchPaginationOptionRequest, hostId);
+        Predicate predicate = applicationQueryBuilder.getPredicate(applicationSearchPaginationOptionRequest);
         OrderSpecifier[] orderSpecifierArray = applicationQueryBuilder.getOrderSpecifier(applicationSearchPaginationOptionRequest);
         Flux<ApplicationEntity> applicationFlux = applicationRepository.query(sqlQuery -> sqlQuery
                 .select(QApplicationEntity.applicationEntity)
                 .from(QApplicationEntity.applicationEntity)
-                .where(predicate)
+                .where(predicate, QApplicationEntity.applicationEntity.tenantId.eq(Expressions.constant(hostId.toString())))
                 .orderBy(orderSpecifierArray)
                 .limit(pageable.getPageSize())
                 .offset(pageable.getOffset())
@@ -87,11 +88,11 @@ public class ApplicationService {
         if (applicationSearchPaginationOptionRequest.isFirstView()) {
             return applicationDtoFlux.collectList()
                     .flatMap(applicationDtoList -> applicationRepository.count(predicate)
-                            .flatMap(count -> {
-                                int totalElementCount = (int) Math.ceil((double) count / pageable.getPageSize());
+                            .flatMap(totalElementCount -> {
+                                long pageCount = (long) Math.ceil((double) totalElementCount / pageable.getPageSize());
                                 return Mono.just(PaginationInfoDto.<CollectionDto<ApplicationWithApiKeyDto>>builder()
                                         .totalElementCount(totalElementCount)
-                                        .pageCount(count)
+                                        .pageCount(pageCount)
                                         .currentPage(applicationSearchPaginationOptionRequest.getPage())
                                         .data(CollectionDto.<ApplicationWithApiKeyDto>builder()
                                                 .data(applicationDtoList)
@@ -109,7 +110,7 @@ public class ApplicationService {
                         .build()));
     }
 
-    public Mono<ApplicationWithApiKeyDto> createApplication(ApplicationCreateRequest applicationCreateRequest, UUID hostId) {
+    public Mono<ApplicationWithApiKeyDto> createApplication(CreateApplicationRequest createApplicationRequest, UUID hostId) {
         String apiKey = UUID.randomUUID().toString();
         Function<ApplicationEntity, Mono<ApplicationEntity>> cachingRedis = application -> redisTemplate.opsForValue()
                 .set(String.valueOf(application.genRedisKey()), application)
@@ -126,7 +127,7 @@ public class ApplicationService {
         return applicationRepository.save(ApplicationEntity.builder()
                         .tenantId(hostId)
                         .apiKey(apiKey)
-                        .type(applicationCreateRequest.type())
+                        .type(createApplicationRequest.type())
                         .status(Status.PENDING)
                         .build())
                 .flatMap(cachingRedis)
@@ -156,14 +157,14 @@ public class ApplicationService {
 
     public Mono<PaginationDto<CollectionDto<ApplicationSessionDto>>> searchSessions(ApplicationSessionSearchPaginationOptionRequest applicationSessionSearchPaginationOptionRequest, UUID applicationId) {
         Pageable pageable = applicationSessionSearchPaginationOptionRequest.getPageable();
-        Predicate predicate = applicationSessionQueryBuilder.getPredicate(applicationSessionSearchPaginationOptionRequest, applicationId);
+        Predicate predicate = applicationSessionQueryBuilder.getPredicate(applicationSessionSearchPaginationOptionRequest);
         OrderSpecifier[] orderSpecifierArray = applicationSessionQueryBuilder.getOrderSpecifier(applicationSessionSearchPaginationOptionRequest);
 
         // TODO: 체인 하나로 묶기
         Flux<ApplicationSessionEntity> applicationSessionFlux = applicationSessionRepository.query(sqlQuery -> sqlQuery
                 .select(QApplicationSessionEntity.applicationSessionEntity)
                 .from(QApplicationSessionEntity.applicationSessionEntity)
-                .where(predicate)
+                .where(predicate, QApplicationSessionEntity.applicationSessionEntity.applicationId.eq(Expressions.constant(applicationId)))
                 .orderBy(orderSpecifierArray)
                 .limit(pageable.getPageSize())
                 .offset(pageable.getOffset())
@@ -175,11 +176,11 @@ public class ApplicationService {
         if (applicationSessionSearchPaginationOptionRequest.isFirstView()) {
             return applicationSessionDtoFlux.collectList()
                     .flatMap(applicationSessionDtoList -> applicationSessionRepository.count(predicate)
-                            .flatMap(count -> {
-                                int totalElementCount = (int) Math.ceil((double) count / pageable.getPageSize());
+                            .flatMap(totalElementCount -> {
+                                long pageCount = (long) Math.ceil((double) totalElementCount / pageable.getPageSize());
                                 return Mono.just(PaginationInfoDto.<CollectionDto<ApplicationSessionDto>>builder()
                                         .totalElementCount(totalElementCount)
-                                        .pageCount(count)
+                                        .pageCount(pageCount)
                                         .currentPage(applicationSessionSearchPaginationOptionRequest.getPage())
                                         .data(CollectionDto.<ApplicationSessionDto>builder()
                                                 .data(applicationSessionDtoList)

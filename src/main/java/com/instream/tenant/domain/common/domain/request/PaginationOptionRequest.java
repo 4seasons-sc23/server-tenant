@@ -5,12 +5,16 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.instream.tenant.domain.common.infra.enums.SortOption;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.util.MultiValueMap;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,6 +23,7 @@ import java.util.stream.IntStream;
 @Getter
 @AllArgsConstructor
 @ToString
+@SuperBuilder
 public class PaginationOptionRequest {
     @Schema(description = "현재 페이지")
     private final int page;
@@ -42,10 +47,9 @@ public class PaginationOptionRequest {
         List<String> sortNameList = queryParams.get("sort[name]");
         List<String> sortOptionList = queryParams.get("sort[option]");
 
-
-        System.out.println(sortNameList);
-        System.out.println(sortOptionList);
-
+        if (sortNameList == null || sortOptionList == null ){
+            return sortOptionRequestList;
+        }
         if (!sortNameList.isEmpty() && !sortOptionList.isEmpty()) {
             if (sortNameList.size() != sortOptionList.size()) {
                 throw new IllegalArgumentException();
@@ -55,6 +59,14 @@ public class PaginationOptionRequest {
                     .mapToObj(index -> new SortOptionRequest(sortNameList.get(index), SortOption.fromCode(sortOptionList.get(index))))
                     .collect(Collectors.toList());
         }
+
         return sortOptionRequestList;
+    }
+
+    protected static LocalDateTime parseDateTime(String dateTimeStr) {
+        if (dateTimeStr == null || dateTimeStr.isEmpty()) {
+            return null;
+        }
+        return LocalDateTime.parse(dateTimeStr, DateTimeFormatter.ISO_DATE_TIME);
     }
 }

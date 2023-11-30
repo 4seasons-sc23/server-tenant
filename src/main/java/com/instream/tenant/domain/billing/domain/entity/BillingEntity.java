@@ -1,6 +1,5 @@
 package com.instream.tenant.domain.billing.domain.entity;
 
-import com.instream.tenant.domain.application.infra.enums.ApplicationType;
 import com.instream.tenant.domain.common.infra.enums.Status;
 import lombok.*;
 import org.springframework.data.annotation.Id;
@@ -19,10 +18,10 @@ import java.util.UUID;
 @ToString
 public class BillingEntity {
     @Id
-    @Column(value = "application_id")
+    @Column(value = "billing_id")
     private UUID id;
 
-    private UUID sessionId;
+    private UUID applicationSessionId;
 
     private Status status;
 

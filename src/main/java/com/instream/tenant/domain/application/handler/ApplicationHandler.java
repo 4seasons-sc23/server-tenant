@@ -1,10 +1,10 @@
 package com.instream.tenant.domain.application.handler;
 
-import com.instream.tenant.domain.application.domain.request.ApplicationCreateRequest;
+import com.instream.tenant.domain.application.domain.request.CreateApplicationRequest;
 import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.service.ApplicationService;
-import com.instream.tenant.domain.common.infra.model.HandlerHelper;
+import com.instream.tenant.domain.common.infra.helper.HandlerHelper;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,7 +50,7 @@ public class ApplicationHandler {
             return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
         }
 
-        return request.bodyToMono(ApplicationCreateRequest.class)
+        return request.bodyToMono(CreateApplicationRequest.class)
                 .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
                 .flatMap((applicationCreateRequest -> applicationService.createApplication(applicationCreateRequest, hostId)))
                 .flatMap(applicationDto -> ServerResponse.created(URI.create(String.format("/%s/info", applicationDto.id())))

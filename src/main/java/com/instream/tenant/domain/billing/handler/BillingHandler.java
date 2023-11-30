@@ -1,11 +1,11 @@
 package com.instream.tenant.domain.billing.handler;
 
-import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
+import com.instream.tenant.domain.application.domain.request.CreateApplicationRequest;
 import com.instream.tenant.domain.billing.domain.request.BillingSearchPaginationOptionRequest;
+import com.instream.tenant.domain.billing.domain.request.CreateBillingRequest;
 import com.instream.tenant.domain.billing.service.BillingService;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
-import com.instream.tenant.domain.tenant.domain.request.TenantSignInRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -50,6 +50,12 @@ public class BillingHandler {
         }
 
         return billingService.getBillingInfo(hostId, billingId)
+                .flatMap(billingDto -> ServerResponse.ok().bodyValue(billingDto));
+    }
+
+    public Mono<ServerResponse> createBilling(ServerRequest request) {
+        return request.bodyToMono(CreateBillingRequest.class)
+                .flatMap(billingService::createBilling)
                 .flatMap(billingDto -> ServerResponse.ok().bodyValue(billingDto));
     }
 }

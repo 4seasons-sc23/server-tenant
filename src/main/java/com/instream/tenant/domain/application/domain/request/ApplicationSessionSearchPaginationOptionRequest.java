@@ -8,6 +8,7 @@ import com.instream.tenant.domain.error.model.exception.RestApiException;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.util.MultiValueMap;
@@ -22,6 +23,7 @@ import java.util.Objects;
 
 @Getter
 @ToString(callSuper = true)
+@SuperBuilder
 public class ApplicationSessionSearchPaginationOptionRequest extends PaginationOptionRequest {
     @Schema(description = "생성 날짜 기준 조회 시작 날짜")
     private final LocalDateTime createdStartAt;
@@ -66,12 +68,5 @@ public class ApplicationSessionSearchPaginationOptionRequest extends PaginationO
         } catch (Exception e) {
             return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
         }
-    }
-
-    private static LocalDateTime parseDateTime(String dateTimeStr) {
-        if (dateTimeStr == null || dateTimeStr.isEmpty()) {
-            return null;
-        }
-        return LocalDateTime.parse(dateTimeStr, DateTimeFormatter.ISO_DATE_TIME);
     }
 }

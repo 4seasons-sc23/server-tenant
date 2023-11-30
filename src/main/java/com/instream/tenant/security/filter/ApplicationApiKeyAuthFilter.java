@@ -2,7 +2,7 @@ package com.instream.tenant.security.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.instream.tenant.domain.application.repository.ApplicationRepository;
-import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
+import com.instream.tenant.domain.common.model.InstreamHttpHeaders;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
