@@ -15,13 +15,8 @@ import java.util.UUID;
 
 @Component
 public class ApplicationSessionQueryBuilder extends DynamicQueryBuilder<ApplicationSessionEntity> {
-    public Predicate getPredicate(ApplicationSessionSearchPaginationOptionRequest applicationSessionSearchPaginationOptionRequest, UUID applicationId) {
-        assert (applicationId != null);
-
+    public BooleanBuilder getPredicate(ApplicationSessionSearchPaginationOptionRequest applicationSessionSearchPaginationOptionRequest) {
         BooleanBuilder builder = new BooleanBuilder();
-
-        StringPath stringPath = Expressions.stringPath("application_id");
-        builder.and(stringPath.eq(String.valueOf(applicationId)));
 
         if (applicationSessionSearchPaginationOptionRequest.getCreatedStartAt() != null) {
             builder.and(QApplicationSessionEntity.applicationSessionEntity.createdAt.goe(applicationSessionSearchPaginationOptionRequest.getCreatedStartAt()));

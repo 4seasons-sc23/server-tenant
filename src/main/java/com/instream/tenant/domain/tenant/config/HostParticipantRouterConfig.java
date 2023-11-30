@@ -1,14 +1,11 @@
 package com.instream.tenant.domain.tenant.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
 import com.instream.tenant.domain.common.config.RouterConfig;
-import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
+import com.instream.tenant.domain.common.model.InstreamHttpHeaders;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.infra.enums.HttpErrorCode;
 import com.instream.tenant.domain.participant.domain.dto.ParticipantJoinDto;
-import com.instream.tenant.domain.participant.domain.request.EnterToApplicationParticipantRequest;
-import com.instream.tenant.domain.participant.domain.request.LeaveFromApplicationParticipantRequest;
 import com.instream.tenant.domain.participant.domain.request.ParticipantJoinSearchPaginationOptionRequest;
 import com.instream.tenant.domain.participant.domain.request.SendMessageParticipantRequest;
 import com.instream.tenant.domain.participant.handler.ParticipantHandler;
@@ -107,7 +104,7 @@ public class HostParticipantRouterConfig extends RouterConfig {
                         """)
                 .tag(v1HostParticipantRoutesTag)
                 .parameter(parameterBuilder()
-                        .name("tenantId")
+                        .name("hostId")
                         .in(ParameterIn.PATH)
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))

@@ -1,4 +1,4 @@
-package com.instream.tenant.domain.common.infra.model;
+package com.instream.tenant.domain.common.model;
 
 import org.springframework.http.HttpHeaders;
 

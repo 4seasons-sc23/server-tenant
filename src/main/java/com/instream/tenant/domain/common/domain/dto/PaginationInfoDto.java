@@ -15,5 +15,5 @@ public class PaginationInfoDto<T extends CollectionDto> extends PaginationDto<T>
 
     @Schema(description = "총 개수, 0부터 시작")
     @Min(value = 0)
-    int totalElementCount;
+    long totalElementCount;
 }

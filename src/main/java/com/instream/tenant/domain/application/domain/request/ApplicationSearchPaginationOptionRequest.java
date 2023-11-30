@@ -11,6 +11,7 @@ import com.instream.tenant.domain.error.model.exception.RestApiException;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.MultiValueMap;
 import reactor.core.publisher.Mono;
@@ -23,6 +24,7 @@ import java.util.stream.IntStream;
 
 @Getter
 @ToString(callSuper = true)
+@SuperBuilder
 public class ApplicationSearchPaginationOptionRequest extends PaginationOptionRequest {
     @Schema(description = "어플리케이션 종류")
     private final ApplicationType type;
@@ -69,12 +71,5 @@ public class ApplicationSearchPaginationOptionRequest extends PaginationOptionRe
         } catch (Exception e) {
             return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
         }
-    }
-
-    private static LocalDateTime parseDateTime(String dateTimeStr) {
-        if (dateTimeStr == null || dateTimeStr.isEmpty()) {
-            return null;
-        }
-        return LocalDateTime.parse(dateTimeStr, DateTimeFormatter.ISO_DATE_TIME);
     }
 }

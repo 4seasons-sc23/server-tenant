@@ -11,7 +11,7 @@ import com.instream.tenant.domain.application.domain.dto.ApplicationSessionDto;
 import com.instream.tenant.domain.application.domain.request.NginxRtmpStreamEvent;
 import com.instream.tenant.domain.application.infra.enums.ApplicationErrorCode;
 import com.instream.tenant.domain.common.config.RouterConfig;
-import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
+import com.instream.tenant.domain.common.model.InstreamHttpHeaders;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.infra.enums.HttpErrorCode;
 import com.instream.tenant.domain.media.domain.request.MediaUploadRequest;
