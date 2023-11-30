@@ -56,8 +56,12 @@ public class BillingHandler {
     }
 
     public Mono<ServerResponse> createBilling(ServerRequest request) {
-        log.info("createBilling request body {}", request.bodyToMono(String.class).block());
-        return request.bodyToMono(CreateBillingRequest.class)
+        return request.bodyToMono(String.class)
+                .flatMap(s -> {
+                    log.info("createBilling request body {}", s);
+                    return Mono.just(s);
+                })
+                .then(request.bodyToMono(CreateBillingRequest.class))
                 .flatMap(billingService::createBilling)
                 .flatMap(billingDto -> ServerResponse.ok().bodyValue(billingDto));
     }
