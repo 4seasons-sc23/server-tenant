@@ -14,6 +14,7 @@ import com.instream.tenant.domain.application.infra.enums.ApplicationSessionErro
 import com.instream.tenant.domain.application.infra.mapper.ApplicationMapper;
 import com.instream.tenant.domain.application.model.queryBuilder.ApplicationQueryBuilder;
 import com.instream.tenant.domain.application.model.queryBuilder.ApplicationSessionQueryBuilder;
+import com.instream.tenant.domain.application.repository.ApplicationRepository;
 import com.instream.tenant.domain.application.repository.ApplicationSessionRepository;
 import com.instream.tenant.domain.billing.domain.dto.BillingDto;
 import com.instream.tenant.domain.billing.domain.dto.QBillingDto;
@@ -31,10 +32,7 @@ import com.instream.tenant.domain.common.infra.enums.Status;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
-import com.querydsl.core.types.ConstructorExpression;
-import com.querydsl.core.types.OrderSpecifier;
-import com.querydsl.core.types.Path;
-import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.*;
 import com.querydsl.core.types.dsl.Expressions;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -52,6 +50,8 @@ import java.util.UUID;
 public class BillingService {
     private final BillingRepository billingRepository;
 
+    private final ApplicationRepository applicationRepository;
+
     private final ApplicationSessionRepository applicationSessionRepository;
 
     private final BillingQueryBuilder billingQueryBuilder;
@@ -61,8 +61,9 @@ public class BillingService {
     private final ApplicationSessionQueryBuilder applicationSessionQueryBuilder;
 
     @Autowired
-    public BillingService(BillingRepository billingRepository, ApplicationSessionRepository applicationSessionRepository, BillingQueryBuilder billingQueryBuilder, ApplicationQueryBuilder applicationQueryBuilder, ApplicationSessionQueryBuilder applicationSessionQueryBuilder) {
+    public BillingService(BillingRepository billingRepository, ApplicationRepository applicationRepository, ApplicationSessionRepository applicationSessionRepository, BillingQueryBuilder billingQueryBuilder, ApplicationQueryBuilder applicationQueryBuilder, ApplicationSessionQueryBuilder applicationSessionQueryBuilder) {
         this.billingRepository = billingRepository;
+        this.applicationRepository = applicationRepository;
         this.applicationSessionRepository = applicationSessionRepository;
         this.billingQueryBuilder = billingQueryBuilder;
         this.applicationQueryBuilder = applicationQueryBuilder;
@@ -70,13 +71,9 @@ public class BillingService {
     }
 
     public Mono<PaginationDto<CollectionDto<BillingDto>>> searchBilling(BillingSearchPaginationOptionRequest billingSearchPaginationOptionRequest, UUID hostId) {
-        QBillingEntity billing = QBillingEntity.billingEntity;
-        QApplicationSessionEntity applicationSession = QApplicationSessionEntity.applicationSessionEntity;
-        QApplicationEntity application = QApplicationEntity.applicationEntity;
-
-        QApplicationSessionDto applicationSessionDto = new QApplicationSessionDto(applicationSession.id, applicationSession.createdAt, applicationSession.deletedAt);
-        QApplicationDto applicationDto = new QApplicationDto(application.id, application.type, application.status, application.createdAt, applicationSessionDto);
-
+        QBillingEntity qBilling = QBillingEntity.billingEntity;
+        QApplicationSessionEntity qApplicationSession = QApplicationSessionEntity.applicationSessionEntity;
+        QApplicationEntity qApplication = QApplicationEntity.applicationEntity;
 
         Pageable pageable = billingSearchPaginationOptionRequest.getPageable();
         BooleanBuilder billingPredicate = billingQueryBuilder.getBillingPredicate(billingSearchPaginationOptionRequest);
@@ -84,44 +81,46 @@ public class BillingService {
         BooleanBuilder applicationPredicate = getApplicationPredicate(billingSearchPaginationOptionRequest, hostId);
         OrderSpecifier[] orderSpecifierArray = billingQueryBuilder.getOrderSpecifier(billingSearchPaginationOptionRequest);
 
-        Flux<BillingDto> billingDtoFlux = billingRepository.query(sqlQuery -> sqlQuery
-                .select(Projections.constructor(BillingDto.class,
-                        billing.id.as("id"),
-                        billing.cost,
-                        billing.status,
-                        billing.createdAt,
-                        billing.updatedAt,
-                        Projections.constructor(ApplicationDto.class,
-                                application.id,
-                                application.type.as("application_type"),
-                                application.status.as("application_status"),
-                                application.createdAt.as("application_created_at"),
-                                Projections.constructor(ApplicationSessionDto.class,
-                                        applicationSession.id,
-                                        applicationSession.createdAt.as("application_session_created_at"),
-                                        applicationSession.deletedAt
-                                )
-                        )
-                ))
-                .from(billing)
+        Flux<BillingEntity> billingFlux = billingRepository.query(sqlQuery -> sqlQuery
+                        .select(qBilling)
+                        .from(qBilling)
+                        .where(billingPredicate)
+                        .leftJoin(qApplicationSession).on(applicationSessionPredicate)
+                        .leftJoin(qApplication).on(applicationPredicate)
+                        .orderBy(orderSpecifierArray)
+                        .limit(pageable.getPageSize())
+                        .offset(pageable.getOffset())
+                )
+                .all();
+        Mono<ApplicationSessionEntity> applicationSessionFlux = applicationSessionRepository.query(sqlQuery -> sqlQuery
+                .select(qApplicationSession)
+                .from(qBilling)
                 .where(billingPredicate)
-                .leftJoin(applicationSession).on(applicationSessionPredicate)
-                .leftJoin(application).on(applicationPredicate)
-                .orderBy(orderSpecifierArray)
-                .limit(pageable.getPageSize())
-                .offset(pageable.getOffset())
-        ).all();
-
+                .leftJoin(qApplicationSession).on(applicationSessionPredicate)
+        ).one();
+        Mono<ApplicationEntity> applicationFlux = applicationRepository.query(sqlQuery -> sqlQuery
+                .select(qApplication)
+                .from(qBilling)
+                .where(billingPredicate)
+                .leftJoin(qApplicationSession).on(applicationSessionPredicate)
+                .leftJoin(qApplication).on(applicationPredicate)
+        ).one();
+        Flux<BillingDto> billingDtoFlux = Flux.zip(billingFlux, applicationFlux, applicationSessionFlux)
+                .flatMap(objects -> {
+                    ApplicationDto applicationDto = ApplicationMapper.INSTANCE.applicationAndSessionEntityToDto(objects.getT2(), objects.getT3());
+                    BillingDto billingDto = BillingMapper.INSTANCE.billingAndApplicationToDto(objects.getT1(), applicationDto);
+                    return Mono.just(billingDto);
+                });
 
         // TODO: Redis 캐싱 넣기
         if (billingSearchPaginationOptionRequest.isFirstView()) {
             return billingDtoFlux.collectList()
                     .flatMap(billingDtoList -> billingRepository.query(sqlQuery -> sqlQuery
-                                    .select(billing.id.count())
-                                    .from(billing)
+                                    .select(qBilling.id.count())
+                                    .from(qBilling)
                                     .where(billingPredicate)
-                                    .join(applicationSession).on(applicationSessionPredicate)
-                                    .join(application).on(applicationPredicate)
+                                    .join(qApplicationSession).on(applicationSessionPredicate)
+                                    .join(qApplication).on(applicationPredicate)
                                     .orderBy(orderSpecifierArray)
                                     .limit(pageable.getPageSize())
                                     .offset(pageable.getOffset())
@@ -200,7 +199,7 @@ public class BillingService {
                         .build()))
                 .flatMap(billing -> {
                     billing.setStatus(billingStatus);
-                    billing.setCost(createBillingRequest.cost());
+                    billing.setCost(billing.getCost() + createBillingRequest.cost());
                     return billingRepository.save(billing);
                 });
     }
