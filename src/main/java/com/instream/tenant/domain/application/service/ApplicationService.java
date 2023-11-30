@@ -128,8 +128,9 @@ public class ApplicationService {
                         .tenantId(hostId)
                         .apiKey(apiKey)
                         .type(createApplicationRequest.type())
-                        .status(Status.PENDING)
+                        .status(Status.USE)
                         .build())
+                .flatMap(application -> applicationRepository.findById(application.getId()))
                 .flatMap(cachingRedis)
                 .flatMap(result);
     }
@@ -232,7 +233,6 @@ public class ApplicationService {
     @NotNull
     private Flux<ApplicationSessionEntity> endRemainApplicationSessions(UUID applicationId) {
         return applicationSessionRepository.findByApplicationIdAndDeletedAtIsNull(applicationId)
-                .switchIfEmpty(Mono.error(new RestApiException(ApplicationSessionErrorCode.APPLICATION_SESSION_NOT_FOUND)))
                 .flatMap(applicationSession -> {
                     applicationSession.setDeletedAt(LocalDateTime.now());
                     return applicationSessionRepository.save(applicationSession);
@@ -275,6 +275,7 @@ public class ApplicationService {
     @NotNull
     private Mono<ApplicationSessionDto> endApplicationSession(ApplicationEntity application) {
         return endRemainApplicationSessions(application.getId())
+                .switchIfEmpty(Mono.error(new RestApiException(ApplicationSessionErrorCode.APPLICATION_SESSION_NOT_FOUND)))
                 .flatMap(applicationSession -> participantJoinRepository
                         .updateAllParticipantJoinsBySessionId(applicationSession.getId())
                         .thenReturn(applicationSession))
