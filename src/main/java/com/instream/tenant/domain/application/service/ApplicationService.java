@@ -165,7 +165,7 @@ public class ApplicationService {
         Flux<ApplicationSessionEntity> applicationSessionFlux = applicationSessionRepository.query(sqlQuery -> sqlQuery
                 .select(QApplicationSessionEntity.applicationSessionEntity)
                 .from(QApplicationSessionEntity.applicationSessionEntity)
-                .where(predicate, QApplicationSessionEntity.applicationSessionEntity.applicationId.eq(Expressions.constant(applicationId)))
+                .where(predicate, QApplicationSessionEntity.applicationSessionEntity.applicationId.eq(Expressions.constant(applicationId.toString())))
                 .orderBy(orderSpecifierArray)
                 .limit(pageable.getPageSize())
                 .offset(pageable.getOffset())
