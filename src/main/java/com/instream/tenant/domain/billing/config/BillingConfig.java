@@ -49,7 +49,7 @@ public class BillingConfig extends RouterConfig {
         return route()
                 .POST(
                         "",
-                        billingHandler::createMinioBilling,
+                        billingHandler::createBilling,
                         this::buildCreateBillingSwagger
                 )
                 .build();
