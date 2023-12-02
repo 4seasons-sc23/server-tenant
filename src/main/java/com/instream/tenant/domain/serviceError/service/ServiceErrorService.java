@@ -1,5 +1,6 @@
 package com.instream.tenant.domain.serviceError.service;
 
+import com.instream.tenant.domain.application.domain.dto.ApplicationWithApiKeyDto;
 import com.instream.tenant.domain.common.domain.dto.CollectionDto;
 import com.instream.tenant.domain.common.domain.dto.PaginationDto;
 import com.instream.tenant.domain.common.domain.dto.PaginationInfoDto;
@@ -182,10 +183,10 @@ public class ServiceErrorService {
                 .flatMap(serviceErrorDtoList -> serviceErrorRepository
                     .count(booleanBuilder)
                     .flatMap(count -> {
-                        int totalElementCount = (int) Math.ceil((double) count / pageable.getPageSize());
+                        int pageCount = (int) Math.ceil((double) count / pageable.getPageSize());
                         return Mono.just(PaginationInfoDto.<CollectionDto<ServiceErrorQuestionDto>>builder()
-                            .totalElementCount(totalElementCount)
-                            .pageCount(Math.toIntExact(count))
+                            .totalElementCount(count)
+                            .pageCount(pageCount)
                             .currentPage(paginationOptionRequest.getPage())
                             .data(CollectionDto.<ServiceErrorQuestionDto>builder()
                                 .data(serviceErrorDtoList)
