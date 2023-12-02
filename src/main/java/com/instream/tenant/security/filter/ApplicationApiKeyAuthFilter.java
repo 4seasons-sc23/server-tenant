@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
 
 public class ApplicationApiKeyAuthFilter extends CustomWebFilter {
     private final List<Pattern> API_BLACK_LIST = new ArrayList<>(Arrays.asList(
+            Pattern.compile("/api/v1/chats/.*"),
             Pattern.compile("/api/v1/medias/upload.*"),
             Pattern.compile("/api/v1/applications/.*")
     ));
