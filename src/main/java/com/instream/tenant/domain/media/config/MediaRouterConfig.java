@@ -55,7 +55,7 @@ public class MediaRouterConfig extends RouterConfig {
     }
 
     private RouterFunction<ServerResponse> startNginxRtmpStream(MediaHandler mediaHandler) {
-        return route().POST(
+        return route().GET(
                         "/start",
                         RequestPredicates.accept(MediaType.APPLICATION_FORM_URLENCODED),
                         mediaHandler::startNginxRtmpStream,
@@ -65,7 +65,7 @@ public class MediaRouterConfig extends RouterConfig {
     }
 
     private RouterFunction<ServerResponse> endNginxRtmpStream(MediaHandler mediaHandler) {
-        return route().POST(
+        return route().GET(
                         "/end",
                         RequestPredicates.accept(MediaType.APPLICATION_FORM_URLENCODED),
                         mediaHandler::endNginxRtmpStream,
