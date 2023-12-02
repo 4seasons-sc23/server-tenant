@@ -10,33 +10,23 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class SummaryBillingRequest {
-    @Schema(description = "생성 날짜 기준 조회 시작 날짜")
-    private final LocalDateTime createdStartAt;
+    @Schema(description = "조회 시작 날짜")
+    private final LocalDateTime startAt;
 
-    @Schema(description = "생성 날짜 기준 조회 종료 날짜")
-    private final LocalDateTime createdEndAt;
+    @Schema(description = "조회 종료 날짜")
+    private final LocalDateTime endAt;
 
-    @Schema(description = "종료 날짜 기준 조회 시작 날짜")
-    private final LocalDateTime deletedStartAt;
-
-    @Schema(description = "종료 날짜 기준 조회 종료 날짜")
-    private final LocalDateTime deletedEndAt;
-
-    public SummaryBillingRequest(LocalDateTime createdStartAt, LocalDateTime createdEndAt, LocalDateTime deletedStartAt, LocalDateTime deletedEndAt) {
-        this.createdStartAt = createdStartAt;
-        this.createdEndAt = createdEndAt;
-        this.deletedStartAt = deletedStartAt;
-        this.deletedEndAt = deletedEndAt;
+    public SummaryBillingRequest(LocalDateTime startAt, LocalDateTime endAt) {
+        this.startAt = startAt;
+        this.endAt = endAt;
     }
 
     public static Mono<SummaryBillingRequest> fromQueryParams(MultiValueMap<String, String> queryParams) {
         try {
-            LocalDateTime createdStartAt = parseDateTime(queryParams.getFirst("createdStartAt"));
-            LocalDateTime createdEndAt = parseDateTime(queryParams.getFirst("createdEndAt"));
-            LocalDateTime deletedStartAt = parseDateTime(queryParams.getFirst("deletedStartAt"));
-            LocalDateTime deletedEndAt = parseDateTime(queryParams.getFirst("deletedEndAt"));
+            LocalDateTime startAt = parseDateTime(queryParams.getFirst("startAt"));
+            LocalDateTime endAt = parseDateTime(queryParams.getFirst("endAt"));
 
-            SummaryBillingRequest summaryBillingRequest = new SummaryBillingRequest(createdStartAt, createdEndAt, deletedStartAt, deletedEndAt);
+            SummaryBillingRequest summaryBillingRequest = new SummaryBillingRequest(startAt, endAt);
 
             return Mono.just(summaryBillingRequest);
         } catch (Exception e) {
