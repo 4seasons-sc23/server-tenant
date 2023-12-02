@@ -2,6 +2,7 @@ package com.instream.tenant.core.config;
 
 import com.instream.tenant.domain.application.domain.dto.ApplicationSessionDto;
 import com.instream.tenant.domain.application.domain.dto.ApplicationWithApiKeyDto;
+import com.instream.tenant.domain.billing.domain.dto.ApplicationBillingDto;
 import com.instream.tenant.domain.billing.domain.dto.BillingDto;
 import com.instream.tenant.domain.participant.domain.dto.ParticipantJoinDto;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -40,7 +41,7 @@ public class OpenApiConfig {
      */
     private final List<Class<?>> customizeDtoSchemaList = List.of(
             ApplicationWithApiKeyDto.class, ApplicationSessionDto.class, ParticipantJoinDto.class,
-            BillingDto.class
+            BillingDto.class, ApplicationBillingDto.class
     );
 
     @Bean
@@ -100,9 +101,8 @@ public class OpenApiConfig {
     private Schema<?> createPaginationDtoSchema(Class<?> clazz) {
         Schema<?> collectionDtoSchema = createCollectionDtoSchema(clazz);
 
-        return (Schema<?>) new Schema<>()
+        return (Schema<?>) collectionDtoSchema
                 .addProperty("currentPage", new IntegerSchema().description("현재 페이지, 0부터 시작").minimum(BigDecimal.valueOf(0)))
-                .addProperty("data", collectionDtoSchema)
                 .addProperty("totalPages", new IntegerSchema().description("전체 페이지 수").minimum(BigDecimal.valueOf(0)))
                 .addProperty("pageSize", new IntegerSchema().description("페이지 당 데이터 수").minimum(BigDecimal.valueOf(0)))
                 .addProperty("totalElements", new IntegerSchema().description("전체 데이터 수").minimum(BigDecimal.valueOf(0)));

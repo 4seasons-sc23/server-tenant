@@ -1,5 +1,6 @@
 package com.instream.tenant.domain.participant.queryBuilder;
 
+import com.instream.tenant.domain.common.domain.request.PaginationOptionRequest;
 import com.instream.tenant.domain.common.model.DynamicQueryBuilder;
 import com.instream.tenant.domain.participant.domain.entity.ParticipantJoinEntity;
 import com.instream.tenant.domain.participant.domain.entity.QParticipantJoinEntity;
@@ -57,7 +58,7 @@ public class ParticipantJoinQueryBuilder extends DynamicQueryBuilder<Participant
                 .and(QParticipantJoinEntity.participantJoinEntity.participantId.eq(participantId));
     }
 
-    public OrderSpecifier[] getOrderSpecifier(ParticipantJoinSearchPaginationOptionRequest participantJoinSearchPaginationOptionRequest) {
-        return super.getOrderSpecifier(QParticipantJoinEntity.participantJoinEntity, participantJoinSearchPaginationOptionRequest.getSort());
+    public OrderSpecifier[] getOrderSpecifier(PaginationOptionRequest paginationOptionRequest) {
+        return super.getOrderSpecifier(QParticipantJoinEntity.participantJoinEntity, paginationOptionRequest);
     }
 }

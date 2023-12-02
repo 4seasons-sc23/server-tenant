@@ -2,6 +2,7 @@ package com.instream.tenant.domain.common.model;
 
 import com.instream.tenant.domain.application.domain.entity.QApplicationEntity;
 import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
+import com.instream.tenant.domain.common.domain.request.PaginationOptionRequest;
 import com.instream.tenant.domain.common.domain.request.SortOptionRequest;
 import com.instream.tenant.domain.common.infra.enums.SortOption;
 import com.querydsl.core.types.Expression;
@@ -16,10 +17,13 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 public abstract class DynamicQueryBuilder<T> {
-    protected OrderSpecifier[] getOrderSpecifier(RelationalPathBase<T> relationalPathBase, Collection<SortOptionRequest> sortOptionRequests) {
+    protected OrderSpecifier[] getOrderSpecifier(RelationalPathBase<T> relationalPathBase, PaginationOptionRequest paginationOptionRequest) {
+        Collection<SortOptionRequest> sortOptionRequests = paginationOptionRequest.getSort();
+
         if(sortOptionRequests == null) {
             return null;
         }
+
         return sortOptionRequests.stream()
                 .flatMap(sortOptionRequest -> relationalPathBase.getColumns().stream()
                         .filter(path -> Objects.equals(sortOptionRequest.name(), path.getMetadata().getName()))

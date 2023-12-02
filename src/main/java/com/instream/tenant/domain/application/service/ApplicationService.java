@@ -25,6 +25,7 @@ import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.media.domain.request.NginxRtmpRequest;
 import com.instream.tenant.domain.participant.repository.ParticipantJoinRepository;
 import com.instream.tenant.domain.redis.model.factory.ReactiveRedisTemplateFactory;
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.dsl.Expressions;
@@ -68,17 +69,22 @@ public class ApplicationService {
 
     public Mono<PaginationDto<CollectionDto<ApplicationWithApiKeyDto>>> search(ApplicationSearchPaginationOptionRequest applicationSearchPaginationOptionRequest, UUID hostId) {
         Pageable pageable = applicationSearchPaginationOptionRequest.getPageable();
-        Predicate predicate = applicationQueryBuilder.getPredicate(applicationSearchPaginationOptionRequest);
+        BooleanBuilder predicate = applicationQueryBuilder.getPredicate(applicationSearchPaginationOptionRequest);
         OrderSpecifier[] orderSpecifierArray = applicationQueryBuilder.getOrderSpecifier(applicationSearchPaginationOptionRequest);
-        Flux<ApplicationEntity> applicationFlux = applicationRepository.query(sqlQuery -> sqlQuery
+        Flux<ApplicationEntity> applicationFlux;
+        Flux<ApplicationWithApiKeyDto> applicationDtoFlux;
+
+        predicate.and(QApplicationEntity.applicationEntity.tenantId.eq(Expressions.constant(hostId.toString())));
+
+        applicationFlux = applicationRepository.query(sqlQuery -> sqlQuery
                 .select(QApplicationEntity.applicationEntity)
                 .from(QApplicationEntity.applicationEntity)
-                .where(predicate, QApplicationEntity.applicationEntity.tenantId.eq(Expressions.constant(hostId.toString())))
+                .where(predicate)
                 .orderBy(orderSpecifierArray)
                 .limit(pageable.getPageSize())
                 .offset(pageable.getOffset())
         ).all();
-        Flux<ApplicationWithApiKeyDto> applicationDtoFlux = applicationFlux
+        applicationDtoFlux = applicationFlux
                 .flatMap(application -> applicationSessionRepository.findTopByApplicationIdOrderByCreatedAtDesc(application.getId())
                         .flatMap(applicationSession -> Mono.just(ApplicationMapper.INSTANCE.applicationAndSessionEntityToWithApiKeyDto(application, applicationSession)))
                         .defaultIfEmpty(ApplicationMapper.INSTANCE.applicationAndSessionEntityToWithApiKeyDto(application, null)));
@@ -158,19 +164,22 @@ public class ApplicationService {
 
     public Mono<PaginationDto<CollectionDto<ApplicationSessionDto>>> searchSessions(ApplicationSessionSearchPaginationOptionRequest applicationSessionSearchPaginationOptionRequest, UUID applicationId) {
         Pageable pageable = applicationSessionSearchPaginationOptionRequest.getPageable();
-        Predicate predicate = applicationSessionQueryBuilder.getPredicate(applicationSessionSearchPaginationOptionRequest);
+        BooleanBuilder predicate = applicationSessionQueryBuilder.getPredicate(applicationSessionSearchPaginationOptionRequest);
         OrderSpecifier[] orderSpecifierArray = applicationSessionQueryBuilder.getOrderSpecifier(applicationSessionSearchPaginationOptionRequest);
+        Flux<ApplicationSessionEntity> applicationSessionFlux;
+        Flux<ApplicationSessionDto> applicationSessionDtoFlux;
 
-        // TODO: 체인 하나로 묶기
-        Flux<ApplicationSessionEntity> applicationSessionFlux = applicationSessionRepository.query(sqlQuery -> sqlQuery
+        predicate.and(QApplicationSessionEntity.applicationSessionEntity.applicationId.eq(Expressions.constant(applicationId.toString())));
+
+        applicationSessionFlux = applicationSessionRepository.query(sqlQuery -> sqlQuery
                 .select(QApplicationSessionEntity.applicationSessionEntity)
                 .from(QApplicationSessionEntity.applicationSessionEntity)
-                .where(predicate, QApplicationSessionEntity.applicationSessionEntity.applicationId.eq(Expressions.constant(applicationId.toString())))
+                .where(predicate)
                 .orderBy(orderSpecifierArray)
                 .limit(pageable.getPageSize())
                 .offset(pageable.getOffset())
         ).all();
-        Flux<ApplicationSessionDto> applicationSessionDtoFlux = applicationSessionFlux
+        applicationSessionDtoFlux = applicationSessionFlux
                 .flatMap(applicationSession -> Mono.just(ApplicationSessionMapper.INSTANCE.entityToDto(applicationSession)));
 
         // TODO: Redis 캐싱 넣기
