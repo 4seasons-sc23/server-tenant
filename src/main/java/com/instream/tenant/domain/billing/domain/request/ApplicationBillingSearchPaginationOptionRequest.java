@@ -8,8 +8,10 @@ import com.instream.tenant.domain.common.infra.enums.Status;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 import org.springframework.util.MultiValueMap;
 import reactor.core.publisher.Mono;
 
@@ -21,6 +23,7 @@ import java.util.UUID;
 
 @Getter
 @ToString(callSuper = true)
+@SuperBuilder
 public class ApplicationBillingSearchPaginationOptionRequest extends PaginationOptionRequest {
     @JsonUnwrapped
     private final ApplicationBillingPaginationOption option;

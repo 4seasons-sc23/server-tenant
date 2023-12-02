@@ -23,6 +23,22 @@ public class BillingHandler {
         this.billingService = billingService;
     }
 
+    public Mono<ServerResponse> searchBilling(ServerRequest request) {
+        UUID hostId;
+
+        try {
+            hostId = UUID.fromString(request.pathVariable("hostId"));
+        } catch (IllegalArgumentException illegalArgumentException) {
+            return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
+        }
+
+        return BillingSearchPaginationOptionRequest.fromQueryParams(request.queryParams())
+                .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
+                .flatMap((billingSearchPaginationOptionRequest -> billingService.searchBilling(billingSearchPaginationOptionRequest, hostId)))
+                .flatMap(billingPaginationDto -> ServerResponse.ok().bodyValue(billingPaginationDto));
+    }
+
+
     public Mono<ServerResponse> searchBillingPerApplication(ServerRequest request) {
         UUID hostId;
         UUID applicationId;
@@ -64,9 +80,9 @@ public class BillingHandler {
             return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
         }
 
-        return SummaryBillingRequest.fromQueryParams(request.queryParams())
+        return Mono.just(ApplicationBillingPaginationOption.fromQueryParams(request.queryParams()))
                 .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
-                .flatMap(summaryBillingRequest -> billingService.getBillingSummary(hostId, summaryBillingRequest))
+                .flatMap(applicationBillingPaginationOption -> billingService.getBillingSummary(hostId, applicationBillingPaginationOption))
                 .flatMap(billingDto -> ServerResponse.ok().bodyValue(billingDto));
     }
 

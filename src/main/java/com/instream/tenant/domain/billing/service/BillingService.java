@@ -6,16 +6,17 @@ import com.instream.tenant.domain.application.domain.entity.QApplicationEntity;
 import com.instream.tenant.domain.application.domain.entity.QApplicationSessionEntity;
 import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.infra.enums.ApplicationSessionErrorCode;
+import com.instream.tenant.domain.application.infra.mapper.ApplicationMapper;
 import com.instream.tenant.domain.application.infra.mapper.ApplicationSessionMapper;
 import com.instream.tenant.domain.application.model.queryBuilder.ApplicationQueryBuilder;
 import com.instream.tenant.domain.application.model.queryBuilder.ApplicationSessionQueryBuilder;
 import com.instream.tenant.domain.application.repository.ApplicationRepository;
 import com.instream.tenant.domain.application.repository.ApplicationSessionRepository;
+import com.instream.tenant.domain.billing.domain.dto.ApplicationBillingDto;
 import com.instream.tenant.domain.billing.domain.dto.BillingDto;
-import com.instream.tenant.domain.billing.domain.request.ApplicationBillingSearchPaginationOptionRequest;
-import com.instream.tenant.domain.billing.domain.request.BillingSearchPaginationOptionRequest;
-import com.instream.tenant.domain.billing.domain.request.CreateBillingRequest;
-import com.instream.tenant.domain.billing.domain.request.SummaryBillingRequest;
+import com.instream.tenant.domain.billing.domain.dto.QApplicationBillingDto;
+import com.instream.tenant.domain.billing.domain.dto.SummaryBillingDto;
+import com.instream.tenant.domain.billing.domain.request.*;
 import com.instream.tenant.domain.common.domain.dto.CollectionDto;
 import com.instream.tenant.domain.common.domain.dto.PaginationDto;
 import com.instream.tenant.domain.common.domain.dto.PaginationInfoDto;
@@ -24,6 +25,7 @@ import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.*;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.sql.SQLQuery;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +35,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -56,6 +58,68 @@ public class BillingService {
         this.applicationSessionRepository = applicationSessionRepository;
         this.applicationQueryBuilder = applicationQueryBuilder;
         this.applicationSessionQueryBuilder = applicationSessionQueryBuilder;
+    }
+
+    public Mono<PaginationDto<CollectionDto<ApplicationBillingDto>>> searchBilling(BillingSearchPaginationOptionRequest paginationOptionRequest, UUID hostId) {
+        QApplicationSessionEntity qApplicationSession = QApplicationSessionEntity.applicationSessionEntity;
+        QApplicationEntity qApplication = QApplicationEntity.applicationEntity;
+        QApplicationBillingDto qApplicationBillingDto = new QApplicationBillingDto(qApplication.id.as("id"), qApplication.type, qApplication.status, qApplication.createdAt, qApplicationSession.id.count().as("session_count"), qApplicationSession.cost.sum().as("cost"));
+
+        Pageable pageable = paginationOptionRequest.getPageable();
+        BooleanBuilder applicationSessionPredicate = applicationSessionQueryBuilder.getBillingPredicate(ApplicationBillingSearchPaginationOptionRequest.builder()
+                .option(paginationOptionRequest.getOption())
+                .build());
+        BooleanBuilder applicationPredicate = applicationQueryBuilder.getPredicate(ApplicationSearchPaginationOptionRequest.builder()
+                .type(paginationOptionRequest.getType())
+                .build());
+        BooleanBuilder applicationPredicateFromBilling = getApplicationPredicate(hostId, null);
+        OrderSpecifier[] orderSpecifierArray = applicationSessionQueryBuilder.getOrderSpecifier(paginationOptionRequest);
+        Flux<ApplicationBillingDto> applicationBillingDtoFlux;
+
+        applicationPredicate.and(applicationPredicateFromBilling);
+
+        applicationBillingDtoFlux = applicationRepository.query(sqlQuery -> sqlQuery
+                .select(qApplicationBillingDto)
+                .from(qApplication)
+                .where(applicationPredicate)
+                .leftJoin(qApplicationSession).on(applicationSessionPredicate)
+                .groupBy(qApplication.id)
+                .orderBy(orderSpecifierArray)
+                .limit(pageable.getPageSize())
+                .offset(pageable.getOffset())
+        ).all();
+
+        // TODO: Redis 캐싱 넣기
+        if (paginationOptionRequest.isFirstView()) {
+            return applicationBillingDtoFlux.collectList()
+                    .flatMap(billingDtoList -> applicationSessionRepository.query(sqlQuery -> sqlQuery
+                                    .select(qApplicationSession.applicationId.countDistinct())
+                                    .from(qApplicationSession)
+                                    .where(applicationSessionPredicate)
+                                    .join(qApplication).on(applicationPredicate)
+                                    .orderBy(orderSpecifierArray)
+                            )
+                            .one()
+                            .flatMap(totalElementCount -> {
+                                long pageCount = (long) Math.ceil((double) totalElementCount / pageable.getPageSize());
+                                return Mono.just(PaginationInfoDto.<CollectionDto<ApplicationBillingDto>>builder()
+                                        .totalElementCount(totalElementCount)
+                                        .pageCount(pageCount)
+                                        .currentPage(paginationOptionRequest.getPage())
+                                        .data(CollectionDto.<ApplicationBillingDto>builder()
+                                                .data(billingDtoList)
+                                                .build())
+                                        .build());
+                            }));
+        }
+
+        return applicationBillingDtoFlux.collectList()
+                .flatMap(billingDtoList -> Mono.just(PaginationDto.<CollectionDto<ApplicationBillingDto>>builder()
+                        .currentPage(paginationOptionRequest.getPageable().getPageNumber())
+                        .data(CollectionDto.<ApplicationBillingDto>builder()
+                                .data(billingDtoList)
+                                .build())
+                        .build()));
     }
 
     public Mono<PaginationDto<CollectionDto<BillingDto>>> searchBillingPerApplication(ApplicationBillingSearchPaginationOptionRequest paginationOptionRequest, UUID hostId, UUID applicationId) {
@@ -120,8 +184,32 @@ public class BillingService {
         return Mono.empty();
     }
 
-    public Mono<ServerResponse> getBillingSummary(UUID hostId, SummaryBillingRequest summaryBillingRequest) {
-        return Mono.empty();
+    public Mono<SummaryBillingDto> getBillingSummary(UUID hostId, ApplicationBillingPaginationOption paginationOptionRequest) {
+        QApplicationSessionEntity qApplicationSession = QApplicationSessionEntity.applicationSessionEntity;
+        QApplicationEntity qApplication = QApplicationEntity.applicationEntity;
+
+        BooleanBuilder applicationSessionPredicate = applicationSessionQueryBuilder.getBillingPredicate(ApplicationBillingSearchPaginationOptionRequest.builder()
+                .option(paginationOptionRequest)
+                .build());
+        BooleanBuilder applicationPredicate = applicationQueryBuilder.getPredicate(ApplicationSearchPaginationOptionRequest.builder().build());
+        BooleanBuilder applicationPredicateFromBilling = getApplicationPredicate(hostId, null);
+
+        applicationPredicate.and(applicationPredicateFromBilling);
+
+        return applicationSessionRepository.query(sqlQuery -> sqlQuery
+                        .select(qApplicationSession.cost)
+                        .from(qApplicationSession)
+                        .where(applicationSessionPredicate)
+                        .leftJoin(qApplication).on(applicationPredicate)
+                )
+                .all()
+                .reduce(Double::sum)
+                .switchIfEmpty(Mono.just(0.0))
+                .flatMap(sum -> Mono.just(SummaryBillingDto.builder()
+                        .cost(sum == null ? 0.0 : sum)
+                        .startAt(paginationOptionRequest.getStartAt())
+                        .endAt(paginationOptionRequest.getEndAt())
+                        .build()));
     }
 
     public Mono<Void> createBilling(CreateBillingRequest createBillingRequest) {

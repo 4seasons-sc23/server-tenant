@@ -2,9 +2,10 @@ package com.instream.tenant.domain.tenant.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.instream.tenant.domain.billing.domain.dto.BillingDto;
+import com.instream.tenant.domain.billing.domain.dto.SummaryBillingDto;
+import com.instream.tenant.domain.billing.domain.request.ApplicationBillingPaginationOption;
 import com.instream.tenant.domain.billing.domain.request.ApplicationBillingSearchPaginationOptionRequest;
 import com.instream.tenant.domain.billing.domain.request.BillingSearchPaginationOptionRequest;
-import com.instream.tenant.domain.billing.domain.request.SummaryBillingRequest;
 import com.instream.tenant.domain.billing.handler.BillingHandler;
 import com.instream.tenant.domain.common.config.RouterConfig;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
@@ -42,8 +43,8 @@ public class HostBillingRouterConfig extends RouterConfig {
         return route().nest(RequestPredicates.path("/v1/hosts/{hostId}/billings"),
                 builder -> {
                     builder.add(searchBilling(billingHandler));
-                    builder.add(getBillingInfo(billingHandler));
                     builder.add(getBillingSummary(billingHandler));
+                    builder.add(getBillingInfo(billingHandler));
                 },
                 ops -> ops.operationId("v1HostBillingRoutes")
         ).build();
@@ -53,7 +54,7 @@ public class HostBillingRouterConfig extends RouterConfig {
         return route()
                 .GET(
                         "",
-                        billingHandler::searchBillingPerApplication,
+                        billingHandler::searchBilling,
                         this::buildSearchBillingSwagger
                 )
                 .build();
@@ -106,7 +107,7 @@ public class HostBillingRouterConfig extends RouterConfig {
                         추가적인 옵션을 원할 경우 백엔드 팀한테 문의해주세요!
                         """)
                 .parameter(parameterBuilder().name("hostId").in(ParameterIn.PATH).required(true).example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                .parameter(parameterBuilder().name("option").in(ParameterIn.QUERY).required(true).implementation(ApplicationBillingSearchPaginationOptionRequest.class))
+                .parameter(parameterBuilder().name("option").in(ParameterIn.QUERY).required(true).implementation(BillingSearchPaginationOptionRequest.class))
                 .response(responseBuilder().responseCode("200").implementation(BillingDto.class));
     }
 
@@ -152,7 +153,7 @@ public class HostBillingRouterConfig extends RouterConfig {
                         추가적인 옵션을 원할 경우 백엔드 팀한테 문의해주세요!
                         """)
                 .parameter(parameterBuilder().name("hostId").in(ParameterIn.PATH).required(true).example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                .parameter(parameterBuilder().name("option").in(ParameterIn.QUERY).required(true).implementation(SummaryBillingRequest.class))
-                .response(responseBuilder().responseCode("200").implementation(BillingDto.class));
+                .parameter(parameterBuilder().name("option").in(ParameterIn.QUERY).required(true).implementation(ApplicationBillingPaginationOption.class))
+                .response(responseBuilder().responseCode("200").implementation(SummaryBillingDto.class));
     }
 }
