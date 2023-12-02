@@ -18,6 +18,7 @@ import com.instream.tenant.domain.billing.domain.entity.BillingEntity;
 import com.instream.tenant.domain.billing.domain.entity.QBillingEntity;
 import com.instream.tenant.domain.billing.domain.request.BillingSearchPaginationOptionRequest;
 import com.instream.tenant.domain.billing.domain.request.CreateBillingRequest;
+import com.instream.tenant.domain.billing.domain.request.SummaryBillingRequest;
 import com.instream.tenant.domain.billing.infra.mapper.BillingMapper;
 import com.instream.tenant.domain.billing.model.queryBuilder.BillingQueryBuilder;
 import com.instream.tenant.domain.billing.repository.BillingRepository;
@@ -146,6 +147,10 @@ public class BillingService {
     }
 
     public Mono<ServerResponse> getBillingInfo(UUID hostId, UUID billingId) {
+        return Mono.empty();
+    }
+
+    public Mono<ServerResponse> getBillingSummary(UUID hostId, SummaryBillingRequest summaryBillingRequest) {
         return Mono.empty();
     }
 

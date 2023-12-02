@@ -1,17 +1,13 @@
 package com.instream.tenant.domain.tenant.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.instream.tenant.domain.application.domain.dto.ApplicationWithApiKeyDto;
 import com.instream.tenant.domain.billing.domain.dto.BillingDto;
 import com.instream.tenant.domain.billing.domain.request.BillingSearchPaginationOptionRequest;
+import com.instream.tenant.domain.billing.domain.request.SummaryBillingRequest;
 import com.instream.tenant.domain.billing.handler.BillingHandler;
 import com.instream.tenant.domain.common.config.RouterConfig;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.infra.enums.HttpErrorCode;
-import com.instream.tenant.domain.tenant.domain.dto.TenantDto;
-import com.instream.tenant.domain.tenant.domain.request.TenantCreateRequest;
-import com.instream.tenant.domain.tenant.domain.request.TenantSignInRequest;
-import com.instream.tenant.domain.tenant.handler.HostHandler;
 import com.instream.tenant.domain.tenant.infra.enums.TenantErrorCode;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import org.springdoc.core.fn.builders.operation.Builder;
@@ -28,7 +24,6 @@ import java.util.List;
 
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
-import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 import static org.springdoc.webflux.core.fn.SpringdocRouteBuilder.route;
 
 
@@ -47,6 +42,7 @@ public class HostBillingRouterConfig extends RouterConfig {
                 builder -> {
                     builder.add(searchBilling(billingHandler));
                     builder.add(getBillingInfo(billingHandler));
+                    builder.add(getBillingSummary(billingHandler));
                 },
                 ops -> ops.operationId("v1HostBillingRoutes")
         ).build();
@@ -64,10 +60,20 @@ public class HostBillingRouterConfig extends RouterConfig {
 
     private RouterFunction<ServerResponse> getBillingInfo(BillingHandler billingHandler) {
         return route()
-                .POST(
+                .GET(
                         "/{billingId}",
                         billingHandler::getBillingInfo,
                         this::buildGetBillingInfoSwagger
+                )
+                .build();
+    }
+
+    private RouterFunction<ServerResponse> getBillingSummary(BillingHandler billingHandler) {
+        return route()
+                .GET(
+                        "/summary",
+                        billingHandler::getBillingSummary,
+                        this::buildGetBillingSummarySwagger
                 )
                 .build();
     }
@@ -122,5 +128,30 @@ public class HostBillingRouterConfig extends RouterConfig {
                 .parameter(parameterBuilder().name("hostId").in(ParameterIn.PATH).required(true).example("80bd6328-76a7-11ee-b720-0242ac130003"))
                 .parameter(parameterBuilder().name("billingId").in(ParameterIn.PATH).required(true).example("80bd6328-76a7-11ee-b720-0242ac130003"))
                 .response(responseBuilder().implementation(BillingDto.class));
+    }
+
+    private void buildGetBillingSummarySwagger(Builder ops) {
+        List<HttpErrorCode> httpErrorCodeList = new ArrayList<>(Arrays.asList(
+                CommonHttpErrorCode.UNAUTHORIZED,
+                CommonHttpErrorCode.BAD_REQUEST,
+                TenantErrorCode.TENANT_NOT_FOUND,
+                CommonHttpErrorCode.INTERNAL_SERVER_ERROR
+        ));
+
+        buildHttpErrorResponse(ops, httpErrorCodeList);
+
+        ops.operationId("billingSummary")
+                .tag(v1HostBillingRoutesTag)
+                .summary("Tenant 사용량 내역 요약 API")
+                .description("""
+                        Tenant의 사용량 내역 요약을 검색합니다.
+                                                
+                        현재 기간별 조회 옵션을 지원합니다.
+                                                
+                        추가적인 옵션을 원할 경우 백엔드 팀한테 문의해주세요!
+                        """)
+                .parameter(parameterBuilder().name("hostId").in(ParameterIn.PATH).required(true).example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                .parameter(parameterBuilder().name("option").in(ParameterIn.QUERY).required(true).implementation(SummaryBillingRequest.class))
+                .response(responseBuilder().responseCode("200").implementation(BillingDto.class));
     }
 }
