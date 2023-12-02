@@ -1,5 +1,6 @@
 package com.instream.tenant.domain.serviceError.service;
 
+import com.instream.tenant.domain.application.domain.dto.ApplicationWithApiKeyDto;
 import com.instream.tenant.domain.common.domain.dto.CollectionDto;
 import com.instream.tenant.domain.common.domain.dto.PaginationDto;
 import com.instream.tenant.domain.common.domain.dto.PaginationInfoDto;
@@ -20,6 +21,7 @@ import com.instream.tenant.domain.serviceError.infra.enums.IsAnswered;
 import com.instream.tenant.domain.serviceError.infra.enums.ServiceErrorErrorCode;
 import com.instream.tenant.domain.serviceError.repository.ServiceErrorAnswerRepository;
 import com.instream.tenant.domain.serviceError.repository.ServiceErrorRepository;
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.dsl.Expressions;
@@ -73,7 +75,7 @@ public class ServiceErrorService {
                     .build();
 
                 ServiceErrorAnswerDto answerDto =
-                    IsAnswered.ANSWERED.equals(question.getIsAnswered()) ? null :
+                    IsAnswered.NOT_ANSWERED.equals(question.getIsAnswered()) ? null :
                         ServiceErrorAnswerDto.builder()
                             .content(answer.getContent())
                             .status(answer.getStatus())
@@ -146,14 +148,17 @@ public class ServiceErrorService {
 
     public Mono<PaginationDto<CollectionDto<ServiceErrorQuestionDto>>> getServiceErrorsByHostId(UUID hostId,
         PaginationOptionRequest paginationOptionRequest) {
-        StringPath tenantIdPath = Expressions.stringPath("tenant_id");
         Pageable pageable = paginationOptionRequest.getPageable();
-        Predicate predicate = tenantIdPath.eq(hostId.toString());
+
+        BooleanBuilder booleanBuilder = new BooleanBuilder();
+
+        booleanBuilder.and(QServiceErrorEntity.serviceErrorEntity.tenantId.eq(Expressions.constant(hostId.toString())));
+        booleanBuilder.and(QServiceErrorEntity.serviceErrorEntity.status.eq(Expressions.constant(Status.USE.getCode())));
 
         Flux<ServiceErrorEntity> serviceErrorEntityFlux = serviceErrorRepository.query(sqlQuery -> sqlQuery
             .select(QServiceErrorEntity.serviceErrorEntity)
             .from(QServiceErrorEntity.serviceErrorEntity)
-            .where(predicate)
+            .where(booleanBuilder)
             .orderBy(QServiceErrorEntity.serviceErrorEntity.createdAt.desc())
             .limit(pageable.getPageSize())
             .offset(pageable.getOffset())
@@ -176,12 +181,12 @@ public class ServiceErrorService {
         if(paginationOptionRequest.isFirstView()) {
             return serviceErrorDtoFlux.collectList()
                 .flatMap(serviceErrorDtoList -> serviceErrorRepository
-                    .count(predicate)
+                    .count(booleanBuilder)
                     .flatMap(count -> {
-                        int totalElementCount = (int) Math.ceil((double) count / pageable.getPageSize());
+                        int pageCount = (int) Math.ceil((double) count / pageable.getPageSize());
                         return Mono.just(PaginationInfoDto.<CollectionDto<ServiceErrorQuestionDto>>builder()
-                            .totalElementCount(totalElementCount)
-                            .pageCount(Math.toIntExact(count))
+                            .totalElementCount(count)
+                            .pageCount(pageCount)
                             .currentPage(paginationOptionRequest.getPage())
                             .data(CollectionDto.<ServiceErrorQuestionDto>builder()
                                 .data(serviceErrorDtoList)

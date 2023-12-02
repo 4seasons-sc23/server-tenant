@@ -21,7 +21,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 @Configuration
 public class ServiceErrorConfig {
     @Bean
-    public RouterFunction<ServerResponse> v1ServiceErrorFunction(
+    public RouterFunction<ServerResponse> v1ServiceErrorRoutes(
         ServiceErrorHandler serviceErrorHandler) {
         return route().nest(RequestPredicates.path("/v1/errors"),
             builder -> {
@@ -53,7 +53,7 @@ public class ServiceErrorConfig {
                 serviceErrorHandler::postServiceError,
                 ops -> ops.operationId("919")
                     .requestBody(requestBodyBuilder().implementation(ServiceErrorCreateRequestDto.class).required(true))
-                    .response(responseBuilder().responseCode(HttpStatus.OK.name()).implementation(
+                    .response(responseBuilder().responseCode(HttpStatus.CREATED.name()).implementation(
                         ServiceErrorCreateResponseDto.class))
             )
             .build();
