@@ -2,6 +2,7 @@ package com.instream.tenant.domain.tenant.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.instream.tenant.domain.billing.domain.dto.BillingDto;
+import com.instream.tenant.domain.billing.domain.request.ApplicationBillingSearchPaginationOptionRequest;
 import com.instream.tenant.domain.billing.domain.request.BillingSearchPaginationOptionRequest;
 import com.instream.tenant.domain.billing.domain.request.SummaryBillingRequest;
 import com.instream.tenant.domain.billing.handler.BillingHandler;
@@ -52,7 +53,7 @@ public class HostBillingRouterConfig extends RouterConfig {
         return route()
                 .GET(
                         "",
-                        billingHandler::searchBilling,
+                        billingHandler::searchBillingPerApplication,
                         this::buildSearchBillingSwagger
                 )
                 .build();
@@ -105,7 +106,7 @@ public class HostBillingRouterConfig extends RouterConfig {
                         추가적인 옵션을 원할 경우 백엔드 팀한테 문의해주세요!
                         """)
                 .parameter(parameterBuilder().name("hostId").in(ParameterIn.PATH).required(true).example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                .parameter(parameterBuilder().name("option").in(ParameterIn.QUERY).required(true).implementation(BillingSearchPaginationOptionRequest.class))
+                .parameter(parameterBuilder().name("option").in(ParameterIn.QUERY).required(true).implementation(ApplicationBillingSearchPaginationOptionRequest.class))
                 .response(responseBuilder().responseCode("200").implementation(BillingDto.class));
     }
 

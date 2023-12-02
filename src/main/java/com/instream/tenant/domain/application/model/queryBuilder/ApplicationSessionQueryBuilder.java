@@ -4,6 +4,7 @@ import com.instream.tenant.domain.application.domain.entity.ApplicationSessionEn
 import com.instream.tenant.domain.application.domain.entity.QApplicationEntity;
 import com.instream.tenant.domain.application.domain.entity.QApplicationSessionEntity;
 import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
+import com.instream.tenant.domain.billing.domain.request.ApplicationBillingSearchPaginationOptionRequest;
 import com.instream.tenant.domain.billing.domain.request.BillingSearchPaginationOptionRequest;
 import com.instream.tenant.domain.common.domain.request.PaginationOptionRequest;
 import com.instream.tenant.domain.common.domain.request.SortOptionRequest;
@@ -45,22 +46,22 @@ public class ApplicationSessionQueryBuilder extends DynamicQueryBuilder<Applicat
         return builder;
     }
 
-    public BooleanBuilder getBillingPredicate(BillingSearchPaginationOptionRequest billingSearchPaginationOptionRequest) {
+    public BooleanBuilder getBillingPredicate(ApplicationBillingSearchPaginationOptionRequest paginationOptionRequest) {
         BooleanBuilder builder = new BooleanBuilder();
 
         builder.and(QApplicationSessionEntity.applicationSessionEntity.status.ne(Expressions.constant(Status.FORCE_STOPPED.getCode())));
         builder.and(QApplicationSessionEntity.applicationSessionEntity.status.ne(Expressions.constant(Status.DELETED.getCode())));
         builder.and(QApplicationSessionEntity.applicationSessionEntity.applicationId.eq(QApplicationEntity.applicationEntity.id));
 
-        if (billingSearchPaginationOptionRequest.getStatus() != null) {
-            builder.and(QApplicationSessionEntity.applicationSessionEntity.status.eq(Expressions.constant(billingSearchPaginationOptionRequest.getStatus().getCode())));
+        if (paginationOptionRequest.getOption().getStatus() != null) {
+            builder.and(QApplicationSessionEntity.applicationSessionEntity.status.eq(Expressions.constant(paginationOptionRequest.getOption().getStatus().getCode())));
         }
 
         builder.and(getPredicate(ApplicationSessionSearchPaginationOptionRequest.builder()
-                .createdStartAt(billingSearchPaginationOptionRequest.getCreatedStartAt())
-                .createdEndAt(billingSearchPaginationOptionRequest.getCreatedEndAt())
-                .deletedStartAt(billingSearchPaginationOptionRequest.getDeletedStartAt())
-                .deletedEndAt(billingSearchPaginationOptionRequest.getDeletedEndAt())
+                .createdStartAt(paginationOptionRequest.getOption().getCreatedStartAt())
+                .createdEndAt(paginationOptionRequest.getOption().getCreatedEndAt())
+                .deletedStartAt(paginationOptionRequest.getOption().getDeletedStartAt())
+                .deletedEndAt(paginationOptionRequest.getOption().getDeletedEndAt())
                 .build()));
 
         return builder;

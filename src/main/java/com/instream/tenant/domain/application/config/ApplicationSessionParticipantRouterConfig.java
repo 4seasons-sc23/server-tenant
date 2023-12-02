@@ -8,6 +8,8 @@ import com.instream.tenant.domain.common.model.InstreamHttpHeaders;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.infra.enums.HttpErrorCode;
 import com.instream.tenant.domain.participant.domain.dto.ParticipantJoinDto;
+import com.instream.tenant.domain.participant.domain.request.EnterToApplicationParticipantRequest;
+import com.instream.tenant.domain.participant.domain.request.LeaveFromApplicationParticipantRequest;
 import com.instream.tenant.domain.participant.domain.request.ParticipantJoinSearchPaginationOptionRequest;
 import com.instream.tenant.domain.participant.handler.ParticipantHandler;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -27,6 +29,7 @@ import java.util.List;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.content.Builder.contentBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
+import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 import static org.springdoc.core.fn.builders.schema.Builder.schemaBuilder;
 import static org.springdoc.webflux.core.fn.SpringdocRouteBuilder.route;
 
@@ -152,6 +155,7 @@ public class ApplicationSessionParticipantRouterConfig extends RouterConfig {
                         .in(ParameterIn.PATH)
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                .requestBody(requestBodyBuilder().implementation(EnterToApplicationParticipantRequest.class))
                 .response(responseBuilder()
                         .responseCode(String.valueOf(HttpStatus.CREATED.value()))
                         .content(contentBuilder().schema(schemaBuilder().implementation(ParticipantJoinDto.class)))
@@ -190,6 +194,7 @@ public class ApplicationSessionParticipantRouterConfig extends RouterConfig {
                         .in(ParameterIn.PATH)
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                .requestBody(requestBodyBuilder().implementation(LeaveFromApplicationParticipantRequest.class))
                 .response(responseBuilder()
                         .responseCode(String.valueOf(HttpStatus.CREATED.value()))
                         .content(contentBuilder().schema(schemaBuilder().implementation(ParticipantJoinDto.class)))

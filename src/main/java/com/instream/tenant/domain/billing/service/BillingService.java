@@ -1,20 +1,18 @@
 package com.instream.tenant.domain.billing.service;
 
-import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
 import com.instream.tenant.domain.application.domain.entity.ApplicationEntity;
 import com.instream.tenant.domain.application.domain.entity.ApplicationSessionEntity;
 import com.instream.tenant.domain.application.domain.entity.QApplicationEntity;
 import com.instream.tenant.domain.application.domain.entity.QApplicationSessionEntity;
 import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
-import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.infra.enums.ApplicationSessionErrorCode;
-import com.instream.tenant.domain.application.infra.mapper.ApplicationMapper;
 import com.instream.tenant.domain.application.infra.mapper.ApplicationSessionMapper;
 import com.instream.tenant.domain.application.model.queryBuilder.ApplicationQueryBuilder;
 import com.instream.tenant.domain.application.model.queryBuilder.ApplicationSessionQueryBuilder;
 import com.instream.tenant.domain.application.repository.ApplicationRepository;
 import com.instream.tenant.domain.application.repository.ApplicationSessionRepository;
 import com.instream.tenant.domain.billing.domain.dto.BillingDto;
+import com.instream.tenant.domain.billing.domain.request.ApplicationBillingSearchPaginationOptionRequest;
 import com.instream.tenant.domain.billing.domain.request.BillingSearchPaginationOptionRequest;
 import com.instream.tenant.domain.billing.domain.request.CreateBillingRequest;
 import com.instream.tenant.domain.billing.domain.request.SummaryBillingRequest;
@@ -60,24 +58,20 @@ public class BillingService {
         this.applicationSessionQueryBuilder = applicationSessionQueryBuilder;
     }
 
-    public Mono<PaginationDto<CollectionDto<BillingDto>>> searchBilling(BillingSearchPaginationOptionRequest billingSearchPaginationOptionRequest, UUID hostId) {
+    public Mono<PaginationDto<CollectionDto<BillingDto>>> searchBillingPerApplication(ApplicationBillingSearchPaginationOptionRequest paginationOptionRequest, UUID hostId, UUID applicationId) {
         QApplicationSessionEntity qApplicationSession = QApplicationSessionEntity.applicationSessionEntity;
         QApplicationEntity qApplication = QApplicationEntity.applicationEntity;
 
-        Pageable pageable = billingSearchPaginationOptionRequest.getPageable();
-        BooleanBuilder applicationSessionPredicate = applicationSessionQueryBuilder.getBillingPredicate(billingSearchPaginationOptionRequest);
-        BooleanBuilder applicationPredicate = applicationQueryBuilder.getPredicate(ApplicationSearchPaginationOptionRequest.builder()
-                .type(billingSearchPaginationOptionRequest.getType())
-                .build());
-        BooleanBuilder applicationPredicateFromBilling = getApplicationPredicate(hostId, billingSearchPaginationOptionRequest.getApplicationId());
-        OrderSpecifier[] orderSpecifierArray = applicationSessionQueryBuilder.getOrderSpecifier(billingSearchPaginationOptionRequest);
-        Flux<ApplicationSessionEntity> applicationSessionFlux;
-        Flux<ApplicationEntity> applicationMono;
+        Pageable pageable = paginationOptionRequest.getPageable();
+        BooleanBuilder applicationSessionPredicate = applicationSessionQueryBuilder.getBillingPredicate(paginationOptionRequest);
+        BooleanBuilder applicationPredicate = applicationQueryBuilder.getPredicate(ApplicationSearchPaginationOptionRequest.builder().build());
+        BooleanBuilder applicationPredicateFromBilling = getApplicationPredicate(hostId, applicationId);
+        OrderSpecifier[] orderSpecifierArray = applicationSessionQueryBuilder.getOrderSpecifier(paginationOptionRequest);
         Flux<BillingDto> billingDtoFlux;
 
         applicationPredicate.and(applicationPredicateFromBilling);
 
-        applicationSessionFlux = applicationSessionRepository.query(sqlQuery -> sqlQuery
+        billingDtoFlux = applicationSessionRepository.query(sqlQuery -> sqlQuery
                         .select(qApplicationSession)
                         .from(qApplicationSession)
                         .where(applicationSessionPredicate)
@@ -86,18 +80,11 @@ public class BillingService {
                         .limit(pageable.getPageSize())
                         .offset(pageable.getOffset())
                 )
-                .all();
-        applicationMono = applicationRepository.query(sqlQuery -> sqlQuery
-                .select(qApplication)
-                .from(qApplicationSession)
-                .where(applicationSessionPredicate)
-                .leftJoin(qApplication).on(applicationPredicate)
-        ).all();
-        billingDtoFlux = Flux.zip(applicationMono, applicationSessionFlux)
-                .flatMap(objects -> Mono.just(ApplicationSessionMapper.INSTANCE.INSTANCE.entityToBilling(objects.getT2())));
+                .all()
+                .flatMap(applicationSession -> Mono.just(ApplicationSessionMapper.INSTANCE.INSTANCE.entityToBilling(applicationSession)));
 
         // TODO: Redis 캐싱 넣기
-        if (billingSearchPaginationOptionRequest.isFirstView()) {
+        if (paginationOptionRequest.isFirstView()) {
             return billingDtoFlux.collectList()
                     .flatMap(billingDtoList -> applicationSessionRepository.query(sqlQuery -> sqlQuery
                                     .select(qApplicationSession.id.count())
@@ -112,7 +99,7 @@ public class BillingService {
                                 return Mono.just(PaginationInfoDto.<CollectionDto<BillingDto>>builder()
                                         .totalElementCount(totalElementCount)
                                         .pageCount(pageCount)
-                                        .currentPage(billingSearchPaginationOptionRequest.getPage())
+                                        .currentPage(paginationOptionRequest.getPage())
                                         .data(CollectionDto.<BillingDto>builder()
                                                 .data(billingDtoList)
                                                 .build())
@@ -122,7 +109,7 @@ public class BillingService {
 
         return billingDtoFlux.collectList()
                 .flatMap(billingDtoList -> Mono.just(PaginationDto.<CollectionDto<BillingDto>>builder()
-                        .currentPage(billingSearchPaginationOptionRequest.getPageable().getPageNumber())
+                        .currentPage(paginationOptionRequest.getPageable().getPageNumber())
                         .data(CollectionDto.<BillingDto>builder()
                                 .data(billingDtoList)
                                 .build())

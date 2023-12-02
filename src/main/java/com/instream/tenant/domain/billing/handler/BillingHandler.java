@@ -1,9 +1,6 @@
 package com.instream.tenant.domain.billing.handler;
 
-import com.instream.tenant.domain.billing.domain.request.BillingSearchPaginationOptionRequest;
-import com.instream.tenant.domain.billing.domain.request.CreateBillingRequest;
-import com.instream.tenant.domain.billing.domain.request.CreateMinioBillingRequest;
-import com.instream.tenant.domain.billing.domain.request.SummaryBillingRequest;
+import com.instream.tenant.domain.billing.domain.request.*;
 import com.instream.tenant.domain.billing.service.BillingService;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
@@ -26,18 +23,20 @@ public class BillingHandler {
         this.billingService = billingService;
     }
 
-    public Mono<ServerResponse> searchBilling(ServerRequest request) {
+    public Mono<ServerResponse> searchBillingPerApplication(ServerRequest request) {
         UUID hostId;
+        UUID applicationId;
 
         try {
             hostId = UUID.fromString(request.pathVariable("hostId"));
+            applicationId = UUID.fromString(request.pathVariable("applicationId"));
         } catch (IllegalArgumentException illegalArgumentException) {
             return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
         }
 
-        return BillingSearchPaginationOptionRequest.fromQueryParams(request.queryParams())
+        return ApplicationBillingSearchPaginationOptionRequest.fromQueryParams(request.queryParams())
                 .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
-                .flatMap((billingSearchPaginationOptionRequest -> billingService.searchBilling(billingSearchPaginationOptionRequest, hostId)))
+                .flatMap((applicationBillingSearchPaginationOptionRequest -> billingService.searchBillingPerApplication(applicationBillingSearchPaginationOptionRequest, hostId, applicationId)))
                 .flatMap(billingPaginationDto -> ServerResponse.ok().bodyValue(billingPaginationDto));
     }
 
