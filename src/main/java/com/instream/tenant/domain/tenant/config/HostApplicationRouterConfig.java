@@ -6,6 +6,8 @@ import com.instream.tenant.domain.application.domain.request.CreateApplicationRe
 import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.handler.ApplicationHandler;
 import com.instream.tenant.domain.billing.domain.dto.BillingDto;
+import com.instream.tenant.domain.billing.domain.request.ApplicationBillingPaginationOption;
+import com.instream.tenant.domain.billing.domain.request.ApplicationBillingSearchPaginationOptionRequest;
 import com.instream.tenant.domain.billing.domain.request.BillingSearchPaginationOptionRequest;
 import com.instream.tenant.domain.billing.handler.BillingHandler;
 import com.instream.tenant.domain.common.config.RouterConfig;
@@ -165,7 +167,7 @@ public class HostApplicationRouterConfig extends RouterConfig {
                         """)
                 .parameter(parameterBuilder().name("hostId").in(ParameterIn.PATH).required(true).example("80bd6328-76a7-11ee-b720-0242ac130003"))
                 .parameter(parameterBuilder().name("applicationId").in(ParameterIn.PATH).required(true).example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                .parameter(parameterBuilder().name("option").in(ParameterIn.QUERY).required(true).implementation(ApplicationSearchPaginationOptionRequest.class))
+                .parameter(parameterBuilder().name("option").in(ParameterIn.QUERY).required(true).implementation(ApplicationBillingSearchPaginationOptionRequest.class))
                 .response(responseBuilder().responseCode("200").implementation(BillingDto.class));
     }
 }

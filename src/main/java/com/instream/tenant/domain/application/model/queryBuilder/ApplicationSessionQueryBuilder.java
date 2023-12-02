@@ -58,10 +58,8 @@ public class ApplicationSessionQueryBuilder extends DynamicQueryBuilder<Applicat
         }
 
         builder.and(getPredicate(ApplicationSessionSearchPaginationOptionRequest.builder()
-                .createdStartAt(paginationOptionRequest.getOption().getCreatedStartAt())
-                .createdEndAt(paginationOptionRequest.getOption().getCreatedEndAt())
-                .deletedStartAt(paginationOptionRequest.getOption().getDeletedStartAt())
-                .deletedEndAt(paginationOptionRequest.getOption().getDeletedEndAt())
+                .deletedStartAt(paginationOptionRequest.getOption().getStartAt())
+                .deletedEndAt(paginationOptionRequest.getOption().getEndAt())
                 .build()));
 
         return builder;

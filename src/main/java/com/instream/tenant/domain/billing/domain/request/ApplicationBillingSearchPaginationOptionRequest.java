@@ -25,13 +25,16 @@ public class ApplicationBillingSearchPaginationOptionRequest extends PaginationO
     @JsonUnwrapped
     private final ApplicationBillingPaginationOption option;
 
-    public ApplicationBillingSearchPaginationOptionRequest(int page, int size, List<SortOptionRequest> sort, boolean firstView, Status status, LocalDateTime createdStartAt, LocalDateTime createdEndAt, LocalDateTime deletedStartAt, LocalDateTime deletedEndAt) {
+    public ApplicationBillingSearchPaginationOptionRequest(int page, int size, List<SortOptionRequest> sort, boolean firstView, ApplicationBillingPaginationOption applicationBillingPaginationOption) {
         super(page, size, sort, firstView);
-        this.option = new ApplicationBillingPaginationOption(status, createdStartAt, createdEndAt, deletedStartAt, deletedEndAt);
+        this.option = applicationBillingPaginationOption;
     }
 
     public static Mono<ApplicationBillingSearchPaginationOptionRequest> fromQueryParams(MultiValueMap<String, String> queryParams) {
         try {
+
+            List<SortOptionRequest> sortOptionRequestList = getSortOptionRequestList(queryParams);
+            ApplicationBillingPaginationOption applicationBillingPaginationOption = ApplicationBillingPaginationOption.fromQueryParams(queryParams);
             int page = Integer.parseInt(Objects.requireNonNull(queryParams.getFirst("page")));
             int size = Integer.parseInt(Objects.requireNonNull(queryParams.getFirst("size")));
             Status status = Optional.ofNullable(queryParams.getFirst("status"))
@@ -44,13 +47,8 @@ public class ApplicationBillingSearchPaginationOptionRequest extends PaginationO
             }
 
             boolean firstView = Boolean.parseBoolean(queryParams.getFirst("firstView"));
-            LocalDateTime createdStartAt = parseDateTime(queryParams.getFirst("createdStartAt"));
-            LocalDateTime createdEndAt = parseDateTime(queryParams.getFirst("createdEndAt"));
-            LocalDateTime deletedStartAt = parseDateTime(queryParams.getFirst("deletedStartAt"));
-            LocalDateTime deletedEndAt = parseDateTime(queryParams.getFirst("deletedEndAt"));
-            List<SortOptionRequest> sortOptionRequestList = getSortOptionRequestList(queryParams);
 
-            ApplicationBillingSearchPaginationOptionRequest searchParams = new ApplicationBillingSearchPaginationOptionRequest(page, size, sortOptionRequestList, firstView, status, createdStartAt, createdEndAt, deletedStartAt, deletedEndAt);
+            ApplicationBillingSearchPaginationOptionRequest searchParams = new ApplicationBillingSearchPaginationOptionRequest(page, size, sortOptionRequestList, firstView, applicationBillingPaginationOption);
 
             return Mono.just(searchParams);
         } catch (Exception e) {
