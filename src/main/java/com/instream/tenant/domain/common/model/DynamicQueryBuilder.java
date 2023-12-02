@@ -17,6 +17,9 @@ import java.util.stream.Collectors;
 
 public abstract class DynamicQueryBuilder<T> {
     protected OrderSpecifier[] getOrderSpecifier(RelationalPathBase<T> relationalPathBase, Collection<SortOptionRequest> sortOptionRequests) {
+        if(sortOptionRequests == null) {
+            return null;
+        }
         return sortOptionRequests.stream()
                 .flatMap(sortOptionRequest -> relationalPathBase.getColumns().stream()
                         .filter(path -> Objects.equals(sortOptionRequest.name(), path.getMetadata().getName()))

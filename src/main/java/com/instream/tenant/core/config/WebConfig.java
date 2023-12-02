@@ -42,15 +42,6 @@ public class WebConfig implements WebFluxConfigurer {
     }
 
     @Override
-    public void addCorsMappings(CorsRegistry corsRegistry) {
-        corsRegistry.addMapping("/**")
-                .allowedOrigins("*")
-                .allowedMethods("*")
-                .allowedHeaders("*")
-                .maxAge(3600);
-    }
-
-    @Override
     public void addFormatters(FormatterRegistry registry) {
         converters.forEach(registry::addConverter);
     }

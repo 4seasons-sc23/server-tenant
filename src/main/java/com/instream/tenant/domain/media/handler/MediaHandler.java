@@ -3,7 +3,7 @@ package com.instream.tenant.domain.media.handler;
 import static org.springframework.web.reactive.function.server.ServerResponse.ok;
 
 import com.instream.tenant.domain.application.service.ApplicationService;
-import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
+import com.instream.tenant.domain.common.model.InstreamHttpHeaders;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.media.domain.request.MediaUploadRequest;

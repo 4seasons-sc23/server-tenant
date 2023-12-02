@@ -11,5 +11,5 @@ import java.util.UUID;
 
 public interface ParticipantJoinRepository extends QuerydslR2dbcRepository<ParticipantJoinEntity, UUID> {
     @Query("UPDATE participant_joins SET updated_at = NOW() WHERE application_session_id = :applicationSessionId")
-    Mono<Integer> updateAllParticipantJoinsBySessionId(@Param("applicationSessionId") UUID applicationSessionId);
+    Mono<Integer> updateAllParticipantJoinsBySessionId(@Param("id") UUID applicationSessionId);
 }

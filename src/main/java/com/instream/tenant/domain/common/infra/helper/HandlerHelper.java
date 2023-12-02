@@ -1,4 +1,4 @@
-package com.instream.tenant.domain.common.infra.model;
+package com.instream.tenant.domain.common.infra.helper;
 
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;

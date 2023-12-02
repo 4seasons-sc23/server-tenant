@@ -14,10 +14,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @Getter
 @ToString
@@ -68,15 +65,7 @@ public class ParticipantJoinSearchPaginationOptionRequest extends PaginationOpti
 
             return Mono.just(searchParams);
         } catch (Exception e) {
-
             return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
         }
-    }
-
-    private static LocalDateTime parseDateTime(String dateTimeStr) {
-        if (dateTimeStr == null || dateTimeStr.isEmpty()) {
-            return null;
-        }
-        return LocalDateTime.parse(dateTimeStr, DateTimeFormatter.ISO_DATE_TIME);
     }
 }

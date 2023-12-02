@@ -3,20 +3,20 @@ package com.instream.tenant.domain.participant.service;
 import com.instream.tenant.domain.application.domain.entity.ApplicationEntity;
 import com.instream.tenant.domain.application.infra.enums.ApplicationErrorCode;
 import com.instream.tenant.domain.application.infra.enums.ApplicationSessionErrorCode;
+import com.instream.tenant.domain.application.infra.enums.ApplicationType;
 import com.instream.tenant.domain.application.infra.mapper.ApplicationMapper;
 import com.instream.tenant.domain.application.repository.ApplicationRepository;
 import com.instream.tenant.domain.application.repository.ApplicationSessionRepository;
+import com.instream.tenant.domain.chat.domain.dto.ChatDto;
+import com.instream.tenant.domain.chat.domain.request.SendChatRequest;
 import com.instream.tenant.domain.common.domain.dto.CollectionDto;
 import com.instream.tenant.domain.common.domain.dto.PaginationDto;
 import com.instream.tenant.domain.common.domain.dto.PaginationInfoDto;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
-import com.instream.tenant.domain.participant.domain.dto.MessageDto;
 import com.instream.tenant.domain.participant.domain.entity.QParticipantJoinEntity;
 import com.instream.tenant.domain.participant.domain.request.ParticipantJoinSearchPaginationOptionRequest;
-import com.instream.tenant.domain.participant.domain.request.SendMessageParticipantRequest;
 import com.instream.tenant.domain.participant.infra.mapper.ParticipantJoinMapper;
 import com.instream.tenant.domain.participant.queryBuilder.ParticipantJoinQueryBuilder;
-import com.instream.tenant.domain.participant.repository.ParticipantActionRepository;
 import com.instream.tenant.domain.participant.domain.dto.ParticipantJoinDto;
 import com.instream.tenant.domain.participant.domain.entity.ParticipantEntity;
 import com.instream.tenant.domain.participant.domain.entity.ParticipantJoinEntity;
@@ -25,6 +25,7 @@ import com.instream.tenant.domain.participant.domain.request.LeaveFromApplicatio
 import com.instream.tenant.domain.participant.infra.enums.ParticipantErrorCode;
 import com.instream.tenant.domain.participant.repository.ParticipantJoinRepository;
 import com.instream.tenant.domain.participant.repository.ParticipantRepository;
+import com.instream.tenant.domain.redis.model.factory.ReactiveRedisTemplateFactory;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Predicate;
@@ -32,7 +33,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.connection.ReactiveSubscription;
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
+import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.stereotype.Service;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -52,16 +57,16 @@ public class ParticipantService {
 
     private final ParticipantJoinRepository participantJoinRepository;
 
-    private final ParticipantActionRepository participantActionRepository;
+    private final ReactiveRedisTemplate<String, ChatDto> chatDtoReactiveRedisTemplate;
 
     @Autowired
-    public ParticipantService(ParticipantJoinQueryBuilder participantJoinQueryBuilder, ApplicationRepository applicationRepository, ApplicationSessionRepository applicationSessionRepository, ParticipantRepository participantRepository, ParticipantJoinRepository participantJoinRepository, ParticipantActionRepository participantActionRepository) {
+    public ParticipantService(ParticipantJoinQueryBuilder participantJoinQueryBuilder, ApplicationRepository applicationRepository, ApplicationSessionRepository applicationSessionRepository, ParticipantRepository participantRepository, ParticipantJoinRepository participantJoinRepository, ReactiveRedisTemplateFactory reactiveRedisTemplateFactory) {
         this.participantJoinQueryBuilder = participantJoinQueryBuilder;
         this.applicationRepository = applicationRepository;
         this.applicationSessionRepository = applicationSessionRepository;
         this.participantRepository = participantRepository;
         this.participantJoinRepository = participantJoinRepository;
-        this.participantActionRepository = participantActionRepository;
+        this.chatDtoReactiveRedisTemplate = reactiveRedisTemplateFactory.getTemplate(ChatDto.class);
     }
 
     public Mono<ParticipantJoinDto> enterToApplication(String apiKey, UUID sessionId, EnterToApplicationParticipantRequest enterToApplicationParticipantRequest) {
@@ -130,11 +135,11 @@ public class ParticipantService {
         if (participantJoinSearchPaginationOptionRequest.isFirstView()) {
             return participantJoinDtoFlux.collectList()
                     .flatMap(participantJoinDtoList -> participantJoinRepository.count(predicate)
-                            .flatMap(count -> {
-                                int totalElementCount = (int) Math.ceil((double) count / pageable.getPageSize());
+                            .flatMap(totalElementCount -> {
+                                long pageCount = (long) Math.ceil((double) totalElementCount / pageable.getPageSize());
                                 return Mono.just(PaginationInfoDto.<CollectionDto<ParticipantJoinDto>>builder()
                                         .totalElementCount(totalElementCount)
-                                        .pageCount(count)
+                                        .pageCount(pageCount)
                                         .currentPage(participantJoinSearchPaginationOptionRequest.getPageable().getPageNumber())
                                         .data(CollectionDto.<ParticipantJoinDto>builder()
                                                 .data(participantJoinDtoList)
@@ -152,8 +157,27 @@ public class ParticipantService {
                         .build()));
     }
 
-    public Mono<MessageDto> sendMessage(String apiKey, UUID tenantId, String participantId, SendMessageParticipantRequest sendMessageParticipantRequest) {
-        return Mono.just(MessageDto.builder().build());
+    public Mono<Void> sendChat(String apiKey, UUID sessionId, SendChatRequest sendChatRequest) {
+        return participantRepository.findById(sendChatRequest.participantId())
+                .switchIfEmpty(Mono.error(new RestApiException(ParticipantErrorCode.PARTICIPANT_NOT_FOUND)))
+                .flatMap(participant -> getApplicationEntityMonoFromApiKeyAndSessionId(apiKey, sessionId)
+                        .flatMap(application -> publishChatToRedis(sessionId, sendChatRequest, participant, application)))
+                .then();
+    }
+
+    @NotNull
+    private Mono<Long> publishChatToRedis(UUID sessionId, SendChatRequest sendChatRequest, ParticipantEntity participant, ApplicationEntity application) {
+        if (application.getType() != ApplicationType.CHAT) {
+            return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_SUPPORTED));
+        }
+
+        return chatDtoReactiveRedisTemplate.convertAndSend(sessionId.toString(), ChatDto.builder()
+                .id(participant.getId())
+                .nickname(participant.getNickname())
+                .profileImgUrl(participant.getProfileImgUrl())
+                .message(sendChatRequest.message())
+                .createdAt(LocalDateTime.now())
+                .build());
     }
 
     @NotNull

@@ -14,11 +14,11 @@ import java.util.*;
 
 @Component
 public class ApplicationQueryBuilder extends DynamicQueryBuilder<ApplicationEntity> {
-    public Predicate getPredicate(ApplicationSearchPaginationOptionRequest applicationSearchPaginationOptionRequest, UUID hostId) {
+    public BooleanBuilder getPredicate(ApplicationSearchPaginationOptionRequest applicationSearchPaginationOptionRequest) {
         BooleanBuilder builder = new BooleanBuilder();
 
         builder.and(QApplicationEntity.applicationEntity.status.ne(Expressions.constant(Status.FORCE_STOPPED.getCode())));
-        builder.and(QApplicationEntity.applicationEntity.tenantId.eq(Expressions.constant(hostId.toString())));
+        builder.and(QApplicationEntity.applicationEntity.status.ne(Expressions.constant(Status.DELETED.getCode())));
 
         if (applicationSearchPaginationOptionRequest.getType() != null) {
             builder.and(QApplicationEntity.applicationEntity.type.eq(Expressions.constant(applicationSearchPaginationOptionRequest.getType().getCode())));
@@ -36,7 +36,7 @@ public class ApplicationQueryBuilder extends DynamicQueryBuilder<ApplicationEnti
             builder.and(QApplicationEntity.applicationEntity.createdAt.loe(applicationSearchPaginationOptionRequest.getEndAt()));
         }
 
-        return builder.getValue();
+        return builder;
     }
 
     public OrderSpecifier[] getOrderSpecifier(ApplicationSearchPaginationOptionRequest applicationSearchPaginationOptionRequest) {

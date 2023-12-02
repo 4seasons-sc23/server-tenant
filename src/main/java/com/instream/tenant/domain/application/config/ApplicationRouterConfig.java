@@ -3,13 +3,12 @@ package com.instream.tenant.domain.application.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
 import com.instream.tenant.domain.application.domain.dto.ApplicationSessionDto;
-import com.instream.tenant.domain.application.domain.dto.ApplicationWithApiKeyDto;
 import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.handler.ApplicationHandler;
 import com.instream.tenant.domain.application.infra.enums.ApplicationErrorCode;
 import com.instream.tenant.domain.application.infra.enums.ApplicationSessionErrorCode;
 import com.instream.tenant.domain.common.config.RouterConfig;
-import com.instream.tenant.domain.common.infra.model.InstreamHttpHeaders;
+import com.instream.tenant.domain.common.model.InstreamHttpHeaders;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.infra.enums.HttpErrorCode;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -154,7 +153,7 @@ public class ApplicationRouterConfig extends RouterConfig {
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
                 .parameter(parameterBuilder()
-                        .name("id")
+                        .name("applicationId")
                         .in(ParameterIn.PATH)
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
@@ -186,7 +185,7 @@ public class ApplicationRouterConfig extends RouterConfig {
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
                 .parameter(parameterBuilder()
-                        .name("id")
+                        .name("applicationId")
                         .in(ParameterIn.PATH)
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
@@ -222,7 +221,7 @@ public class ApplicationRouterConfig extends RouterConfig {
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
                 .parameter(parameterBuilder()
-                        .name("id")
+                        .name("applicationId")
                         .in(ParameterIn.PATH)
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
@@ -255,7 +254,7 @@ public class ApplicationRouterConfig extends RouterConfig {
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
                 .parameter(parameterBuilder()
-                        .name("id")
+                        .name("applicationId")
                         .in(ParameterIn.PATH)
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
@@ -287,7 +286,7 @@ public class ApplicationRouterConfig extends RouterConfig {
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
                 .parameter(parameterBuilder()
-                        .name("id")
+                        .name("applicationId")
                         .in(ParameterIn.PATH)
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
@@ -310,7 +309,7 @@ public class ApplicationRouterConfig extends RouterConfig {
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
                 .parameter(parameterBuilder()
-                        .name("id")
+                        .name("applicationId")
                         .in(ParameterIn.PATH)
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
