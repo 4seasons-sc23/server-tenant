@@ -165,9 +165,6 @@ public class ServiceErrorService {
         ).all();
 
         Flux<ServiceErrorQuestionDto> serviceErrorDtoFlux = serviceErrorEntityFlux
-            .doOnNext(serviceError -> {
-                System.out.println("Mapping ServiceErrorEntity to ServiceErrorQuestionDto: " + serviceError);
-            })
             .flatMap(serviceError -> Mono.just(ServiceErrorQuestionDto.builder()
                 .errorId(serviceError.getErrorId())
                 .title(serviceError.getTitle())
