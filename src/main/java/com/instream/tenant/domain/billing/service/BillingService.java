@@ -9,19 +9,15 @@ import com.instream.tenant.domain.application.domain.request.ApplicationSearchPa
 import com.instream.tenant.domain.application.domain.request.ApplicationSessionSearchPaginationOptionRequest;
 import com.instream.tenant.domain.application.infra.enums.ApplicationSessionErrorCode;
 import com.instream.tenant.domain.application.infra.mapper.ApplicationMapper;
+import com.instream.tenant.domain.application.infra.mapper.ApplicationSessionMapper;
 import com.instream.tenant.domain.application.model.queryBuilder.ApplicationQueryBuilder;
 import com.instream.tenant.domain.application.model.queryBuilder.ApplicationSessionQueryBuilder;
 import com.instream.tenant.domain.application.repository.ApplicationRepository;
 import com.instream.tenant.domain.application.repository.ApplicationSessionRepository;
 import com.instream.tenant.domain.billing.domain.dto.BillingDto;
-import com.instream.tenant.domain.billing.domain.entity.BillingEntity;
-import com.instream.tenant.domain.billing.domain.entity.QBillingEntity;
 import com.instream.tenant.domain.billing.domain.request.BillingSearchPaginationOptionRequest;
 import com.instream.tenant.domain.billing.domain.request.CreateBillingRequest;
 import com.instream.tenant.domain.billing.domain.request.SummaryBillingRequest;
-import com.instream.tenant.domain.billing.infra.mapper.BillingMapper;
-import com.instream.tenant.domain.billing.model.queryBuilder.BillingQueryBuilder;
-import com.instream.tenant.domain.billing.repository.BillingRepository;
 import com.instream.tenant.domain.common.domain.dto.CollectionDto;
 import com.instream.tenant.domain.common.domain.dto.PaginationDto;
 import com.instream.tenant.domain.common.domain.dto.PaginationInfoDto;
@@ -47,100 +43,70 @@ public class BillingService {
     private final double MINIO_BILLING_RATIO = 0.00005;
 
     private final double CHAT_BILLING_RATIO = 0.001;
-    private final BillingRepository billingRepository;
 
     private final ApplicationRepository applicationRepository;
 
     private final ApplicationSessionRepository applicationSessionRepository;
-
-    private final BillingQueryBuilder billingQueryBuilder;
 
     private final ApplicationQueryBuilder applicationQueryBuilder;
 
     private final ApplicationSessionQueryBuilder applicationSessionQueryBuilder;
 
     @Autowired
-    public BillingService(BillingRepository billingRepository, ApplicationRepository applicationRepository, ApplicationSessionRepository applicationSessionRepository, BillingQueryBuilder billingQueryBuilder, ApplicationQueryBuilder applicationQueryBuilder, ApplicationSessionQueryBuilder applicationSessionQueryBuilder) {
-        this.billingRepository = billingRepository;
+    public BillingService(ApplicationRepository applicationRepository, ApplicationSessionRepository applicationSessionRepository, ApplicationQueryBuilder applicationQueryBuilder, ApplicationSessionQueryBuilder applicationSessionQueryBuilder) {
         this.applicationRepository = applicationRepository;
         this.applicationSessionRepository = applicationSessionRepository;
-        this.billingQueryBuilder = billingQueryBuilder;
         this.applicationQueryBuilder = applicationQueryBuilder;
         this.applicationSessionQueryBuilder = applicationSessionQueryBuilder;
     }
 
     public Mono<PaginationDto<CollectionDto<BillingDto>>> searchBilling(BillingSearchPaginationOptionRequest billingSearchPaginationOptionRequest, UUID hostId) {
-        QBillingEntity qBilling = QBillingEntity.billingEntity;
         QApplicationSessionEntity qApplicationSession = QApplicationSessionEntity.applicationSessionEntity;
         QApplicationEntity qApplication = QApplicationEntity.applicationEntity;
 
         Pageable pageable = billingSearchPaginationOptionRequest.getPageable();
-        BooleanBuilder billingPredicate = billingQueryBuilder.getBillingPredicate(billingSearchPaginationOptionRequest);
-        BooleanBuilder applicationSessionPredicate = applicationSessionQueryBuilder.getPredicate(ApplicationSessionSearchPaginationOptionRequest.builder()
-                .createdStartAt(billingSearchPaginationOptionRequest.getCreatedStartAt())
-                .createdEndAt(billingSearchPaginationOptionRequest.getCreatedEndAt())
-                .deletedStartAt(billingSearchPaginationOptionRequest.getDeletedStartAt())
-                .deletedEndAt(billingSearchPaginationOptionRequest.getDeletedEndAt())
-                .build());
+        BooleanBuilder applicationSessionPredicate = applicationSessionQueryBuilder.getBillingPredicate(billingSearchPaginationOptionRequest);
         BooleanBuilder applicationPredicate = applicationQueryBuilder.getPredicate(ApplicationSearchPaginationOptionRequest.builder()
                 .type(billingSearchPaginationOptionRequest.getType())
                 .build());
-        BooleanBuilder applicationSessionPredicateFromBilling = getApplicationSessionPredicateFromBilling();
         BooleanBuilder applicationPredicateFromBilling = getApplicationPredicate(hostId, billingSearchPaginationOptionRequest.getApplicationId());
-        applicationSessionPredicateFromBilling.and(applicationSessionPredicate);
-        OrderSpecifier[] orderSpecifierArray = billingQueryBuilder.getOrderSpecifier(billingSearchPaginationOptionRequest);
-        Flux<BillingEntity> billingFlux;
-        Mono<ApplicationSessionEntity> applicationSessionFlux;
-        Mono<ApplicationEntity> applicationFlux;
+        OrderSpecifier[] orderSpecifierArray = applicationSessionQueryBuilder.getOrderSpecifier(billingSearchPaginationOptionRequest);
+        Flux<ApplicationSessionEntity> applicationSessionFlux;
+        Flux<ApplicationEntity> applicationMono;
         Flux<BillingDto> billingDtoFlux;
 
         applicationPredicate.and(applicationPredicateFromBilling);
-        applicationSessionPredicate.and(applicationSessionPredicateFromBilling);
 
-        billingFlux = billingRepository.query(sqlQuery -> sqlQuery
-                        .select(qBilling)
-                        .from(qBilling)
-                        .where(billingPredicate)
-                        .leftJoin(qApplicationSession).on(applicationSessionPredicate)
+        applicationSessionFlux = applicationSessionRepository.query(sqlQuery -> sqlQuery
+                        .select(qApplicationSession)
+                        .from(qApplicationSession)
+                        .where(applicationSessionPredicate)
                         .leftJoin(qApplication).on(applicationPredicate)
                         .orderBy(orderSpecifierArray)
                         .limit(pageable.getPageSize())
                         .offset(pageable.getOffset())
                 )
                 .all();
-        applicationSessionFlux = applicationSessionRepository.query(sqlQuery -> sqlQuery
-                .select(qApplicationSession)
-                .from(qBilling)
-                .where(billingPredicate)
-                .leftJoin(qApplicationSession).on(applicationSessionPredicate)
-        ).one();
-        applicationFlux = applicationRepository.query(sqlQuery -> sqlQuery
+        applicationMono = applicationRepository.query(sqlQuery -> sqlQuery
                 .select(qApplication)
-                .from(qBilling)
-                .where(billingPredicate)
-                .leftJoin(qApplicationSession).on(applicationSessionPredicate)
+                .from(qApplicationSession)
+                .where(applicationSessionPredicate)
                 .leftJoin(qApplication).on(applicationPredicate)
-        ).one();
-        billingDtoFlux = Flux.zip(billingFlux, applicationFlux, applicationSessionFlux)
-                .flatMap(objects -> {
-                    ApplicationDto applicationDto = ApplicationMapper.INSTANCE.applicationAndSessionEntityToDto(objects.getT2(), objects.getT3());
-                    BillingDto billingDto = BillingMapper.INSTANCE.billingAndApplicationToDto(objects.getT1(), applicationDto);
-                    return Mono.just(billingDto);
-                });
+        ).all();
+        billingDtoFlux = Flux.zip(applicationMono, applicationSessionFlux)
+                .flatMap(objects -> Mono.just(ApplicationSessionMapper.INSTANCE.INSTANCE.entityToBilling(objects.getT2())));
 
         // TODO: Redis 캐싱 넣기
         if (billingSearchPaginationOptionRequest.isFirstView()) {
             return billingDtoFlux.collectList()
-                    .flatMap(billingDtoList -> billingRepository.query(sqlQuery -> sqlQuery
-                                    .select(qBilling.id.count())
-                                    .from(qBilling)
-                                    .where(billingPredicate)
-                                    .join(qApplicationSession).on(applicationSessionPredicate)
+                    .flatMap(billingDtoList -> applicationSessionRepository.query(sqlQuery -> sqlQuery
+                                    .select(qApplicationSession.id.count())
+                                    .from(qApplicationSession)
+                                    .where(applicationSessionPredicate)
                                     .join(qApplication).on(applicationPredicate)
                                     .orderBy(orderSpecifierArray)
-                                    .limit(pageable.getPageSize())
-                                    .offset(pageable.getOffset())
-                            ).one()
+                            )
+                            .one()
                             .flatMap(totalElementCount -> {
                                 long pageCount = (long) Math.ceil((double) totalElementCount / pageable.getPageSize());
                                 return Mono.just(PaginationInfoDto.<CollectionDto<BillingDto>>builder()
@@ -185,12 +151,6 @@ public class BillingService {
                 .then();
     }
 
-    private BooleanBuilder getApplicationSessionPredicateFromBilling() {
-        BooleanBuilder booleanBuilder = new BooleanBuilder();
-        booleanBuilder.and(QApplicationSessionEntity.applicationSessionEntity.id.eq(QBillingEntity.billingEntity.applicationSessionId));
-        return booleanBuilder;
-    }
-
     private BooleanBuilder getApplicationPredicate(UUID hostId, UUID applicationId) {
         BooleanBuilder booleanBuilder = new BooleanBuilder();
 
@@ -206,18 +166,12 @@ public class BillingService {
     }
 
     @NotNull
-    private Mono<BillingEntity> saveBilling(ApplicationSessionEntity applicationSession, double cost) {
+    private Mono<ApplicationSessionEntity> saveBilling(ApplicationSessionEntity applicationSession, double cost) {
         Status billingStatus = applicationSession.isDeleted() ? Status.USE : Status.FORCE_STOPPED;
-        return billingRepository.findByApplicationSessionId(applicationSession.getId())
-                .switchIfEmpty(billingRepository.save(BillingEntity.builder()
-                        .applicationSessionId(applicationSession.getId())
-                        .status(billingStatus)
-                        .cost(cost)
-                        .build()))
-                .flatMap(billing -> {
-                    billing.setStatus(billingStatus);
-                    billing.setCost(billing.getCost() + cost);
-                    return billingRepository.save(billing);
-                });
+
+        applicationSession.setStatus(billingStatus);
+        applicationSession.setCost(applicationSession.getCost() + cost);
+
+        return applicationSessionRepository.save(applicationSession);
     }
 }

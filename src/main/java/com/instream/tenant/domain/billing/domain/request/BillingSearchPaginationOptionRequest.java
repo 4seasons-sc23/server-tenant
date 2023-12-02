@@ -43,7 +43,6 @@ public class BillingSearchPaginationOptionRequest extends PaginationOptionReques
     @Schema(description = "종료 날짜 기준 조회 종료 날짜")
     private final LocalDateTime deletedEndAt;
 
-
     public BillingSearchPaginationOptionRequest(int page, int size, List<SortOptionRequest> sort, boolean firstView, UUID applicationId, ApplicationType type, Status status, LocalDateTime createdStartAt, LocalDateTime createdEndAt, LocalDateTime deletedStartAt, LocalDateTime deletedEndAt) {
         super(page, size, sort, firstView);
         this.applicationId = applicationId;

@@ -3,6 +3,7 @@ package com.instream.tenant.domain.application.model.queryBuilder;
 import com.instream.tenant.domain.application.domain.entity.ApplicationEntity;
 import com.instream.tenant.domain.application.domain.entity.QApplicationEntity;
 import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
+import com.instream.tenant.domain.common.domain.request.PaginationOptionRequest;
 import com.instream.tenant.domain.common.infra.enums.Status;
 import com.instream.tenant.domain.common.model.DynamicQueryBuilder;
 import com.querydsl.core.BooleanBuilder;
@@ -39,8 +40,8 @@ public class ApplicationQueryBuilder extends DynamicQueryBuilder<ApplicationEnti
         return builder;
     }
 
-    public OrderSpecifier[] getOrderSpecifier(ApplicationSearchPaginationOptionRequest applicationSearchPaginationOptionRequest) {
-        return super.getOrderSpecifier(QApplicationEntity.applicationEntity, applicationSearchPaginationOptionRequest.getSort());
+    public OrderSpecifier[] getOrderSpecifier(PaginationOptionRequest paginationOptionRequest) {
+        return super.getOrderSpecifier(QApplicationEntity.applicationEntity, paginationOptionRequest);
     }
 }
 

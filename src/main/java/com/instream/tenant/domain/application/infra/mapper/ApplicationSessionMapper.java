@@ -1,7 +1,9 @@
 package com.instream.tenant.domain.application.infra.mapper;
 
+import com.instream.tenant.domain.application.domain.dto.ApplicationDto;
 import com.instream.tenant.domain.application.domain.dto.ApplicationSessionDto;
 import com.instream.tenant.domain.application.domain.entity.ApplicationSessionEntity;
+import com.instream.tenant.domain.billing.domain.dto.BillingDto;
 import org.mapstruct.Builder;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
@@ -12,4 +14,6 @@ public interface ApplicationSessionMapper {
 
 
     ApplicationSessionDto entityToDto(ApplicationSessionEntity entity);
+
+    BillingDto entityToBilling(ApplicationSessionEntity applicationSession);
 }
