@@ -2,6 +2,7 @@ package com.instream.tenant.domain.admin.serviceError.handler;
 
 import com.instream.tenant.domain.admin.serviceError.domain.request.ServiceErrorAnswerRequestDto;
 import com.instream.tenant.domain.admin.serviceError.service.AdminServiceErrorService;
+import com.instream.tenant.domain.common.domain.request.PaginationOptionRequest;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.serviceError.infra.enums.ServiceErrorErrorCode;
@@ -47,5 +48,13 @@ public class AdminServiceErrorHandler {
         return adminServiceErrorService.getServiceErrorById(errorId)
             .flatMap(error -> ServerResponse.ok().bodyValue(error))
             .switchIfEmpty(ServerResponse.notFound().build());
+    }
+
+    public Mono<ServerResponse> getServiceErrorList(ServerRequest request) {
+        return PaginationOptionRequest.fromQueryParams(request.queryParams())
+            .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
+            .flatMap(paginationRequest -> adminServiceErrorService.getServiceErrorList(paginationRequest))
+            .flatMap(serviceErrorListDto -> ServerResponse.ok().bodyValue(serviceErrorListDto));
+
     }
 }
