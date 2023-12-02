@@ -4,6 +4,7 @@ import com.instream.tenant.domain.admin.serviceError.domain.request.ServiceError
 import com.instream.tenant.domain.admin.serviceError.service.AdminServiceErrorService;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
+import com.instream.tenant.domain.serviceError.infra.enums.ServiceErrorErrorCode;
 import java.net.URI;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -39,5 +40,12 @@ public class AdminServiceErrorHandler {
             .flatMap(answerPostDto -> adminServiceErrorService.patchServiceErrorAnswer(answerPostDto, errorId))
             .flatMap(serviceErrorAnswerDto -> ServerResponse.status(HttpStatus.OK)
                 .bodyValue(serviceErrorAnswerDto));
+    }
+
+    public Mono<ServerResponse> getServiceErrorDetail(ServerRequest request) {
+        Long errorId = Long.valueOf(request.pathVariable("errorId"));
+        return adminServiceErrorService.getServiceErrorById(errorId)
+            .flatMap(error -> ServerResponse.ok().bodyValue(error))
+            .switchIfEmpty(ServerResponse.notFound().build());
     }
 }

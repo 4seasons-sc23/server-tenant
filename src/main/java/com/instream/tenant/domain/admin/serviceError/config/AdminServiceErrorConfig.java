@@ -6,6 +6,7 @@ import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuil
 import static org.springdoc.webflux.core.fn.SpringdocRouteBuilder.route;
 
 import com.instream.tenant.domain.admin.serviceError.domain.request.ServiceErrorAnswerRequestDto;
+import com.instream.tenant.domain.admin.serviceError.domain.response.AdminServiceErrorDetail;
 import com.instream.tenant.domain.admin.serviceError.handler.AdminServiceErrorHandler;
 import com.instream.tenant.domain.serviceError.domain.response.ServiceErrorAnswerDto;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -25,6 +26,7 @@ public class AdminServiceErrorConfig {
             builder -> {
                 builder.add(postServiceErrorAnswer(adminServiceErrorHandler));
                 builder.add(patchServiceErrorAnswer(adminServiceErrorHandler));
+                builder.add(getServiceErrorDetail(adminServiceErrorHandler));
             },
             ops -> ops.operationId("919")
         ).build();
@@ -54,6 +56,19 @@ public class AdminServiceErrorConfig {
                     .requestBody(requestBodyBuilder().implementation(ServiceErrorAnswerRequestDto.class).required(true))
                     .response(responseBuilder().responseCode(HttpStatus.CREATED.name()).implementation(
                         ServiceErrorAnswerDto.class))
+            )
+            .build();
+    }
+
+    private RouterFunction<ServerResponse> getServiceErrorDetail(AdminServiceErrorHandler adminServiceErrorHandler) {
+        return route()
+            .GET(
+                "/{errorId}",
+                adminServiceErrorHandler::getServiceErrorDetail,
+                ops->ops.operationId("919")
+                    .parameter(parameterBuilder().name("errorId").in(ParameterIn.PATH).required(true).example("1"))
+                    .response(responseBuilder().responseCode(HttpStatus.OK.name()).implementation(
+                        AdminServiceErrorDetail.class))
             )
             .build();
     }
