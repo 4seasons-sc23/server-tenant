@@ -1,25 +1,34 @@
 package com.instream.tenant.domain.tenant.domain.dto;
 
 import com.instream.tenant.domain.common.infra.enums.Status;
+import com.querydsl.core.annotations.QueryProjection;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
-public record TenantDto(
-        UUID id,
+@Getter
+@Builder
+@NoArgsConstructor
+public class TenantDto {
+    private UUID id;
 
-        String account,
+    private String account;
 
-        String name,
+    private String name;
 
-        String phoneNumber,
+    private String phoneNumber;
 
-        Status status,
+    private Status status;
 
-        String session
-) {
-    @Builder
-    public TenantDto {
-
+    @QueryProjection
+    public TenantDto(UUID id, String account, String name, String phoneNumber, Status status) {
+        this.id = id;
+        this.account = account;
+        this.name = name;
+        this.phoneNumber = phoneNumber;
+        this.status = status;
     }
 }

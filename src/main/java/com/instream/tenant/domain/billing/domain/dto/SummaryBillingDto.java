@@ -13,7 +13,6 @@ import java.util.UUID;
 @Getter
 @Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class SummaryBillingDto {
     @Schema(description = "사용량 요금", example = "123123.123123")
     private Double cost;
@@ -23,4 +22,11 @@ public class SummaryBillingDto {
 
     @Schema(description = "사용량 요악 조회 종료 기간", example = "2023-11-26T02:27:20.492Z")
     private LocalDateTime endAt;
+
+    @QueryProjection
+    public SummaryBillingDto(Double cost, LocalDateTime startAt, LocalDateTime endAt) {
+        this.cost = cost;
+        this.startAt = startAt;
+        this.endAt = endAt;
+    }
 }

@@ -37,13 +37,13 @@ public class MediaHandler {
     }
 
     public Mono<ServerResponse> startNginxRtmpStream(ServerRequest request) {
-        return request.bodyToMono(NginxRtmpRequest.class)
+        return NginxRtmpRequest.fromQueryParams(request.queryParams())
                 .flatMap(applicationService::startApplicationSession)
                 .flatMap(applicationSessionDto -> ServerResponse.created(URI.create("")).bodyValue(applicationSessionDto));
     }
 
     public Mono<ServerResponse> endNginxRtmpStream(ServerRequest request) {
-        return request.bodyToMono(NginxRtmpRequest.class)
+        return NginxRtmpRequest.fromQueryParams(request.queryParams())
                 .flatMap(applicationService::endApplicationSession)
                 .flatMap(applicationSessionDto -> ServerResponse.ok().bodyValue(applicationSessionDto));
     }
@@ -62,7 +62,7 @@ public class MediaHandler {
                     Map<String, Part> partMap = stringPartMultiValueMap.toSingleValueMap();
                     Part ts = partMap.get("ts");
 
-                    if(ts == null) {
+                    if (ts == null) {
                         return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
                     }
 
