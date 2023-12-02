@@ -143,52 +143,23 @@ public class BillingService {
 
         QTenantDto qTenantDto = new QTenantDto(qTenant.id.as("id"), qTenant.account, qTenant.name, qTenant.phoneNumber, qTenant.status);
         QSummaryBillingDto qSummaryBillingDto = new QSummaryBillingDto(qApplicationSession.cost.sum().as("cost"), qApplicationSession.createdAt, qApplicationSession.deletedAt);
-
-        Expression<TenantDto> qTenantDtoExpression = ExpressionUtils.as(select(qTenantDto)
-                .distinct()
-                .from(qApplication)
-                .where(applicationPredicate)
-                .leftJoin(qApplicationSession).on(applicationSessionPredicate)
-                .leftJoin(qTenant).on(new BooleanBuilder().and(qTenant.id.eq(qApplication.tenantId)))
-                .orderBy(orderSpecifierArray)
-                .limit(pageable.getPageSize())
-                .offset(pageable.getOffset()), "tenant");
-        Expression<SummaryBillingDto> qSummaryBillingDtoExpression = ExpressionUtils.as(select(qSummaryBillingDto)
-                .from(qApplication)
-                .where(applicationPredicate)
-                .leftJoin(qApplicationSession).on(applicationSessionPredicate)
-                .leftJoin(qTenant).on(new BooleanBuilder().and(qTenant.id.eq(qApplication.tenantId)))
-                .groupBy(qApplication.id)
-                .orderBy(orderSpecifierArray)
-                .limit(pageable.getPageSize())
-                .offset(pageable.getOffset()), "summary_billing");
-
-        QAdminBillingDto qAdminBillingDto = new QAdminBillingDto(qTenantDtoExpression, qSummaryBillingDtoExpression);
+        QAdminBillingDto qAdminBillingDto = new QAdminBillingDto(qTenantDto, qSummaryBillingDto);
 
         Flux<AdminBillingDto> applicationBillingDtoFlux;
 
         applicationPredicate.and(applicationPredicateFromBilling);
 
-        applicationRepository.query(sqlQuery -> sqlQuery.select(qTenantDtoExpression))
-                .all()
-                .flatMap(tenantDto -> {
-                    System.out.println(tenantDto);
-                    return Mono.just(tenantDto);
-                })
-                .thenMany(applicationRepository.query(sqlQuery -> sqlQuery.select(qSummaryBillingDtoExpression))
-                        .all()
-                        .flatMap(tenantDto -> {
-                            System.out.println(tenantDto);
-                            return Mono.just(tenantDto);
-                        })
-                ).subscribe();
         applicationBillingDtoFlux = applicationRepository.query(sqlQuery -> sqlQuery
                         .select(qAdminBillingDto)
+                        .from(qApplication)
+                        .where(applicationPredicate)
+                        .leftJoin(qApplicationSession).on(applicationSessionPredicate)
+                        .leftJoin(qTenant).on(new BooleanBuilder().and(qTenant.id.eq(qApplication.tenantId)))
+                        .orderBy(orderSpecifierArray)
+                        .limit(pageable.getPageSize())
+                        .offset(pageable.getOffset())
                 )
-                .all()
-                .flatMap(tuple -> Mono.just(
-                        AdminBillingDto.builder().build()
-                ));
+                .all();
 //                .flatMap(adminBillingDto -> Mono.just(AdminBillingDto.builder()
 //                        .tenant(adminBillingDto.getTenant())
 //                        .summaryBilling(SummaryBillingDto.builder()
