@@ -1,6 +1,7 @@
 package com.instream.tenant.domain.tenant.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.instream.tenant.domain.billing.domain.dto.ApplicationBillingDto;
 import com.instream.tenant.domain.billing.domain.dto.BillingDto;
 import com.instream.tenant.domain.billing.domain.dto.SummaryBillingDto;
 import com.instream.tenant.domain.billing.domain.request.ApplicationBillingPaginationOption;
@@ -90,7 +91,7 @@ public class HostBillingRouterConfig extends RouterConfig {
 
         buildHttpErrorResponse(ops, httpErrorCodeList);
 
-        ops.operationId(String.format("pagination_%s", BillingDto.class.getSimpleName()))
+        ops.operationId(String.format("pagination_%s", ApplicationBillingDto.class.getSimpleName()))
                 .tag(v1HostBillingRoutesTag)
                 .summary("Tenant 사용량 내역 검색 API")
                 .description("""
@@ -108,7 +109,7 @@ public class HostBillingRouterConfig extends RouterConfig {
                         """)
                 .parameter(parameterBuilder().name("hostId").in(ParameterIn.PATH).required(true).example("80bd6328-76a7-11ee-b720-0242ac130003"))
                 .parameter(parameterBuilder().name("option").in(ParameterIn.QUERY).required(true).implementation(BillingSearchPaginationOptionRequest.class))
-                .response(responseBuilder().responseCode("200").implementation(BillingDto.class));
+                .response(responseBuilder().responseCode("200").implementation(ApplicationBillingDto.class));
     }
 
     private void buildGetBillingInfoSwagger(Builder ops) {
