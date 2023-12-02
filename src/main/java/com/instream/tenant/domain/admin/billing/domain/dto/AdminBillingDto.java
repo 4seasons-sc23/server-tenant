@@ -14,15 +14,14 @@ import java.util.UUID;
 @Getter
 @Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class AdminBillingDto {
     private TenantDto tenant;
 
     private SummaryBillingDto summaryBilling;
 
     @QueryProjection
-    public AdminBillingDto(UUID id, String account, String name, String phoneNumber, Status status, String session, Double cost, LocalDateTime startAt, LocalDateTime endAt) {
-        this.tenant = new TenantDto(id, account, name, phoneNumber, status, session);
-        this.summaryBilling = new SummaryBillingDto(cost, startAt, endAt);
+    public AdminBillingDto(TenantDto tenant, SummaryBillingDto summaryBilling) {
+        this.tenant = tenant;
+        this.summaryBilling = summaryBilling;
     }
 }

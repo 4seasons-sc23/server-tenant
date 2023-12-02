@@ -45,7 +45,6 @@ public class TenantService {
                         .phoneNumber(tenant.getPhoneNumber())
                         .status(tenant.getStatus())
                         // TODO: 세션
-                        .session("")
                         .build());
     }
 
@@ -58,7 +57,6 @@ public class TenantService {
                         .name(tenant.getName())
                         .phoneNumber(tenant.getPhoneNumber())
                         .status(tenant.getStatus())
-                        .session("")
                         .build());
     }
 
@@ -83,7 +81,6 @@ public class TenantService {
                                         .name(savedTenant.getName())
                                         .phoneNumber(savedTenant.getPhoneNumber())
                                         .status(savedTenant.getStatus())
-                                        .session("")
                                         .build()
                                 ))
                 );
