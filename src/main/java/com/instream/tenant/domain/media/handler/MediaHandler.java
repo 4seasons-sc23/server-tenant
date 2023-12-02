@@ -14,6 +14,7 @@ import com.instream.tenant.domain.minio.MinioService;
 import java.net.URI;
 import java.util.Map;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.http.codec.multipart.Part;
 import org.springframework.stereotype.Component;
@@ -23,6 +24,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
 @Component
+@Slf4j
 public class MediaHandler {
     private final MediaService mediaService;
 
@@ -37,12 +39,14 @@ public class MediaHandler {
     }
 
     public Mono<ServerResponse> startNginxRtmpStream(ServerRequest request) {
+        request.queryParams().forEach((key, value) -> log.info("startNginxRtmpStream request {} {}", key, value));
         return NginxRtmpRequest.fromQueryParams(request.queryParams())
                 .flatMap(applicationService::startApplicationSession)
                 .flatMap(applicationSessionDto -> ServerResponse.created(URI.create("")).bodyValue(applicationSessionDto));
     }
 
     public Mono<ServerResponse> endNginxRtmpStream(ServerRequest request) {
+        request.queryParams().forEach((key, value) -> log.info("endNginxRtmpStream request {} {}", key, value));
         return NginxRtmpRequest.fromQueryParams(request.queryParams())
                 .flatMap(applicationService::endApplicationSession)
                 .flatMap(applicationSessionDto -> ServerResponse.ok().bodyValue(applicationSessionDto));

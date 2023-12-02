@@ -124,7 +124,7 @@ public class MediaRouterConfig extends RouterConfig {
                         .in(ParameterIn.PATH)
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                .requestBody(requestBodyBuilder().implementation(NginxRtmpStreamEvent.class).required(true).description("Nginx publishing request"))
+                .parameter(parameterBuilder().in(ParameterIn.PATH).implementation(NginxRtmpStreamEvent.class).required(true).description("Nginx publishing request"))
                 .response(responseBuilder().responseCode(String.valueOf(HttpStatus.CREATED.value())).implementation(ApplicationSessionDto.class));
 
     }
@@ -170,7 +170,7 @@ public class MediaRouterConfig extends RouterConfig {
                         .in(ParameterIn.PATH)
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
-                .requestBody(requestBodyBuilder().implementation(NginxRtmpStreamEvent.class).required(true).description("Nginx publishing request"))
+                .parameter(parameterBuilder().name("NginxRtmpStreamEvent").description("Nginx rtmp stream event 쿼리 파라미터").in(ParameterIn.PATH).implementation(NginxRtmpStreamEvent.class).required(true))
                 .response(responseBuilder().responseCode(String.valueOf(HttpStatus.OK.value())).implementation(ApplicationSessionDto.class));
     }
 

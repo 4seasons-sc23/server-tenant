@@ -2,16 +2,14 @@ package com.instream.tenant.domain.tenant.domain.dto;
 
 import com.instream.tenant.domain.common.infra.enums.Status;
 import com.querydsl.core.annotations.QueryProjection;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.UUID;
 
 @Getter
 @Builder
 @NoArgsConstructor
+@ToString
 public class TenantDto {
     private UUID id;
 
