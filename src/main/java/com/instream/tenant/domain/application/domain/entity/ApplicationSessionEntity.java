@@ -37,7 +37,11 @@ public class ApplicationSessionEntity implements RedisEntity {
         return getClass().getSimpleName() + "_" + id;
     }
 
-    public boolean isDeleted () {
+    public String genSessionEndRedisKey() {
+        return id + "_END";
+    }
+
+    public boolean isDeleted() {
         return this.deletedAt != null;
     }
 }

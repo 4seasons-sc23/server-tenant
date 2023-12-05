@@ -14,14 +14,32 @@ import java.util.UUID;
 @Getter
 @Builder
 @NoArgsConstructor
+@AllArgsConstructor
 public class AdminBillingDto {
-    private TenantDto tenant;
+    @Schema(description = "사용량 요금", example = "123123.123123")
+    private UUID id;
 
-    private SummaryBillingDto summaryBilling;
+    @Schema(description = "Tenant 계정", example = "testAccount")
+    private String account;
+
+    @Schema(description = "Tenant 이름", example = "랄라")
+    private String name;
+
+    @Schema(description = "사용량 요금", example = "123123.123123")
+    private Double cost;
+
+    @Schema(description = "사용량 요악 조회 시작 기간", example = "2023-11-26T02:27:20.492Z")
+    private LocalDateTime startAt;
+
+    @Schema(description = "사용량 요악 조회 종료 기간", example = "2023-11-26T02:27:20.492Z")
+    private LocalDateTime endAt;
+
 
     @QueryProjection
-    public AdminBillingDto(TenantDto tenant, SummaryBillingDto summaryBilling) {
-        this.tenant = tenant;
-        this.summaryBilling = summaryBilling;
+    public AdminBillingDto(UUID id, String account, String name, Double cost) {
+        this.id = id;
+        this.account = account;
+        this.name = name;
+        this.cost = cost;
     }
 }
