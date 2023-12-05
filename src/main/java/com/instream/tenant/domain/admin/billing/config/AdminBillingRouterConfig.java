@@ -84,15 +84,13 @@ public class AdminBillingRouterConfig extends RouterConfig {
                 .tag(v1AdminBillingRoutesTag)
                 .summary("관리자 사용량 내역 검색 API")
                 .description("""
-                        관리자가 사용량 내역을 검색합니다.
+                        관리자가 사용량 내역을 검색합니다. startAt & endAt으로 기간 조회를 지원합니다. 해당 값이 없으면 회원가입 이후 전체기간 사용량 요금을 조회합니다.
                                                 
                         정렬은 sort에서 원하는 옵션과 ASC(오름차순), DESC(내림차순)을 입력하시면 됩니다. name 항목은 DB 컬럼 기준 CamelCase로 입력받고 있습니다. 자세한 항목은 ErdCloud 참고해주세요.
                                                 
                         QueryParameter에서는 sort[name]=createdAt&sort[option]=DESC 와 같은 방식으로 입력해주셔야 처리 가능합니다. Swagger에서 요청하면 Responses 항목에서 예시 url을 보실 수 있습니다.
                                                 
                         전체 페이지 및 데이터 개수가 필요할 때만 firstView를 true로, 아니라면 false로 호출해주세요. SQL 성능 차이가 납니다.
-                                                
-                        현재 세션 기간별 조회 옵션을 지원합니다.
                                                 
                         추가적인 옵션을 원할 경우 백엔드 팀한테 문의해주세요!
                         """)
