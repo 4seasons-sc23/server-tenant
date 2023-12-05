@@ -29,7 +29,7 @@
 
 ## 서비스 아키텍쳐
 <div align="center">
-    <img src="./architecture/full-service.png" width="900" alt="chat-sync-server-architecutre">
+    <img src="./architecture/full-service.png" width="900" alt="full-service">
 </div>
 
 운영 서버는 여러 소프트웨어 컴포넌트를 통합·관리하는 역할을 맡고 있습니다. 이러한 역할을 맡고 있음에 대한 이해를 돕고자 전체 서비스 아키텍쳐로 표현하였습니다.
