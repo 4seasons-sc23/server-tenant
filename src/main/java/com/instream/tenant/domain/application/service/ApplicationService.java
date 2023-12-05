@@ -19,15 +19,19 @@ import com.instream.tenant.domain.application.domain.dto.ApplicationWithApiKeyDt
 import com.instream.tenant.domain.application.domain.entity.ApplicationEntity;
 import com.instream.tenant.domain.application.domain.request.CreateApplicationRequest;
 import com.instream.tenant.domain.application.repository.ApplicationSessionRepository;
+import com.instream.tenant.domain.chat.domain.dto.ChatDto;
+import com.instream.tenant.domain.chat.domain.request.SendChatRequest;
 import com.instream.tenant.domain.common.domain.dto.*;
 import com.instream.tenant.domain.common.infra.enums.Status;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.media.domain.request.NginxRtmpRequest;
+import com.instream.tenant.domain.participant.domain.entity.ParticipantEntity;
+import com.instream.tenant.domain.participant.queryBuilder.ParticipantJoinQueryBuilder;
 import com.instream.tenant.domain.participant.repository.ParticipantJoinRepository;
+import com.instream.tenant.domain.participant.repository.ParticipantRepository;
 import com.instream.tenant.domain.redis.model.factory.ReactiveRedisTemplateFactory;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
-import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.dsl.Expressions;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -45,7 +49,9 @@ import java.util.function.Function;
 @Service
 @Slf4j
 public class ApplicationService {
-    private final ReactiveRedisTemplate<String, ApplicationEntity> redisTemplate;
+    private final ReactiveRedisTemplate<String, ApplicationEntity> applicationEntityRedisTemplate;
+
+    private final ReactiveRedisTemplate<String, ApplicationSessionDto> applicationSessionDtoReactiveRedisTemplate;
 
     private final ApplicationRepository applicationRepository;
 
@@ -59,7 +65,8 @@ public class ApplicationService {
 
     @Autowired
     public ApplicationService(ReactiveRedisTemplateFactory redisTemplateFactory, ApplicationRepository applicationRepository, ApplicationSessionRepository applicationSessionRepository, ParticipantJoinRepository participantJoinRepository, ApplicationQueryBuilder applicationQueryBuilder, ApplicationSessionQueryBuilder applicationSessionQueryBuilder) {
-        this.redisTemplate = redisTemplateFactory.getTemplate(ApplicationEntity.class);
+        this.applicationEntityRedisTemplate = redisTemplateFactory.getTemplate(ApplicationEntity.class);
+        this.applicationSessionDtoReactiveRedisTemplate = redisTemplateFactory.getTemplate(ApplicationSessionDto.class);
         this.applicationRepository = applicationRepository;
         this.applicationSessionRepository = applicationSessionRepository;
         this.participantJoinRepository = participantJoinRepository;
@@ -118,7 +125,7 @@ public class ApplicationService {
 
     public Mono<ApplicationWithApiKeyDto> createApplication(CreateApplicationRequest createApplicationRequest, UUID hostId) {
         String apiKey = UUID.randomUUID().toString();
-        Function<ApplicationEntity, Mono<ApplicationEntity>> cachingRedis = application -> redisTemplate.opsForValue()
+        Function<ApplicationEntity, Mono<ApplicationEntity>> cachingRedis = application -> applicationEntityRedisTemplate.opsForValue()
                 .set(String.valueOf(application.genRedisKey()), application)
                 .thenReturn(application);
         Function<ApplicationEntity, Mono<ApplicationWithApiKeyDto>> result = savedApplication -> Mono.just(ApplicationWithApiKeyDto.builder()
@@ -290,7 +297,8 @@ public class ApplicationService {
                         .thenReturn(applicationSession))
                 .sort((session1, session2) -> session2.getCreatedAt().compareTo(session1.getCreatedAt()))
                 .next()
-                .flatMap(applicationSession -> Mono.just(ApplicationSessionMapper.INSTANCE.entityToDto(applicationSession)));
+                .flatMap(applicationSession -> publishEndApplicationSessionToRedis(application, applicationSession)
+                        .then(Mono.just(ApplicationSessionMapper.INSTANCE.entityToDto(applicationSession))));
     }
 
     @NotNull
@@ -302,5 +310,14 @@ public class ApplicationService {
             return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_SUPPORTED));
         }
         return Mono.just(application);
+    }
+
+    @NotNull
+    private Mono<Long> publishEndApplicationSessionToRedis(ApplicationEntity application, ApplicationSessionEntity applicationSession) {
+        if (application.getType() != ApplicationType.CHAT) {
+            return Mono.just(1L);
+        }
+
+        return applicationSessionDtoReactiveRedisTemplate.convertAndSend(applicationSession.genSessionEndRedisKey(), ApplicationSessionMapper.INSTANCE.entityToDto(applicationSession));
     }
 }

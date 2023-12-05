@@ -127,57 +127,52 @@ public class BillingService {
     }
 
     public Mono<PaginationDto<CollectionDto<AdminBillingDto>>> searchBillingForAdmin(BillingSearchPaginationOptionRequest paginationOptionRequest) {
-        Pageable pageable = paginationOptionRequest.getPageable();
-        BooleanBuilder applicationSessionPredicate = applicationSessionQueryBuilder.getBillingPredicate(ApplicationBillingSearchPaginationOptionRequest.builder()
-                .option(paginationOptionRequest.getOption())
-                .build());
-        BooleanBuilder applicationPredicate = applicationQueryBuilder.getPredicate(ApplicationSearchPaginationOptionRequest.builder()
-                .type(paginationOptionRequest.getType())
-                .build());
-        BooleanBuilder applicationPredicateFromBilling = getApplicationPredicate(null, null);
-        OrderSpecifier[] orderSpecifierArray = applicationSessionQueryBuilder.getOrderSpecifier(paginationOptionRequest);
-
         QTenantEntity qTenant = QTenantEntity.tenantEntity;
         QApplicationSessionEntity qApplicationSession = QApplicationSessionEntity.applicationSessionEntity;
         QApplicationEntity qApplication = QApplicationEntity.applicationEntity;
 
-        QTenantDto qTenantDto = new QTenantDto(qTenant.id.as("id"), qTenant.account, qTenant.name, qTenant.phoneNumber, qTenant.status);
-        QSummaryBillingDto qSummaryBillingDto = new QSummaryBillingDto(qApplicationSession.cost.sum().as("cost"), qApplicationSession.createdAt, qApplicationSession.deletedAt);
-        QAdminBillingDto qAdminBillingDto = new QAdminBillingDto(qTenantDto, qSummaryBillingDto);
-
+        Pageable pageable = paginationOptionRequest.getPageable();
+        BooleanBuilder applicationSessionPredicate = applicationSessionQueryBuilder.getBillingPredicate(ApplicationBillingSearchPaginationOptionRequest.builder()
+                .option(paginationOptionRequest.getOption())
+                .build());
+        BooleanBuilder tenantPredicate = new BooleanBuilder().and(qTenant.id.eq(qApplication.tenantId));
+        BooleanBuilder applicationPredicate = applicationQueryBuilder.getPredicate(ApplicationSearchPaginationOptionRequest.builder()
+                .type(paginationOptionRequest.getType())
+                .build());
+        OrderSpecifier[] orderSpecifierArray = applicationSessionQueryBuilder.getOrderSpecifier(paginationOptionRequest);
+        QAdminBillingDto qAdminBillingDto = new QAdminBillingDto(qTenant.id.as("id"), qTenant.account, qTenant.name, qApplicationSession.cost.sum().coalesce(0.0).as("cost"));
         Flux<AdminBillingDto> applicationBillingDtoFlux;
-
-        applicationPredicate.and(applicationPredicateFromBilling);
 
         applicationBillingDtoFlux = applicationRepository.query(sqlQuery -> sqlQuery
                         .select(qAdminBillingDto)
-                        .from(qApplication)
-                        .where(applicationPredicate)
+                        .from(qTenant)
+                        .leftJoin(qApplication).on(tenantPredicate)
                         .leftJoin(qApplicationSession).on(applicationSessionPredicate)
-                        .leftJoin(qTenant).on(new BooleanBuilder().and(qTenant.id.eq(qApplication.tenantId)))
+                        .where(applicationPredicate)
+                        .groupBy(qTenant.id)
                         .orderBy(orderSpecifierArray)
                         .limit(pageable.getPageSize())
                         .offset(pageable.getOffset())
                 )
-                .all();
-//                .flatMap(adminBillingDto -> Mono.just(AdminBillingDto.builder()
-//                        .tenant(adminBillingDto.getTenant())
-//                        .summaryBilling(SummaryBillingDto.builder()
-//                                .cost(1.0)
-//                                .startAt(paginationOptionRequest.getOption().getStartAt())
-//                                .endAt(paginationOptionRequest.getOption().getEndAt())
-//                                .build())
-//                        .build()));
+                .all()
+                .flatMap(adminBillingDto -> Mono.just(AdminBillingDto.builder()
+                                .id(adminBillingDto.getId())
+                                .account(adminBillingDto.getAccount())
+                                .cost(adminBillingDto.getCost())
+                                .name(adminBillingDto.getName())
+                                .startAt(paginationOptionRequest.getOption().getStartAt())
+                                .endAt(paginationOptionRequest.getOption().getEndAt())
+                        .build()));
 
         // TODO: Redis 캐싱 넣기
         if (paginationOptionRequest.isFirstView()) {
             return applicationBillingDtoFlux.collectList()
                     .flatMap(billingDtoList -> applicationSessionRepository.query(sqlQuery -> sqlQuery
-                                    .select(qApplicationSession.applicationId.countDistinct())
-                                    .from(qApplicationSession)
-                                    .where(applicationSessionPredicate)
-                                    .join(qApplication).on(applicationPredicate)
-                                    .orderBy(orderSpecifierArray)
+                                    .select(qTenant.id.countDistinct())
+                                    .from(qTenant)
+                                    .leftJoin(qApplication).on(tenantPredicate)
+                                    .leftJoin(qApplicationSession).on(applicationSessionPredicate)
+                                    .where(applicationPredicate)
                             )
                             .one()
                             .flatMap(totalElementCount -> {
@@ -235,7 +230,6 @@ public class BillingService {
                                     .from(qApplicationSession)
                                     .where(applicationSessionPredicate)
                                     .join(qApplication).on(applicationPredicate)
-                                    .orderBy(orderSpecifierArray)
                             )
                             .one()
                             .flatMap(totalElementCount -> {
