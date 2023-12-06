@@ -2,6 +2,7 @@ package com.instream.tenant.domain.tenant.handler;
 
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
+import com.instream.tenant.domain.tenant.domain.request.FindAccountRequestDto;
 import com.instream.tenant.domain.tenant.domain.request.TenantCreateRequest;
 import com.instream.tenant.domain.tenant.domain.request.TenantSignInRequest;
 import com.instream.tenant.domain.tenant.service.TenantService;
@@ -50,5 +51,12 @@ public class HostHandler {
                 .flatMap(tenantService::signUp)
                 .flatMap(tenantDto -> ServerResponse.created(URI.create(String.format("/%s/info", tenantDto.getId())))
                         .bodyValue(tenantDto));
+    }
+
+    public Mono<ServerResponse> findAccountByPhonenum(ServerRequest request) {
+        return request.bodyToMono(FindAccountRequestDto.class)
+            .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
+            .flatMap(tenantService::findAccountByPhonenum)
+            .flatMap(accountDto -> ServerResponse.ok().bodyValue(accountDto));
     }
 }

@@ -6,8 +6,10 @@ import com.instream.tenant.domain.common.config.RouterConfig;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.infra.enums.HttpErrorCode;
 import com.instream.tenant.domain.tenant.domain.dto.TenantDto;
+import com.instream.tenant.domain.tenant.domain.request.FindAccountRequestDto;
 import com.instream.tenant.domain.tenant.domain.request.TenantCreateRequest;
 import com.instream.tenant.domain.tenant.domain.request.TenantSignInRequest;
+import com.instream.tenant.domain.tenant.domain.response.FindAccountResponseDto;
 import com.instream.tenant.domain.tenant.handler.HostHandler;
 import com.instream.tenant.domain.tenant.infra.enums.TenantErrorCode;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -45,6 +47,7 @@ public class HostRouterConfig extends RouterConfig {
                     builder.add(getUserInfo(hostHandler));
                     builder.add(signIn(hostHandler));
                     builder.add(signUp(hostHandler));
+                    builder.add(findAccount(hostHandler));
                 },
                 ops -> ops.operationId("v1HostRoutes")
         ).build();
@@ -78,6 +81,16 @@ public class HostRouterConfig extends RouterConfig {
                         this::buildSignUpSwagger
                 )
                 .build();
+    }
+
+    private RouterFunction<ServerResponse> findAccount(HostHandler hostHandler) {
+        return route()
+            .POST(
+                "/find/id",
+                hostHandler::findAccountByPhonenum,
+                this::buildFindIdSwagger
+            )
+            .build();
     }
 
     private void buildGetUserInfoSwagger(Builder ops) {
@@ -144,5 +157,23 @@ public class HostRouterConfig extends RouterConfig {
                         """)
                 .requestBody(requestBodyBuilder().implementation(TenantCreateRequest.class))
                 .response(responseBuilder().implementation(TenantDto.class));
+    }
+
+    private void buildFindIdSwagger(Builder ops) {
+        List<HttpErrorCode> httpErrorCodeList = new ArrayList<>(Arrays.asList(
+            CommonHttpErrorCode.BAD_REQUEST,
+            TenantErrorCode.TENANT_NOT_FOUND
+        ));
+
+        buildHttpErrorResponse(ops, httpErrorCodeList);
+
+        ops.operationId("findAccount")
+            .tag(v1HostRoutesTag)
+            .summary("아이디 찾기 API")
+            .description("""
+                    회원가입에 사용한 전화번호를 통해 아이디를 찾습니다.
+                """)
+            .requestBody(requestBodyBuilder().implementation(FindAccountRequestDto.class))
+            .response(responseBuilder().implementation(FindAccountResponseDto.class));
     }
 }

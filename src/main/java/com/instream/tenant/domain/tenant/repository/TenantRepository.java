@@ -1,6 +1,8 @@
 package com.instream.tenant.domain.tenant.repository;
 
+import com.instream.tenant.domain.common.infra.enums.Status;
 import com.instream.tenant.domain.tenant.domain.entity.TenantEntity;
+import com.instream.tenant.domain.tenant.domain.response.FindAccountResponseDto;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import reactor.core.publisher.Mono;
 
@@ -10,4 +12,6 @@ public interface TenantRepository extends ReactiveCrudRepository<TenantEntity, U
     Mono<TenantEntity> findByAccount(String account);
 
     Mono<TenantEntity> findByAccountAndPassword(String account, String password);
+
+    Mono<TenantEntity> findByPhoneNumberAndStatus(String phoneNumber, Status status);
 }
