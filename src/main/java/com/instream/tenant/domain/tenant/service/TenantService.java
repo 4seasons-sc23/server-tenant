@@ -107,4 +107,15 @@ public class TenantService {
             })
             .then();
     }
+
+    public Mono<Void> checkDupliacteAccount(String account) {
+        return tenantRepository.findByAccount(account)
+            .flatMap(tenantEntity -> {
+                if(tenantEntity != null) {
+                    return Mono.error(new RestApiException(TenantErrorCode.EXIST_ACCOUNT));
+                }
+                return Mono.empty();
+            })
+            .then();
+    }
 }

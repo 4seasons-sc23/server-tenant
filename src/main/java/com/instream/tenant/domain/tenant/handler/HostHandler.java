@@ -6,6 +6,7 @@ import com.instream.tenant.domain.tenant.domain.request.FindAccountRequestDto;
 import com.instream.tenant.domain.tenant.domain.request.FindPasswordRequestDto;
 import com.instream.tenant.domain.tenant.domain.request.TenantCreateRequest;
 import com.instream.tenant.domain.tenant.domain.request.TenantSignInRequest;
+import com.instream.tenant.domain.tenant.infra.enums.TenantErrorCode;
 import com.instream.tenant.domain.tenant.service.TenantService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -66,5 +67,14 @@ public class HostHandler {
             .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
             .flatMap(tenantService::findPasswordByPhonenum)
             .then(ServerResponse.ok().build());
+    }
+
+    public Mono<ServerResponse> checkDuplicateAccount(ServerRequest request) {
+        String account = request.queryParam("account")
+            .orElseThrow(() -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
+        return tenantService.checkDupliacteAccount(account)
+            .then(ServerResponse.ok().build());
+
+
     }
 }

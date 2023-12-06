@@ -51,6 +51,7 @@ public class HostRouterConfig extends RouterConfig {
                     builder.add(signUp(hostHandler));
                     builder.add(findAccount(hostHandler));
                     builder.add(findPassword(hostHandler));
+                    builder.add(checkDuplicateAccount(hostHandler));
                 },
                 ops -> ops.operationId("v1HostRoutes")
         ).build();
@@ -102,6 +103,16 @@ public class HostRouterConfig extends RouterConfig {
                 "/find/pw",
                 hostHandler::findPasswordByPhonenum,
                 this::buildFindPasswordSwagger
+            )
+            .build();
+    }
+
+    private RouterFunction<ServerResponse> checkDuplicateAccount(HostHandler hostHandler) {
+        return route()
+            .GET(
+                "/duplicate/account",
+                hostHandler::checkDuplicateAccount,
+                this::buildCheckDuplicateAccountSwagger
             )
             .build();
     }
@@ -202,6 +213,22 @@ public class HostRouterConfig extends RouterConfig {
             .summary("비밀번호 찾기 API")
             .description("회원가입에 사용한 전화번호를 통해 비밀번호를 재설정합니다.")
             .requestBody(requestBodyBuilder().implementation(FindPasswordRequestDto.class))
+            .response(responseBuilder().responseCode("200").description(HttpStatus.OK.name()));
+    }
+
+    private void buildCheckDuplicateAccountSwagger(Builder ops) {
+        List<HttpErrorCode> httpErrorCodeList = new ArrayList<>(Arrays.asList(
+            CommonHttpErrorCode.BAD_REQUEST,
+            TenantErrorCode.EXIST_ACCOUNT
+        ));
+
+        buildHttpErrorResponse(ops, httpErrorCodeList);
+
+        ops.operationId("checkDuplicateAccount")
+            .tag(v1HostRoutesTag)
+            .summary("아이디 중복 확인 API")
+            .description("회원가입에 사용할 아이디가 중복인지 확인합니다.")
+            .parameter(parameterBuilder().name("account"))
             .response(responseBuilder().responseCode("200").description(HttpStatus.OK.name()));
     }
 }
