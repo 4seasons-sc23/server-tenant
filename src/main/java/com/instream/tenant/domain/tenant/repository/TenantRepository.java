@@ -14,4 +14,6 @@ public interface TenantRepository extends ReactiveCrudRepository<TenantEntity, U
     Mono<TenantEntity> findByAccountAndPassword(String account, String password);
 
     Mono<TenantEntity> findByPhoneNumberAndStatus(String phoneNumber, Status status);
+
+    Mono<TenantEntity> findByIdAndStatus(UUID hostId, Status status);
 }

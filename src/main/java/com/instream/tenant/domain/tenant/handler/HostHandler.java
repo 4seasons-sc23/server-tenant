@@ -1,5 +1,6 @@
 package com.instream.tenant.domain.tenant.handler;
 
+import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.tenant.domain.request.FindAccountRequestDto;
@@ -74,7 +75,18 @@ public class HostHandler {
             .orElseThrow(() -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
         return tenantService.checkDupliacteAccount(account)
             .then(ServerResponse.ok().build());
+    }
 
+    public Mono<ServerResponse> withdrawal(ServerRequest request) {
+        UUID hostId;
 
+        try {
+            hostId = UUID.fromString(request.pathVariable("hostId"));
+        } catch (IllegalArgumentException illegalArgumentException) {
+            return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
+        }
+
+        return tenantService.withdrawal(hostId)
+            .flatMap(withdrawalDto -> ServerResponse.ok().bodyValue(withdrawalDto));
     }
 }

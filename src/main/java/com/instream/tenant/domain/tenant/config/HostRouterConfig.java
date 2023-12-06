@@ -11,6 +11,7 @@ import com.instream.tenant.domain.tenant.domain.request.FindPasswordRequestDto;
 import com.instream.tenant.domain.tenant.domain.request.TenantCreateRequest;
 import com.instream.tenant.domain.tenant.domain.request.TenantSignInRequest;
 import com.instream.tenant.domain.tenant.domain.response.FindAccountResponseDto;
+import com.instream.tenant.domain.tenant.domain.response.HostWithdrawalResponseDto;
 import com.instream.tenant.domain.tenant.handler.HostHandler;
 import com.instream.tenant.domain.tenant.infra.enums.TenantErrorCode;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -52,6 +53,7 @@ public class HostRouterConfig extends RouterConfig {
                     builder.add(findAccount(hostHandler));
                     builder.add(findPassword(hostHandler));
                     builder.add(checkDuplicateAccount(hostHandler));
+                    builder.add(withdrawal(hostHandler));
                 },
                 ops -> ops.operationId("v1HostRoutes")
         ).build();
@@ -113,6 +115,16 @@ public class HostRouterConfig extends RouterConfig {
                 "/duplicate/account",
                 hostHandler::checkDuplicateAccount,
                 this::buildCheckDuplicateAccountSwagger
+            )
+            .build();
+    }
+
+    private RouterFunction<ServerResponse> withdrawal(HostHandler hostHandler) {
+        return route()
+            .PATCH(
+                "/{hostId}/withdrawal",
+                hostHandler::withdrawal,
+                this::buildWithdrawalSwagger
             )
             .build();
     }
@@ -230,5 +242,23 @@ public class HostRouterConfig extends RouterConfig {
             .description("회원가입에 사용할 아이디가 중복인지 확인합니다.")
             .parameter(parameterBuilder().name("account"))
             .response(responseBuilder().responseCode("200").description(HttpStatus.OK.name()));
+    }
+
+    private void buildWithdrawalSwagger(Builder ops) {
+        List<HttpErrorCode> httpErrorCodeList = new ArrayList<>(Arrays.asList(
+            CommonHttpErrorCode.BAD_REQUEST,
+            TenantErrorCode.TENANT_NOT_FOUND
+        ));
+
+        buildHttpErrorResponse(ops, httpErrorCodeList);
+
+        ops.operationId("checkDuplicateAccount")
+            .tag(v1HostRoutesTag)
+            .summary("회원 탈퇴 API")
+            .description("사용자가 서비스에서 탈퇴합니다.")
+            .parameter(parameterBuilder().name("hostId").in(ParameterIn.PATH).required(true)
+                .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+            .response(responseBuilder().responseCode("200").description(HttpStatus.OK.name())
+                .implementation(HostWithdrawalResponseDto.class));
     }
 }

@@ -9,9 +9,11 @@ import com.instream.tenant.domain.tenant.domain.request.FindPasswordRequestDto;
 import com.instream.tenant.domain.tenant.domain.request.TenantCreateRequest;
 import com.instream.tenant.domain.tenant.domain.request.TenantSignInRequest;
 import com.instream.tenant.domain.tenant.domain.response.FindAccountResponseDto;
+import com.instream.tenant.domain.tenant.domain.response.HostWithdrawalResponseDto;
 import com.instream.tenant.domain.tenant.infra.enums.TenantErrorCode;
 import com.instream.tenant.domain.tenant.repository.TenantRepository;
 import com.instream.tenant.domain.redis.model.factory.ReactiveRedisTemplateFactory;
+import java.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -117,5 +119,20 @@ public class TenantService {
                 return Mono.empty();
             })
             .then();
+    }
+
+    public Mono<HostWithdrawalResponseDto> withdrawal(UUID hostId) {
+        return tenantRepository.findByIdAndStatus(hostId, Status.USE)
+            .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
+            .flatMap(tenantEntity -> {
+                tenantEntity.setStatus(Status.DELETED);
+                tenantEntity.setDeletedAt(LocalDateTime.now());
+                return tenantRepository.save(tenantEntity)
+                    .flatMap(savedTenant -> Mono.just(HostWithdrawalResponseDto.builder()
+                        .hostId(savedTenant.getId())
+                        .status(savedTenant.getStatus())
+                        .deletedAt(savedTenant.getDeletedAt())
+                        .build()));
+            });
     }
 }
