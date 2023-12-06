@@ -5,6 +5,7 @@ import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.tenant.domain.dto.TenantDto;
 import com.instream.tenant.domain.tenant.domain.entity.TenantEntity;
 import com.instream.tenant.domain.tenant.domain.request.FindAccountRequestDto;
+import com.instream.tenant.domain.tenant.domain.request.FindPasswordRequestDto;
 import com.instream.tenant.domain.tenant.domain.request.TenantCreateRequest;
 import com.instream.tenant.domain.tenant.domain.request.TenantSignInRequest;
 import com.instream.tenant.domain.tenant.domain.response.FindAccountResponseDto;
@@ -95,5 +96,15 @@ public class TenantService {
                 .account(accountDto.getAccount())
                 .createdAt(accountDto.getCreatedAt())
                 .build()));
+    }
+
+    public Mono<Void> findPasswordByPhonenum(FindPasswordRequestDto requestDto) {
+        return tenantRepository.findByPhoneNumberAndStatus(requestDto.userPhoneNum(), Status.USE)
+            .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
+            .flatMap(tenantEntity -> {
+                tenantEntity.setPassword(requestDto.newPassword());
+                return tenantRepository.save(tenantEntity);
+            })
+            .then();
     }
 }

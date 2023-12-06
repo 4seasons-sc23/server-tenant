@@ -7,6 +7,7 @@ import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.infra.enums.HttpErrorCode;
 import com.instream.tenant.domain.tenant.domain.dto.TenantDto;
 import com.instream.tenant.domain.tenant.domain.request.FindAccountRequestDto;
+import com.instream.tenant.domain.tenant.domain.request.FindPasswordRequestDto;
 import com.instream.tenant.domain.tenant.domain.request.TenantCreateRequest;
 import com.instream.tenant.domain.tenant.domain.request.TenantSignInRequest;
 import com.instream.tenant.domain.tenant.domain.response.FindAccountResponseDto;
@@ -17,6 +18,7 @@ import org.springdoc.core.fn.builders.operation.Builder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.server.RequestPredicates;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -48,6 +50,7 @@ public class HostRouterConfig extends RouterConfig {
                     builder.add(signIn(hostHandler));
                     builder.add(signUp(hostHandler));
                     builder.add(findAccount(hostHandler));
+                    builder.add(findPassword(hostHandler));
                 },
                 ops -> ops.operationId("v1HostRoutes")
         ).build();
@@ -89,6 +92,16 @@ public class HostRouterConfig extends RouterConfig {
                 "/find/id",
                 hostHandler::findAccountByPhonenum,
                 this::buildFindIdSwagger
+            )
+            .build();
+    }
+
+    private RouterFunction<ServerResponse> findPassword(HostHandler hostHandler) {
+        return route()
+            .POST(
+                "/find/pw",
+                hostHandler::findPasswordByPhonenum,
+                this::buildFindPasswordSwagger
             )
             .build();
     }
@@ -170,10 +183,25 @@ public class HostRouterConfig extends RouterConfig {
         ops.operationId("findAccount")
             .tag(v1HostRoutesTag)
             .summary("아이디 찾기 API")
-            .description("""
-                    회원가입에 사용한 전화번호를 통해 아이디를 찾습니다.
-                """)
+            .description("회원가입에 사용한 전화번호를 통해 아이디를 찾습니다.")
             .requestBody(requestBodyBuilder().implementation(FindAccountRequestDto.class))
-            .response(responseBuilder().implementation(FindAccountResponseDto.class));
+            .response(responseBuilder().responseCode("200").description(HttpStatus.OK.name())
+                .implementation(FindAccountResponseDto.class));
+    }
+
+    private void buildFindPasswordSwagger(Builder ops) {
+        List<HttpErrorCode> httpErrorCodeList = new ArrayList<>(Arrays.asList(
+            CommonHttpErrorCode.BAD_REQUEST,
+            TenantErrorCode.TENANT_NOT_FOUND
+        ));
+
+        buildHttpErrorResponse(ops, httpErrorCodeList);
+
+        ops.operationId("findPassword")
+            .tag(v1HostRoutesTag)
+            .summary("비밀번호 찾기 API")
+            .description("회원가입에 사용한 전화번호를 통해 비밀번호를 재설정합니다.")
+            .requestBody(requestBodyBuilder().implementation(FindPasswordRequestDto.class))
+            .response(responseBuilder().responseCode("200").description(HttpStatus.OK.name()));
     }
 }

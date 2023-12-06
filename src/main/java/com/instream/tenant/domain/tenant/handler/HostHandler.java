@@ -3,6 +3,7 @@ package com.instream.tenant.domain.tenant.handler;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.tenant.domain.request.FindAccountRequestDto;
+import com.instream.tenant.domain.tenant.domain.request.FindPasswordRequestDto;
 import com.instream.tenant.domain.tenant.domain.request.TenantCreateRequest;
 import com.instream.tenant.domain.tenant.domain.request.TenantSignInRequest;
 import com.instream.tenant.domain.tenant.service.TenantService;
@@ -58,5 +59,12 @@ public class HostHandler {
             .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
             .flatMap(tenantService::findAccountByPhonenum)
             .flatMap(accountDto -> ServerResponse.ok().bodyValue(accountDto));
+    }
+
+    public Mono<ServerResponse> findPasswordByPhonenum(ServerRequest request) {
+        return request.bodyToMono(FindPasswordRequestDto.class)
+            .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
+            .flatMap(tenantService::findPasswordByPhonenum)
+            .then(ServerResponse.ok().build());
     }
 }
