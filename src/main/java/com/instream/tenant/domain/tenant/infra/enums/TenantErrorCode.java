@@ -5,7 +5,9 @@ import org.springframework.http.HttpStatus;
 
 public enum TenantErrorCode implements HttpErrorCode {
     TENANT_NOT_FOUND("호스트를 찾지 못 했습니다.", HttpStatus.NOT_FOUND),
-    EXIST_TENANT("존재하는 호스트입니다.", HttpStatus.CONFLICT);
+    EXIST_TENANT("존재하는 호스트입니다.", HttpStatus.CONFLICT),
+    EXIST_ACCOUNT("존재하는 아이디입니다.", HttpStatus.CONFLICT),
+    NOT_MATCH_PASSWORD("비밀번호가 일치하지 않습니다.", HttpStatus.UNAUTHORIZED);
 
     private final String message;
     private final HttpStatus httpStatus;

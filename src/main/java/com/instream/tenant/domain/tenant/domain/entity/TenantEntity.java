@@ -37,6 +37,8 @@ public class TenantEntity implements RedisEntity {
 
     private LocalDateTime updatedAt;
 
+    private LocalDateTime deletedAt;
+
     @Override
     public String genRedisKey() {
         return getClass().getSimpleName() + "_" + id;
