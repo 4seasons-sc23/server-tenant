@@ -8,6 +8,7 @@ import com.instream.tenant.domain.error.infra.enums.HttpErrorCode;
 import com.instream.tenant.domain.tenant.domain.dto.TenantDto;
 import com.instream.tenant.domain.tenant.domain.request.FindAccountRequestDto;
 import com.instream.tenant.domain.tenant.domain.request.FindPasswordRequestDto;
+import com.instream.tenant.domain.tenant.domain.request.PatchPasswordRequestDto;
 import com.instream.tenant.domain.tenant.domain.request.TenantCreateRequest;
 import com.instream.tenant.domain.tenant.domain.request.TenantSignInRequest;
 import com.instream.tenant.domain.tenant.domain.response.FindAccountResponseDto;
@@ -54,6 +55,7 @@ public class HostRouterConfig extends RouterConfig {
                     builder.add(findPassword(hostHandler));
                     builder.add(checkDuplicateAccount(hostHandler));
                     builder.add(withdrawal(hostHandler));
+                    builder.add(patchPassword(hostHandler));
                 },
                 ops -> ops.operationId("v1HostRoutes")
         ).build();
@@ -125,6 +127,16 @@ public class HostRouterConfig extends RouterConfig {
                 "/{hostId}/withdrawal",
                 hostHandler::withdrawal,
                 this::buildWithdrawalSwagger
+            )
+            .build();
+    }
+
+    private RouterFunction<ServerResponse> patchPassword(HostHandler hostHandler) {
+        return route()
+            .PATCH(
+                "/{hostId}/password",
+                hostHandler::patchPassword,
+                this::buildPatchPassword
             )
             .build();
     }
@@ -252,7 +264,7 @@ public class HostRouterConfig extends RouterConfig {
 
         buildHttpErrorResponse(ops, httpErrorCodeList);
 
-        ops.operationId("checkDuplicateAccount")
+        ops.operationId("hostWithdrawal")
             .tag(v1HostRoutesTag)
             .summary("회원 탈퇴 API")
             .description("사용자가 서비스에서 탈퇴합니다.")
@@ -260,5 +272,24 @@ public class HostRouterConfig extends RouterConfig {
                 .example("80bd6328-76a7-11ee-b720-0242ac130003"))
             .response(responseBuilder().responseCode("200").description(HttpStatus.OK.name())
                 .implementation(HostWithdrawalResponseDto.class));
+    }
+
+    private void buildPatchPassword(Builder ops) {
+        List<HttpErrorCode> httpErrorCodeList = new ArrayList<>(Arrays.asList(
+            CommonHttpErrorCode.BAD_REQUEST,
+            TenantErrorCode.TENANT_NOT_FOUND,
+            TenantErrorCode.NOT_MATCH_PASSWORD
+        ));
+
+        buildHttpErrorResponse(ops, httpErrorCodeList);
+
+        ops.operationId("patchPassword")
+            .tag(v1HostRoutesTag)
+            .summary("비밀번호 변경 API")
+            .description("사용자가 사용 중인 비밀번호를 변경합니다.")
+            .requestBody(requestBodyBuilder().implementation(PatchPasswordRequestDto.class))
+            .parameter(parameterBuilder().name("hostId").in(ParameterIn.PATH).required(true)
+                .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+            .response(responseBuilder().responseCode("200").description(HttpStatus.OK.name()));
     }
 }

@@ -6,6 +6,7 @@ import com.instream.tenant.domain.tenant.domain.dto.TenantDto;
 import com.instream.tenant.domain.tenant.domain.entity.TenantEntity;
 import com.instream.tenant.domain.tenant.domain.request.FindAccountRequestDto;
 import com.instream.tenant.domain.tenant.domain.request.FindPasswordRequestDto;
+import com.instream.tenant.domain.tenant.domain.request.PatchPasswordRequestDto;
 import com.instream.tenant.domain.tenant.domain.request.TenantCreateRequest;
 import com.instream.tenant.domain.tenant.domain.request.TenantSignInRequest;
 import com.instream.tenant.domain.tenant.domain.response.FindAccountResponseDto;
@@ -14,6 +15,7 @@ import com.instream.tenant.domain.tenant.infra.enums.TenantErrorCode;
 import com.instream.tenant.domain.tenant.repository.TenantRepository;
 import com.instream.tenant.domain.redis.model.factory.ReactiveRedisTemplateFactory;
 import java.time.LocalDateTime;
+import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -134,5 +136,18 @@ public class TenantService {
                         .deletedAt(savedTenant.getDeletedAt())
                         .build()));
             });
+    }
+
+    public Mono<Void> patchPassword(UUID hostId, PatchPasswordRequestDto requestDto) {
+        return tenantRepository.findByIdAndStatus(hostId, Status.USE)
+            .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
+            .flatMap(tenantEntity -> {
+                if(!Objects.equals(tenantEntity.getPassword(), requestDto.currentPassword())) {
+                    return Mono.error(new RestApiException(TenantErrorCode.NOT_MATCH_PASSWORD));
+                }
+                tenantEntity.setPassword(requestDto.newPassword());
+                return tenantRepository.save(tenantEntity);
+            })
+            .then();
     }
 }
