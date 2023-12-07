@@ -55,16 +55,22 @@ public class TenantService {
     }
 
     public Mono<TenantDto> signIn(TenantSignInRequest tenantSignInRequest) {
-        return tenantRepository.findByAccountAndPassword(tenantSignInRequest.account(), passwordEncoder.encode(tenantSignInRequest.password()))
+        return tenantRepository.findByAccount(tenantSignInRequest.account())
                 .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
-                .map(tenant -> TenantDto.builder()
-                        .id(tenant.getId())
-                        .account(tenant.getAccount())
-                        .name(tenant.getName())
-                        .phoneNumber(tenant.getPhoneNumber())
-                        .apiKey(tenant.getApiKey())
-                        .status(tenant.getStatus())
-                        .build());
+                .flatMap(tenant -> {
+                    if (passwordEncoder.matches(tenantSignInRequest.password(), tenant.getPassword())) {
+                        return Mono.error(new RestApiException(TenantErrorCode.UNAUTHORIZED));
+                    }
+                    return Mono.just(
+                            TenantDto.builder()
+                                    .id(tenant.getId())
+                                    .account(tenant.getAccount())
+                                    .name(tenant.getName())
+                                    .phoneNumber(tenant.getPhoneNumber())
+                                    .apiKey(tenant.getApiKey())
+                                    .status(tenant.getStatus())
+                                    .build());
+                });
     }
 
     public Mono<TenantDto> signUp(TenantCreateRequest tenantCreateRequest) {
