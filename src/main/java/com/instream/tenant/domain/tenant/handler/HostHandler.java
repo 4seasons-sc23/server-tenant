@@ -1,6 +1,5 @@
 package com.instream.tenant.domain.tenant.handler;
 
-import com.instream.tenant.domain.application.domain.request.ApplicationSearchPaginationOptionRequest;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.tenant.domain.request.FindAccountRequestDto;
@@ -9,7 +8,6 @@ import com.instream.tenant.domain.tenant.domain.request.PatchPasswordRequestDto;
 import com.instream.tenant.domain.tenant.domain.request.PatchTenantNameRequestDto;
 import com.instream.tenant.domain.tenant.domain.request.TenantCreateRequest;
 import com.instream.tenant.domain.tenant.domain.request.TenantSignInRequest;
-import com.instream.tenant.domain.tenant.infra.enums.TenantErrorCode;
 import com.instream.tenant.domain.tenant.service.TenantService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -61,21 +59,21 @@ public class HostHandler {
     public Mono<ServerResponse> findAccountByPhonenum(ServerRequest request) {
         return request.bodyToMono(FindAccountRequestDto.class)
             .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
-            .flatMap(tenantService::findAccountByPhonenum)
+            .flatMap(tenantService::findAccountByPhoneNum)
             .flatMap(accountDto -> ServerResponse.ok().bodyValue(accountDto));
     }
 
     public Mono<ServerResponse> findPasswordByPhonenum(ServerRequest request) {
         return request.bodyToMono(FindPasswordRequestDto.class)
             .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
-            .flatMap(tenantService::findPasswordByPhonenum)
+            .flatMap(tenantService::findPasswordByPhoneNum)
             .then(ServerResponse.ok().build());
     }
 
     public Mono<ServerResponse> checkDuplicateAccount(ServerRequest request) {
         String account = request.queryParam("account")
             .orElseThrow(() -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
-        return tenantService.checkDupliacteAccount(account)
+        return tenantService.checkDuplicateAccount(account)
             .then(ServerResponse.ok().build());
     }
 
