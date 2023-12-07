@@ -12,7 +12,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @ToString
 public class TenantDto {
-    @Schema(description = "Tenant ID", example = "80bd6328-76a7-11ee-b720-0242ac130003")
+    @Schema(description = "Tenant Id", example = "80bd6328-76a7-11ee-b720-0242ac130003")
     private UUID id;
 
     @Schema(description = "Tenant 계정", example = "testAccount")

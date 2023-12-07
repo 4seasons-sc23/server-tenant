@@ -7,6 +7,7 @@ import com.instream.tenant.domain.tenant.domain.entity.TenantEntity;
 import com.instream.tenant.domain.tenant.domain.request.FindAccountRequestDto;
 import com.instream.tenant.domain.tenant.domain.request.FindPasswordRequestDto;
 import com.instream.tenant.domain.tenant.domain.request.PatchPasswordRequestDto;
+import com.instream.tenant.domain.tenant.domain.request.PatchTenantNameRequestDto;
 import com.instream.tenant.domain.tenant.domain.request.TenantCreateRequest;
 import com.instream.tenant.domain.tenant.domain.request.TenantSignInRequest;
 import com.instream.tenant.domain.tenant.domain.response.FindAccountResponseDto;
@@ -149,5 +150,21 @@ public class TenantService {
                 return tenantRepository.save(tenantEntity);
             })
             .then();
+    }
+
+    public Mono<TenantDto> patchHostName(UUID hostId, PatchTenantNameRequestDto requestDto) {
+        return tenantRepository.findByIdAndStatus(hostId, Status.USE)
+            .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
+            .flatMap(tenantEntity -> {
+                tenantEntity.setName(requestDto.name());
+                return tenantRepository.save(tenantEntity);
+            })
+            .flatMap(savedTenant -> Mono.just(TenantDto.builder()
+                .id(savedTenant.getId())
+                .account(savedTenant.getAccount())
+                .name(savedTenant.getName())
+                .phoneNumber(savedTenant.getPhoneNumber())
+                .status(savedTenant.getStatus())
+                .build()));
     }
 }

@@ -6,6 +6,7 @@ import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.tenant.domain.request.FindAccountRequestDto;
 import com.instream.tenant.domain.tenant.domain.request.FindPasswordRequestDto;
 import com.instream.tenant.domain.tenant.domain.request.PatchPasswordRequestDto;
+import com.instream.tenant.domain.tenant.domain.request.PatchTenantNameRequestDto;
 import com.instream.tenant.domain.tenant.domain.request.TenantCreateRequest;
 import com.instream.tenant.domain.tenant.domain.request.TenantSignInRequest;
 import com.instream.tenant.domain.tenant.infra.enums.TenantErrorCode;
@@ -104,5 +105,20 @@ public class HostHandler {
             .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
             .flatMap(patchPasswordDto -> tenantService.patchPassword(hostId, patchPasswordDto))
             .then(ServerResponse.ok().build());
+    }
+
+    public Mono<ServerResponse> patchHostName(ServerRequest request) {
+        UUID hostId;
+
+        try {
+            hostId = UUID.fromString(request.pathVariable("hostId"));
+        } catch (IllegalArgumentException illegalArgumentException) {
+            return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
+        }
+
+        return request.bodyToMono(PatchTenantNameRequestDto.class)
+            .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
+            .flatMap(patchHostNameDto -> tenantService.patchHostName(hostId, patchHostNameDto))
+            .flatMap(hostDto -> ServerResponse.ok().bodyValue(hostDto));
     }
 }

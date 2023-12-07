@@ -9,6 +9,7 @@ import com.instream.tenant.domain.tenant.domain.dto.TenantDto;
 import com.instream.tenant.domain.tenant.domain.request.FindAccountRequestDto;
 import com.instream.tenant.domain.tenant.domain.request.FindPasswordRequestDto;
 import com.instream.tenant.domain.tenant.domain.request.PatchPasswordRequestDto;
+import com.instream.tenant.domain.tenant.domain.request.PatchTenantNameRequestDto;
 import com.instream.tenant.domain.tenant.domain.request.TenantCreateRequest;
 import com.instream.tenant.domain.tenant.domain.request.TenantSignInRequest;
 import com.instream.tenant.domain.tenant.domain.response.FindAccountResponseDto;
@@ -56,6 +57,7 @@ public class HostRouterConfig extends RouterConfig {
                     builder.add(checkDuplicateAccount(hostHandler));
                     builder.add(withdrawal(hostHandler));
                     builder.add(patchPassword(hostHandler));
+                    builder.add(patchHostName(hostHandler));
                 },
                 ops -> ops.operationId("v1HostRoutes")
         ).build();
@@ -136,7 +138,17 @@ public class HostRouterConfig extends RouterConfig {
             .PATCH(
                 "/{hostId}/password",
                 hostHandler::patchPassword,
-                this::buildPatchPassword
+                this::buildPatchPasswordSwagger
+            )
+            .build();
+    }
+
+    private RouterFunction<ServerResponse> patchHostName(HostHandler hostHandler) {
+        return route()
+            .PATCH(
+                "/{hostId}/name",
+                hostHandler::patchHostName,
+                this::buildPatchHostNameSwagger
             )
             .build();
     }
@@ -274,7 +286,7 @@ public class HostRouterConfig extends RouterConfig {
                 .implementation(HostWithdrawalResponseDto.class));
     }
 
-    private void buildPatchPassword(Builder ops) {
+    private void buildPatchPasswordSwagger(Builder ops) {
         List<HttpErrorCode> httpErrorCodeList = new ArrayList<>(Arrays.asList(
             CommonHttpErrorCode.BAD_REQUEST,
             TenantErrorCode.TENANT_NOT_FOUND,
@@ -291,5 +303,24 @@ public class HostRouterConfig extends RouterConfig {
             .parameter(parameterBuilder().name("hostId").in(ParameterIn.PATH).required(true)
                 .example("80bd6328-76a7-11ee-b720-0242ac130003"))
             .response(responseBuilder().responseCode("200").description(HttpStatus.OK.name()));
+    }
+
+    private void buildPatchHostNameSwagger(Builder ops) {
+        List<HttpErrorCode> httpErrorCodeList = new ArrayList<>(Arrays.asList(
+            CommonHttpErrorCode.BAD_REQUEST,
+            TenantErrorCode.TENANT_NOT_FOUND
+        ));
+
+        buildHttpErrorResponse(ops, httpErrorCodeList);
+
+        ops.operationId("patchHostName")
+            .tag(v1HostRoutesTag)
+            .summary("테넌트 이름 변경 API")
+            .description("테넌트 이름을 변경합니다.")
+            .requestBody(requestBodyBuilder().implementation(PatchTenantNameRequestDto.class))
+            .parameter(parameterBuilder().name("hostId").in(ParameterIn.PATH).required(true)
+                .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+            .response(responseBuilder().responseCode("200").description(HttpStatus.OK.name())
+                .implementation(TenantDto.class));
     }
 }
