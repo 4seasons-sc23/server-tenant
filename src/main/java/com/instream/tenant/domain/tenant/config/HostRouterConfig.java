@@ -290,7 +290,7 @@ public class HostRouterConfig extends RouterConfig {
         List<HttpErrorCode> httpErrorCodeList = new ArrayList<>(Arrays.asList(
             CommonHttpErrorCode.BAD_REQUEST,
             TenantErrorCode.TENANT_NOT_FOUND,
-            TenantErrorCode.NOT_MATCH_PASSWORD
+            TenantErrorCode.UNAUTHORIZED
         ));
 
         buildHttpErrorResponse(ops, httpErrorCodeList);
