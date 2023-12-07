@@ -25,6 +25,7 @@ import com.instream.tenant.domain.common.domain.dto.*;
 import com.instream.tenant.domain.common.infra.enums.Status;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.media.domain.request.NginxRtmpRequest;
+import com.instream.tenant.domain.minio.MinioService;
 import com.instream.tenant.domain.participant.domain.entity.ParticipantEntity;
 import com.instream.tenant.domain.participant.queryBuilder.ParticipantJoinQueryBuilder;
 import com.instream.tenant.domain.participant.repository.ParticipantJoinRepository;
@@ -36,6 +37,7 @@ import com.querydsl.core.types.dsl.Expressions;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -49,6 +51,11 @@ import java.util.function.Function;
 @Service
 @Slf4j
 public class ApplicationService {
+    private final MinioService minioService;
+
+    @Value("${minio.bucket}")
+    private String bucketName;
+
     private final ReactiveRedisTemplate<String, ApplicationEntity> applicationEntityRedisTemplate;
 
     private final ReactiveRedisTemplate<String, ApplicationSessionDto> applicationSessionDtoReactiveRedisTemplate;
@@ -64,7 +71,8 @@ public class ApplicationService {
     private final ApplicationSessionQueryBuilder applicationSessionQueryBuilder;
 
     @Autowired
-    public ApplicationService(ReactiveRedisTemplateFactory redisTemplateFactory, ApplicationRepository applicationRepository, ApplicationSessionRepository applicationSessionRepository, ParticipantJoinRepository participantJoinRepository, ApplicationQueryBuilder applicationQueryBuilder, ApplicationSessionQueryBuilder applicationSessionQueryBuilder) {
+    public ApplicationService(MinioService minioService, ReactiveRedisTemplateFactory redisTemplateFactory, ApplicationRepository applicationRepository, ApplicationSessionRepository applicationSessionRepository, ParticipantJoinRepository participantJoinRepository, ApplicationQueryBuilder applicationQueryBuilder, ApplicationSessionQueryBuilder applicationSessionQueryBuilder) {
+        this.minioService = minioService;
         this.applicationEntityRedisTemplate = redisTemplateFactory.getTemplate(ApplicationEntity.class);
         this.applicationSessionDtoReactiveRedisTemplate = redisTemplateFactory.getTemplate(ApplicationSessionDto.class);
         this.applicationRepository = applicationRepository;
@@ -121,6 +129,14 @@ public class ApplicationService {
                                 .data(applicationDtoList)
                                 .build())
                         .build()));
+    }
+
+    public Mono<ApplicationSessionDto> getRecentSession(String apiKey, UUID applicationId) {
+        return applicationRepository.findByIdAndApiKey(applicationId, apiKey)
+                .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
+                .then(applicationSessionRepository.findTopByApplicationIdAndDeletedAtIsNullOrderByCreatedAtDesc(applicationId))
+                .flatMap(applicationSession -> Mono.just(ApplicationSessionMapper.INSTANCE.entityToDto(applicationSession)))
+                .switchIfEmpty(Mono.error(new RestApiException(ApplicationSessionErrorCode.APPLICATION_SESSION_NOT_FOUND)));
     }
 
     public Mono<ApplicationWithApiKeyDto> createApplication(CreateApplicationRequest createApplicationRequest, UUID hostId) {
@@ -298,8 +314,14 @@ public class ApplicationService {
                 .sort((session1, session2) -> session2.getCreatedAt().compareTo(session1.getCreatedAt()))
                 .next()
                 .flatMap(applicationSession -> publishEndApplicationSessionToRedis(application, applicationSession)
+                        // .then(this.deleteRemainFileInMinio(applicationSession))
                         .then(Mono.just(ApplicationSessionMapper.INSTANCE.entityToDto(applicationSession))));
     }
+
+//    @NotNull
+//    private Mono<Void> deleteRemainFileInMinio(ApplicationSessionEntity applicationSession) {
+//        minioService.
+//    }
 
     @NotNull
     private Mono<ApplicationEntity> validationForNginxRtmp(ApplicationEntity application, boolean isNginxRtmp) {

@@ -33,6 +33,8 @@ public class TenantEntity implements RedisEntity {
 
     private String phoneNumber;
 
+    private String apiKey;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

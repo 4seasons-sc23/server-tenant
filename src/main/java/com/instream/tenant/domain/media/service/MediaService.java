@@ -43,8 +43,7 @@ public class MediaService {
     @Value("${minio.bucket}")
     private String bucketName;
 
-    public MediaService(ApplicationRepository applicationRepository,
-                        ApplicationSessionRepository applicationSessionRepository, MinioService minioService) {
+    public MediaService(ApplicationRepository applicationRepository, ApplicationSessionRepository applicationSessionRepository, MinioService minioService) {
         this.applicationRepository = applicationRepository;
         this.applicationSessionRepository = applicationSessionRepository;
         this.minioService = minioService;

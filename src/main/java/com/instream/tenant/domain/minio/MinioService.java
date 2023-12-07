@@ -3,6 +3,7 @@ package com.instream.tenant.domain.minio;
 import io.minio.MinioClient;
 import io.minio.ObjectWriteResponse;
 import io.minio.PutObjectArgs;
+import io.minio.RemoveObjectsArgs;
 import io.minio.errors.MinioException;
 
 import java.io.File;
@@ -47,4 +48,23 @@ public class MinioService {
             }
         }).subscribeOn(Schedulers.boundedElastic());
     }
+
+//    public Mono<ObjectWriteResponse> deleteFile(String objectName) {
+//        if (file == null) {
+//            return Mono.empty();
+//        }
+//
+//        return Mono.fromCallable(() -> {
+//            try (FileInputStream fileInputStream = new FileInputStream(file)) {
+//                log.info("Upload file to Minio {}", objectName);
+//                return minioClient.removeObjects(
+//                        RemoveObjectsArgs.builder()
+//                                .bucket(bucketName)
+//                                .objects()
+//                                .build());
+//            } catch (MinioException | IOException | NoSuchAlgorithmException | InvalidKeyException e) {
+//                throw new RuntimeException("Error uploading file to MinIO", e);
+//            }
+//        }).subscribeOn(Schedulers.boundedElastic());
+//    }
 }

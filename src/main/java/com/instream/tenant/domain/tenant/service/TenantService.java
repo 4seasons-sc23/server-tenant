@@ -11,6 +11,7 @@ import com.instream.tenant.domain.tenant.repository.TenantRepository;
 import com.instream.tenant.domain.redis.model.factory.ReactiveRedisTemplateFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -20,12 +21,16 @@ import java.util.UUID;
 public class TenantService {
     private ReactiveRedisTemplate<String, TenantEntity> redisTemplate;
 
+    private PasswordEncoder passwordEncoder;
+
     private TenantRepository tenantRepository;
 
+
     @Autowired
-    public TenantService(ReactiveRedisTemplateFactory redisTemplateFactory, TenantRepository tenantRepository) {
+    public TenantService(ReactiveRedisTemplateFactory redisTemplateFactory, TenantRepository tenantRepository, PasswordEncoder passwordEncoder) {
         this.redisTemplate = redisTemplateFactory.getTemplate(TenantEntity.class);
         this.tenantRepository = tenantRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public Mono<TenantDto> getTenantById(UUID tenantId) {
@@ -43,19 +48,21 @@ public class TenantService {
                         .account(tenant.getAccount())
                         .name(tenant.getName())
                         .phoneNumber(tenant.getPhoneNumber())
+                        .apiKey(tenant.getApiKey())
                         .status(tenant.getStatus())
                         // TODO: 세션
                         .build());
     }
 
     public Mono<TenantDto> signIn(TenantSignInRequest tenantSignInRequest) {
-        return tenantRepository.findByAccountAndPassword(tenantSignInRequest.account(), tenantSignInRequest.password())
+        return tenantRepository.findByAccountAndPassword(tenantSignInRequest.account(), passwordEncoder.encode(tenantSignInRequest.password()))
                 .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
                 .map(tenant -> TenantDto.builder()
                         .id(tenant.getId())
                         .account(tenant.getAccount())
                         .name(tenant.getName())
                         .phoneNumber(tenant.getPhoneNumber())
+                        .apiKey(tenant.getApiKey())
                         .status(tenant.getStatus())
                         .build());
     }
@@ -66,9 +73,10 @@ public class TenantService {
                 .switchIfEmpty(Mono.defer(() -> tenantRepository.save(
                                         TenantEntity.builder()
                                                 .account(tenantCreateRequest.account())
-                                                .password(tenantCreateRequest.password())
+                                                .password(passwordEncoder.encode(tenantCreateRequest.password()))
                                                 .name(tenantCreateRequest.name())
                                                 .phoneNumber(tenantCreateRequest.phoneNumber())
+                                                .apiKey(UUID.randomUUID().toString())
                                                 .status(Status.USE)
                                                 .build()
                                 ))
@@ -80,6 +88,7 @@ public class TenantService {
                                         .account(savedTenant.getAccount())
                                         .name(savedTenant.getName())
                                         .phoneNumber(savedTenant.getPhoneNumber())
+                                        .apiKey(savedTenant.getApiKey())
                                         .status(savedTenant.getStatus())
                                         .build()
                                 ))
