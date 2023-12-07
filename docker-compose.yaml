@@ -9,6 +9,10 @@ services:
       SERVER_MODE: dev
     env_file:
       - .env
+    networks:
+      mynetwork:
+        ipv4_address: 172.20.0.2
+
   instream-media-server:
     image: instream-media-server:latest
     container_name: instream-media-server
@@ -21,6 +25,9 @@ services:
       - "80:80"
     env_file:
       - .env
+    networks:
+      mynetwork:
+        ipv4_address: 172.20.0.3
 
   redis:
     image: redis:alpine
@@ -31,6 +38,9 @@ services:
     - "mode=standalone"
     ports:
     - "6379:6379"
+    networks:
+      mynetwork:
+        ipv4_address: 172.20.0.4
 
   mariadb:
     container_name: "mariadb"
@@ -46,3 +56,13 @@ services:
       MARIADB_USER: ${MARIA_USERNAME}
       MARIADB_PASSWORD: ${MARIA_PASSWORD}
       MARIADB_ROOT_PASSWORD: ${MARIA_ROOT_PASSWORD}
+    networks:
+      mynetwork:
+        ipv4_address: 172.20.0.5
+
+networks:
+  mynetwork:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16

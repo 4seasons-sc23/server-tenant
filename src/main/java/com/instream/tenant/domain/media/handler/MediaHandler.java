@@ -3,6 +3,7 @@ package com.instream.tenant.domain.media.handler;
 import static org.springframework.web.reactive.function.server.ServerResponse.ok;
 
 import com.instream.tenant.domain.application.service.ApplicationService;
+import com.instream.tenant.domain.common.infra.helper.HandlerHelper;
 import com.instream.tenant.domain.common.model.InstreamHttpHeaders;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
@@ -13,8 +14,11 @@ import com.instream.tenant.domain.minio.MinioService;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.UUID;
 
+import io.swagger.v3.oas.models.servers.Server;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.http.codec.multipart.Part;
 import org.springframework.stereotype.Component;
@@ -29,13 +33,18 @@ public class MediaHandler {
     private final MediaService mediaService;
 
     private final ApplicationService applicationService;
-    private final MinioService minioService;
 
-
-    public MediaHandler(MediaService mediaService, ApplicationService applicationService, MinioService minioService) {
+    public MediaHandler(MediaService mediaService, ApplicationService applicationService) {
         this.mediaService = mediaService;
         this.applicationService = applicationService;
-        this.minioService = minioService;
+    }
+
+    public Mono<ServerResponse> getRecentSession(ServerRequest request) {
+        String apiKey = request.headers().firstHeader(InstreamHttpHeaders.API_KEY);
+        Mono<UUID> applicationIdMono = HandlerHelper.getUUIDFromPathVariable(request, "applicationId");
+        return applicationIdMono
+                .flatMap(applicationId -> applicationService.getRecentSession(apiKey, applicationId))
+                .flatMap(applicationSessionDto -> ServerResponse.ok().bodyValue(applicationSessionDto));
     }
 
     public Mono<ServerResponse> startNginxRtmpStream(ServerRequest request) {

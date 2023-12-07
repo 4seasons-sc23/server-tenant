@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.instream.tenant.domain.application.domain.dto.ApplicationSessionDto;
 import com.instream.tenant.domain.application.domain.request.NginxRtmpStreamEvent;
 import com.instream.tenant.domain.application.infra.enums.ApplicationErrorCode;
+import com.instream.tenant.domain.application.infra.enums.ApplicationSessionErrorCode;
 import com.instream.tenant.domain.common.config.RouterConfig;
 import com.instream.tenant.domain.common.model.InstreamHttpHeaders;
 import com.instream.tenant.domain.error.infra.enums.CommonHttpErrorCode;
@@ -45,6 +46,7 @@ public class MediaRouterConfig extends RouterConfig {
     public RouterFunction<ServerResponse> v1MediaRoutes(MediaHandler mediaHandler) {
         return route().nest(RequestPredicates.path("/v1/medias"),
                 builder -> {
+                    builder.add(getRecentSession(mediaHandler));
                     builder.add(startNginxRtmpStream(mediaHandler));
                     builder.add(endNginxRtmpStream(mediaHandler));
                     builder.add(uploadHlsFiles(mediaHandler));
@@ -52,6 +54,15 @@ public class MediaRouterConfig extends RouterConfig {
                 ops -> ops.operationId("v1-media-routes")
                         .tag(v1MediaRoutesTag)
         ).build();
+    }
+
+    private RouterFunction<ServerResponse> getRecentSession(MediaHandler mediaHandler) {
+        return route().GET(
+                        "/{applicationId}/recentSession",
+                        mediaHandler::getRecentSession,
+                        this::buildGetRecentSessionSwagger
+                )
+                .build();
     }
 
     private RouterFunction<ServerResponse> startNginxRtmpStream(MediaHandler mediaHandler) {
@@ -81,6 +92,38 @@ public class MediaRouterConfig extends RouterConfig {
                         this::buildUploadHlsFilesSwagger
                 )
                 .build();
+    }
+
+    private void buildGetRecentSessionSwagger(Builder ops) {
+        List<HttpErrorCode> httpErrorCodeList = new ArrayList<>(Arrays.asList(
+                CommonHttpErrorCode.UNAUTHORIZED,
+                CommonHttpErrorCode.BAD_REQUEST,
+                ApplicationErrorCode.APPLICATION_NOT_FOUND,
+                ApplicationSessionErrorCode.APPLICATION_SESSION_NOT_FOUND,
+                CommonHttpErrorCode.INTERNAL_SERVER_ERROR
+        ));
+
+        buildHttpErrorResponse(ops, httpErrorCodeList);
+
+        ops.operationId("getRecentSession")
+                .summary("어플리케이션 종료되지 않은 최근 세션 찾기")
+                .description("""
+                        어플리케이션 종료되지 않은 최근 세션 찾기
+                        """)
+                .tag(v1MediaRoutesTag)
+                .parameter(parameterBuilder()
+                        .name(InstreamHttpHeaders.API_KEY)
+                        .description("API Key")
+                        .in(ParameterIn.HEADER)
+                        .required(true)
+                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                .parameter(parameterBuilder()
+                        .name("applicationId")
+                        .description("어플리케이션 ID")
+                        .in(ParameterIn.PATH)
+                        .required(true)
+                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                .response(responseBuilder().responseCode(String.valueOf(HttpStatus.OK.value())).implementation(ApplicationSessionDto.class));
     }
 
     private void buildStartNginxRtmpStreamSwagger(Builder ops) {
@@ -121,12 +164,11 @@ public class MediaRouterConfig extends RouterConfig {
                 .parameter(parameterBuilder()
                         .name(InstreamHttpHeaders.API_KEY)
                         .description("API Key")
-                        .in(ParameterIn.PATH)
+                        .in(ParameterIn.HEADER)
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
                 .parameter(parameterBuilder().in(ParameterIn.PATH).implementation(NginxRtmpStreamEvent.class).required(true).description("Nginx publishing request"))
                 .response(responseBuilder().responseCode(String.valueOf(HttpStatus.CREATED.value())).implementation(ApplicationSessionDto.class));
-
     }
 
     private void buildEndNginxRtmpStreamSwagger(Builder ops) {
@@ -167,7 +209,7 @@ public class MediaRouterConfig extends RouterConfig {
                 .parameter(parameterBuilder()
                         .name(InstreamHttpHeaders.API_KEY)
                         .description("API Key")
-                        .in(ParameterIn.PATH)
+                        .in(ParameterIn.HEADER)
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
                 .parameter(parameterBuilder().name("NginxRtmpStreamEvent").description("Nginx rtmp stream event 쿼리 파라미터").in(ParameterIn.PATH).implementation(NginxRtmpStreamEvent.class).required(true))

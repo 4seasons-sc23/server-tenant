@@ -21,6 +21,8 @@ public interface ApplicationSessionRepository extends QuerydslR2dbcRepository<Ap
 
     Mono<ApplicationSessionEntity> findTopByApplicationIdOrderByCreatedAtDesc(UUID applicationId);
 
+    Mono<ApplicationSessionEntity> findTopByApplicationIdAndDeletedAtIsNullOrderByCreatedAtDesc(UUID applicationId);
+
     Mono<ApplicationSessionEntity> findTopByApplicationIdAndDeletedAtOrderByCreatedAtDesc(
             UUID applicationId, LocalDateTime deletedAt);
 

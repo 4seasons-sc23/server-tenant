@@ -18,6 +18,8 @@ public interface ApplicationRepository extends QuerydslR2dbcRepository<Applicati
 
     Mono<ApplicationEntity> findByIdAndTenantId(UUID id, UUID tenantId);
 
+    Mono<ApplicationEntity> findByIdAndApiKey(UUID id, String apiKey);
+
     Mono<ApplicationEntity> findByApiKey(String apiKey);
 
     Mono<Void> deleteByIdAndTenantId(UUID id, UUID tenantId);
