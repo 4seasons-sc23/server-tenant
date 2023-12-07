@@ -325,18 +325,23 @@ public class ApplicationService {
 
     @NotNull
     private Mono<ApplicationEntity> validationForNginxRtmp(ApplicationEntity application, boolean isNginxRtmp) {
-        if (isNginxRtmp && application.getType() != ApplicationType.STREAMING) {
+        if (isNginxRtmp) {
+            if (application.getType() == ApplicationType.CHAT) {
+                return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_SUPPORTED));
+            }
+            return Mono.just(application);
+        }
+
+        if (application.getType() != ApplicationType.CHAT) {
             return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_SUPPORTED));
         }
-        if (!isNginxRtmp && application.getType() == ApplicationType.STREAMING) {
-            return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_SUPPORTED));
-        }
+
         return Mono.just(application);
     }
 
     @NotNull
     private Mono<Long> publishEndApplicationSessionToRedis(ApplicationEntity application, ApplicationSessionEntity applicationSession) {
-        if (application.getType() != ApplicationType.CHAT) {
+        if (application.getType() == ApplicationType.STREAMING) {
             return Mono.just(1L);
         }
 

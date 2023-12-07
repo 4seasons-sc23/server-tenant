@@ -7,7 +7,8 @@ import java.util.Arrays;
 
 public enum ApplicationType {
     CHAT("CHAT"),
-    STREAMING("STREAMING");
+    STREAMING("STREAMING"),
+    LIVE("LIVE");
 
     private final String code;
 

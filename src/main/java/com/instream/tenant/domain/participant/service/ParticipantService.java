@@ -167,7 +167,8 @@ public class ParticipantService {
 
     @NotNull
     private Mono<Long> publishChatToRedis(UUID sessionId, SendChatRequest sendChatRequest, ParticipantEntity participant, ApplicationEntity application) {
-        if (application.getType() != ApplicationType.CHAT) {
+        boolean validType = application.getType() != ApplicationType.STREAMING;
+        if (!validType) {
             return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_SUPPORTED));
         }
 

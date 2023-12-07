@@ -82,7 +82,8 @@ public class MediaService {
 
     @NotNull
     private Mono<ApplicationEntity> validationStreamingApplication(ApplicationEntity application) {
-        if (application.getType() != ApplicationType.STREAMING) {
+        boolean validApplication = application.getType() != ApplicationType.CHAT;
+        if (!validApplication) {
             return Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_SUPPORTED));
         }
         if (application.getStatus() != Status.USE) {
