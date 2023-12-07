@@ -63,22 +63,15 @@ public class TenantService {
     }
 
     public Mono<TenantDto> signIn(TenantSignInRequest tenantSignInRequest) {
-        return tenantRepository.findByAccount(tenantSignInRequest.account())
+        return tenantRepository.findByAccountAndPassword(tenantSignInRequest.account(), tenantSignInRequest.password())
                 .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
-                .flatMap(tenant -> {
-                    if (passwordEncoder.matches(tenantSignInRequest.password(), tenant.getPassword())) {
-                        return Mono.error(new RestApiException(TenantErrorCode.UNAUTHORIZED));
-                    }
-                    return Mono.just(
-                            TenantDto.builder()
-                                    .id(tenant.getId())
-                                    .account(tenant.getAccount())
-                                    .name(tenant.getName())
-                                    .phoneNumber(tenant.getPhoneNumber())
-                                    .apiKey(tenant.getApiKey())
-                                    .status(tenant.getStatus())
-                                    .build());
-                });
+                .map(tenant -> TenantDto.builder()
+                        .id(tenant.getId())
+                        .account(tenant.getAccount())
+                        .name(tenant.getName())
+                        .phoneNumber(tenant.getPhoneNumber())
+                        .status(tenant.getStatus())
+                        .build());
     }
 
     public Mono<TenantDto> signUp(TenantCreateRequest tenantCreateRequest) {
@@ -87,10 +80,9 @@ public class TenantService {
                 .switchIfEmpty(Mono.defer(() -> tenantRepository.save(
                                         TenantEntity.builder()
                                                 .account(tenantCreateRequest.account())
-                                                .password(passwordEncoder.encode(tenantCreateRequest.password()))
+                                                .password(tenantCreateRequest.password())
                                                 .name(tenantCreateRequest.name())
                                                 .phoneNumber(tenantCreateRequest.phoneNumber())
-                                                .apiKey(UUID.randomUUID().toString())
                                                 .status(Status.USE)
                                                 .build()
                                 ))
@@ -102,7 +94,6 @@ public class TenantService {
                                         .account(savedTenant.getAccount())
                                         .name(savedTenant.getName())
                                         .phoneNumber(savedTenant.getPhoneNumber())
-                                        .apiKey(savedTenant.getApiKey())
                                         .status(savedTenant.getStatus())
                                         .build()
                                 ))
