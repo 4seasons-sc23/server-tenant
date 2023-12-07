@@ -109,7 +109,7 @@ public class TenantService {
                 );
     }
 
-    public Mono<FindAccountResponseDto> findAccountByPhonenum(FindAccountRequestDto requestDto) {
+    public Mono<FindAccountResponseDto> findAccountByPhoneNum(FindAccountRequestDto requestDto) {
         return tenantRepository.findByPhoneNumberAndStatus(requestDto.phoneNumber(), Status.USE)
             .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
             .flatMap(accountDto -> Mono.just(FindAccountResponseDto.builder()
@@ -118,7 +118,7 @@ public class TenantService {
                 .build()));
     }
 
-    public Mono<Void> findPasswordByPhonenum(FindPasswordRequestDto requestDto) {
+    public Mono<Void> findPasswordByPhoneNum(FindPasswordRequestDto requestDto) {
         return tenantRepository.findByPhoneNumberAndStatus(requestDto.userPhoneNum(), Status.USE)
             .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
             .flatMap(tenantEntity -> {
@@ -128,7 +128,7 @@ public class TenantService {
             .then();
     }
 
-    public Mono<Void> checkDupliacteAccount(String account) {
+    public Mono<Void> checkDuplicateAccount(String account) {
         return tenantRepository.findByAccount(account)
             .flatMap(tenantEntity -> {
                 if(tenantEntity != null) {
@@ -159,7 +159,7 @@ public class TenantService {
             .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
             .flatMap(tenantEntity -> {
                 if(!Objects.equals(tenantEntity.getPassword(), requestDto.currentPassword())) {
-                    return Mono.error(new RestApiException(TenantErrorCode.NOT_MATCH_PASSWORD));
+                    return Mono.error(new RestApiException(TenantErrorCode.UNAUTHORIZED));
                 }
                 tenantEntity.setPassword(requestDto.newPassword());
                 return tenantRepository.save(tenantEntity);
