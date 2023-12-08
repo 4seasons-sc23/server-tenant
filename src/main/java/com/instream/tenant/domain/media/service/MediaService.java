@@ -66,9 +66,13 @@ public class MediaService {
                     Mono<ObjectWriteResponse> uploadTs = createTempFileFromPart(uploadRequest.ts(), savedPath)
                             .flatMap(file -> minioService.uploadFile(tsSavedPath, file, tsContentType));
 
-                    return Mono.zip(uploadMainM3u8, uploadM3u8, uploadTs);
+                    return Mono.when(uploadMainM3u8, uploadM3u8, uploadTs);
                 })
                 .thenReturn("Upload media successfully");
+    }
+
+    public Mono<Void> deleteRemainHlsFiles(UUID sessionId) {
+        return minioService.deleteFolder(sessionId.toString());
     }
 
     @NotNull
@@ -92,7 +96,10 @@ public class MediaService {
         return Mono.just(application);
     }
 
-    public Mono<File> createTempFileFromPart(FilePart filePart, String sessionId) {
+    private Mono<File> createTempFileFromPart(FilePart filePart, String sessionId) {
+        if(filePart == null) {
+            return Mono.empty();
+        }
         return Mono.create(sink -> {
             try {
                 File tempFile = createTempFile(sessionId, filePart.filename());
@@ -103,7 +110,10 @@ public class MediaService {
         });
     }
 
-    public Mono<File> createTempFileFromMainM3u8Part(FilePart filePart, String sessionId, String apiKey) {
+    private Mono<File> createTempFileFromMainM3u8Part(FilePart filePart, String sessionId, String apiKey) {
+        if(filePart == null) {
+            return Mono.empty();
+        }
         return Mono.create(sink -> {
             try {
                 File tempFile = createTempFile(sessionId, filePart.filename());

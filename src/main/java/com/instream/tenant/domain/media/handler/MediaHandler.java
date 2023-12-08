@@ -58,7 +58,8 @@ public class MediaHandler {
         request.queryParams().forEach((key, value) -> log.info("endNginxRtmpStream request {} {}", key, value));
         return NginxRtmpRequest.fromQueryParams(request.queryParams())
                 .flatMap(applicationService::endApplicationSession)
-                .flatMap(applicationSessionDto -> ServerResponse.ok().bodyValue(applicationSessionDto));
+                .flatMap(applicationSessionDto -> mediaService.deleteRemainHlsFiles(applicationSessionDto.getId())
+                        .then(ServerResponse.ok().bodyValue(applicationSessionDto)));
     }
 
     public Mono<ServerResponse> uploadMedia(ServerRequest request) {

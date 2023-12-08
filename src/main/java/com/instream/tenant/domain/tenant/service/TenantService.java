@@ -56,7 +56,6 @@ public class TenantService {
                         .account(tenant.getAccount())
                         .name(tenant.getName())
                         .phoneNumber(tenant.getPhoneNumber())
-                        .apiKey(tenant.getApiKey())
                         .status(tenant.getStatus())
                         // TODO: 세션
                         .build());
