@@ -246,16 +246,16 @@ public class ApplicationService {
                 .flatMap(this::endApplicationSession);
     }
 
-    public Mono<ApplicationSessionDto> startApplicationSession(UUID applicationId, String apiKey) {
-        return applicationRepository.findByIdAndApiKey(applicationId, apiKey)
+    public Mono<ApplicationSessionDto> startApplicationSession(NginxRtmpRequest nginxRtmpRequest) {
+        return applicationRepository.findByApiKey(nginxRtmpRequest.name())
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
                 .flatMap(application -> validationForNginxRtmp(application, true))
                 .flatMap(this::validationForApplicationSession)
                 .flatMap(this::startApplicationSession);
     }
 
-    public Mono<ApplicationSessionDto> endApplicationSession(UUID applicationId, String apiKey) {
-        return applicationRepository.findByIdAndApiKey(applicationId, apiKey)
+    public Mono<ApplicationSessionDto> endApplicationSession(NginxRtmpRequest nginxRtmpRequest) {
+        return applicationRepository.findByApiKey(nginxRtmpRequest.name())
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationErrorCode.APPLICATION_NOT_FOUND)))
                 .flatMap(application -> validationForNginxRtmp(application, true))
                 .flatMap(this::validationForApplicationSession)
