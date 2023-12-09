@@ -314,14 +314,8 @@ public class ApplicationService {
                 .sort((session1, session2) -> session2.getCreatedAt().compareTo(session1.getCreatedAt()))
                 .next()
                 .flatMap(applicationSession -> publishEndApplicationSessionToRedis(application, applicationSession)
-                        // .then(this.deleteRemainFileInMinio(applicationSession))
                         .then(Mono.just(ApplicationSessionMapper.INSTANCE.entityToDto(applicationSession))));
     }
-
-//    @NotNull
-//    private Mono<Void> deleteRemainFileInMinio(ApplicationSessionEntity applicationSession) {
-//        minioService.
-//    }
 
     @NotNull
     private Mono<ApplicationEntity> validationForNginxRtmp(ApplicationEntity application, boolean isNginxRtmp) {

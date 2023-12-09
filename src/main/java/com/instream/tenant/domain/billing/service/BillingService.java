@@ -44,7 +44,9 @@ import static com.querydsl.sql.SQLExpressions.select;
 @Service
 @Slf4j
 public class BillingService {
-    private final double MINIO_BILLING_RATIO = 0.00005;
+
+    // 10GB 당 0.5$
+    private final double MINIO_BILLING_RATIO = 1 * 0.5 / 10737418240L;
 
     private final double CHAT_BILLING_RATIO = 0.001;
 
@@ -321,10 +323,10 @@ public class BillingService {
                 .then();
     }
 
-    public Mono<Void> createMinioBilling(UUID sessionId) {
+    public Mono<Void> createMinioBilling(UUID sessionId, long trafficBytes) {
         return applicationSessionRepository.findById(sessionId)
                 .switchIfEmpty(Mono.error(new RestApiException(ApplicationSessionErrorCode.APPLICATION_SESSION_NOT_FOUND)))
-                .flatMap(applicationSession -> saveBilling(applicationSession, MINIO_BILLING_RATIO))
+                .flatMap(applicationSession -> saveBilling(applicationSession, trafficBytes * MINIO_BILLING_RATIO))
                 .then();
     }
 

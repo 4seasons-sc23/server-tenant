@@ -22,6 +22,9 @@ public class CreateMinioBillingRequest {
     @Schema(description = "Minio 접근 기록")
     private List<Record> records;
 
+    @Setter
+    @Getter
+    @NoArgsConstructor
     public static class Record {
         @JsonProperty("eventVersion")
         @Schema(example = "2.0")
@@ -49,11 +52,17 @@ public class CreateMinioBillingRequest {
         private Source source;
     }
 
+    @Setter
+    @Getter
+    @NoArgsConstructor
     public static class UserIdentity {
         @JsonProperty("principalId")
         private String principalId;
     }
 
+    @Setter
+    @Getter
+    @NoArgsConstructor
     public static class RequestParameters {
         @JsonProperty("principalId")
         private String principalId;
@@ -64,10 +73,13 @@ public class CreateMinioBillingRequest {
         private String sourceIPAddress;
     }
 
+    @Setter
+    @Getter
+    @NoArgsConstructor
     public static class ResponseElements {
         @JsonProperty("content-length")
         @Schema(description = "파일 크기(Byte)", example = "209056")
-        private String contentLength;
+        private long contentLength;
         @JsonProperty("x-amz-id-2")
         @Schema(example = "dd9025bab4ad464b049177c95eb6ebf374d3b3fd1af9251148b658df7ac2e3e8")
         private String xAmzId2;
@@ -82,6 +94,9 @@ public class CreateMinioBillingRequest {
         private String xMinioOriginEndpoint;
     }
 
+    @Setter
+    @Getter
+    @NoArgsConstructor
     public static class S3 {
         @JsonProperty("s3SchemaVersion")
         @Schema(example = "1.0")
@@ -95,6 +110,9 @@ public class CreateMinioBillingRequest {
         private ObjectEntity object;
     }
 
+    @Setter
+    @Getter
+    @NoArgsConstructor
     public static class Bucket {
         @JsonProperty("name")
         @Schema(example = "bucketName")
@@ -106,11 +124,17 @@ public class CreateMinioBillingRequest {
         private String arn;
     }
 
+    @Setter
+    @Getter
+    @NoArgsConstructor
     public static class OwnerIdentity {
         @JsonProperty("principalId")
         private String principalId;
     }
 
+    @Setter
+    @Getter
+    @NoArgsConstructor
     public static class ObjectEntity {
         @JsonProperty("key")
         @Schema(description = "파일 이름", example = "itemPath%2FitemName.ts")
@@ -131,12 +155,18 @@ public class CreateMinioBillingRequest {
         private String sequencer;
     }
 
+    @Setter
+    @Getter
+    @NoArgsConstructor
     public static class UserMetadata {
         @JsonProperty("content-type")
         @Schema(example = "video/mp2t")
         private String contentType;
     }
 
+    @Setter
+    @Getter
+    @NoArgsConstructor
     public static class Source {
         @JsonProperty("host")
         @Schema(example = "10.16.0.1")

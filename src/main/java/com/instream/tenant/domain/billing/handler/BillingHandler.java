@@ -11,6 +11,7 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Component
@@ -96,7 +97,15 @@ public class BillingHandler {
         return request.bodyToMono(CreateMinioBillingRequest.class)
                 .flatMap(createMinioBillingRequest -> {
                     String[] paths = createMinioBillingRequest.getKey().split("/", 3);
-                    return billingService.createMinioBilling(UUID.fromString(paths[1]));
+                    Optional<Long> trafficBytes = createMinioBillingRequest.getRecords().stream()
+                            .map(record -> record.getResponseElements().getContentLength())
+                            .reduce(Long::sum);
+
+                    if (trafficBytes.isEmpty()) {
+                        return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
+                    }
+
+                    return billingService.createMinioBilling(UUID.fromString(paths[1]), trafficBytes.get());
                 })
                 .then(ServerResponse.ok().build());
     }
