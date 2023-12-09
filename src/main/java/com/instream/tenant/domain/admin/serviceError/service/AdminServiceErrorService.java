@@ -162,7 +162,7 @@ public class AdminServiceErrorService {
             ).all();
 
         Flux<AdminServiceErrorListDto> adminServiceErrorListDtoFlux = serviceErrorEntityFlux
-            .flatMap(serviceError -> {
+            .flatMapSequential(serviceError -> {
                 Mono<ServiceErrorWriterDto> writerDtoMono = tenantRepository.findById(serviceError.getTenantId())
                     .map(tenantEntity -> ServiceErrorWriterDto.builder()
                         .tenantId(tenantEntity.getId())
