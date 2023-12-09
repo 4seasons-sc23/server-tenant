@@ -82,34 +82,31 @@ public class BillingService {
                 .build());
         BooleanBuilder applicationPredicateFromBilling = getApplicationPredicate(hostId, null);
         OrderSpecifier[] orderSpecifierArray = applicationSessionQueryBuilder.getOrderSpecifier(paginationOptionRequest);
+        Function<SQLQuery<?>, SQLQuery<ApplicationBillingDto>> applicationBillingQuery = (sqlQuery) -> sqlQuery
+                .select(qApplicationBillingDto)
+                .from(qApplication)
+                .where(applicationPredicate)
+                .leftJoin(qApplicationSession).on(applicationSessionPredicate)
+                .groupBy(qApplication.id)
+                .having(qApplicationSession.cost.sum().gt(0.0));
         Flux<ApplicationBillingDto> applicationBillingDtoFlux;
 
         applicationPredicate.and(applicationPredicateFromBilling);
 
-        applicationBillingDtoFlux = applicationRepository.query(sqlQuery -> sqlQuery
-                        .select(qApplicationBillingDto)
-                        .from(qApplication)
-                        .where(applicationPredicate)
-                        .leftJoin(qApplicationSession).on(applicationSessionPredicate)
-                        .groupBy(qApplication.id)
-                        .orderBy(orderSpecifierArray)
-                        .limit(pageable.getPageSize())
-                        .offset(pageable.getOffset())
-                )
+        applicationBillingDtoFlux = applicationRepository.query(applicationBillingQuery
+                        .andThen(applicationBillingDtoSQLQuery -> applicationBillingDtoSQLQuery
+                                .orderBy(orderSpecifierArray)
+                                .limit(pageable.getPageSize())
+                                .offset(pageable.getOffset())))
                 .all()
                 .flatMapSequential(Mono::just);
 
         // TODO: Redis 캐싱 넣기
         if (paginationOptionRequest.isFirstView()) {
             return applicationBillingDtoFlux.collectList()
-                    .flatMap(billingDtoList -> applicationSessionRepository.query(sqlQuery -> sqlQuery
-                                    .select(qApplicationSession.applicationId.countDistinct())
-                                    .from(qApplicationSession)
-                                    .where(applicationSessionPredicate)
-                                    .join(qApplication).on(applicationPredicate)
-                                    .orderBy(orderSpecifierArray)
-                            )
-                            .one()
+                    .flatMap(billingDtoList -> applicationSessionRepository.query(applicationBillingQuery)
+                            .all()
+                            .count()
                             .flatMap(totalElementCount -> {
                                 long pageCount = (long) Math.ceil((double) totalElementCount / pageable.getPageSize());
                                 return Mono.just(PaginationInfoDto.<CollectionDto<ApplicationBillingDto>>builder()
@@ -205,7 +202,8 @@ public class BillingService {
         QApplicationEntity qApplication = QApplicationEntity.applicationEntity;
 
         Pageable pageable = paginationOptionRequest.getPageable();
-        BooleanBuilder applicationSessionPredicate = applicationSessionQueryBuilder.getBillingPredicate(paginationOptionRequest);
+        BooleanBuilder applicationSessionPredicate = applicationSessionQueryBuilder.getBillingPredicate(paginationOptionRequest)
+                .and(qApplicationSession.cost.gt(0.0));
         BooleanBuilder applicationPredicate = applicationQueryBuilder.getPredicate(ApplicationSearchPaginationOptionRequest.builder().build());
         BooleanBuilder applicationPredicateFromBilling = getApplicationPredicate(hostId, applicationId);
         OrderSpecifier[] orderSpecifierArray = applicationSessionQueryBuilder.getOrderSpecifier(paginationOptionRequest);
