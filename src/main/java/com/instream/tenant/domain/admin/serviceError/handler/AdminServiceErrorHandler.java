@@ -53,7 +53,7 @@ public class AdminServiceErrorHandler {
     public Mono<ServerResponse> getServiceErrorList(ServerRequest request) {
         return PaginationOptionRequest.fromQueryParams(request.queryParams())
             .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
-            .flatMap(paginationRequest -> adminServiceErrorService.getServiceErrorList(paginationRequest))
+            .flatMap(adminServiceErrorService::getServiceErrorList)
             .flatMap(serviceErrorListDto -> ServerResponse.ok().bodyValue(serviceErrorListDto));
 
     }
