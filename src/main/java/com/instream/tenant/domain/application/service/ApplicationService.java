@@ -100,7 +100,7 @@ public class ApplicationService {
                 .offset(pageable.getOffset())
         ).all();
         applicationDtoFlux = applicationFlux
-                .flatMap(application -> applicationSessionRepository.findTopByApplicationIdOrderByCreatedAtDesc(application.getId())
+                .flatMapSequential(application -> applicationSessionRepository.findTopByApplicationIdOrderByCreatedAtDesc(application.getId())
                         .flatMap(applicationSession -> Mono.just(ApplicationMapper.INSTANCE.applicationAndSessionEntityToWithApiKeyDto(application, applicationSession)))
                         .defaultIfEmpty(ApplicationMapper.INSTANCE.applicationAndSessionEntityToWithApiKeyDto(application, null)));
 
@@ -203,7 +203,7 @@ public class ApplicationService {
                 .offset(pageable.getOffset())
         ).all();
         applicationSessionDtoFlux = applicationSessionFlux
-                .flatMap(applicationSession -> Mono.just(ApplicationSessionMapper.INSTANCE.entityToDto(applicationSession)));
+                .flatMapSequential(applicationSession -> Mono.just(ApplicationSessionMapper.INSTANCE.entityToDto(applicationSession)));
 
         // TODO: Redis 캐싱 넣기
         if (applicationSessionSearchPaginationOptionRequest.isFirstView()) {

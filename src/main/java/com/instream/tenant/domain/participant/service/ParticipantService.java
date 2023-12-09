@@ -119,7 +119,7 @@ public class ParticipantService {
                 .offset(pageable.getOffset())
         ).all();
         Flux<ParticipantJoinDto> participantJoinDtoFlux = participantJoinFlux
-                .flatMap(participantJoin -> applicationSessionRepository.findById(participantJoin.getApplicationSessionId())
+                .flatMapSequential(participantJoin -> applicationSessionRepository.findById(participantJoin.getApplicationSessionId())
                         .flatMap(applicationSession ->
                                 Mono.zip(
                                         participantRepository.findById(participantJoin.getParticipantId()),

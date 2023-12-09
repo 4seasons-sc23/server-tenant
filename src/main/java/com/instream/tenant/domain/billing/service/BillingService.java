@@ -38,7 +38,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.*;
+import java.util.function.Function;
 
+import static com.querydsl.sql.SQLExpressions.countAll;
 import static com.querydsl.sql.SQLExpressions.select;
 
 @Service
@@ -85,15 +87,17 @@ public class BillingService {
         applicationPredicate.and(applicationPredicateFromBilling);
 
         applicationBillingDtoFlux = applicationRepository.query(sqlQuery -> sqlQuery
-                .select(qApplicationBillingDto)
-                .from(qApplication)
-                .where(applicationPredicate)
-                .leftJoin(qApplicationSession).on(applicationSessionPredicate)
-                .groupBy(qApplication.id)
-                .orderBy(orderSpecifierArray)
-                .limit(pageable.getPageSize())
-                .offset(pageable.getOffset())
-        ).all();
+                        .select(qApplicationBillingDto)
+                        .from(qApplication)
+                        .where(applicationPredicate)
+                        .leftJoin(qApplicationSession).on(applicationSessionPredicate)
+                        .groupBy(qApplication.id)
+                        .orderBy(orderSpecifierArray)
+                        .limit(pageable.getPageSize())
+                        .offset(pageable.getOffset())
+                )
+                .all()
+                .flatMapSequential(Mono::just);
 
         // TODO: Redis 캐싱 넣기
         if (paginationOptionRequest.isFirstView()) {
@@ -143,40 +147,37 @@ public class BillingService {
                 .build());
         OrderSpecifier[] orderSpecifierArray = applicationSessionQueryBuilder.getOrderSpecifier(paginationOptionRequest);
         QAdminBillingDto qAdminBillingDto = new QAdminBillingDto(qTenant.id.as("id"), qTenant.account, qTenant.name, qApplicationSession.cost.sum().coalesce(0.0).as("cost"));
+        Function<SQLQuery<?>, SQLQuery<AdminBillingDto>> adminBillingQuery = (sqlQuery) -> sqlQuery
+                .select(qAdminBillingDto)
+                .from(qTenant)
+                .leftJoin(qApplication).on(tenantPredicate)
+                .leftJoin(qApplicationSession).on(applicationSessionPredicate)
+                .where(applicationPredicate)
+                .groupBy(qTenant.id)
+                .having(qApplicationSession.cost.sum().coalesce(0.0).gt(0.0));
         Flux<AdminBillingDto> applicationBillingDtoFlux;
 
-        applicationBillingDtoFlux = applicationRepository.query(sqlQuery -> sqlQuery
-                        .select(qAdminBillingDto)
-                        .from(qTenant)
-                        .leftJoin(qApplication).on(tenantPredicate)
-                        .leftJoin(qApplicationSession).on(applicationSessionPredicate)
-                        .where(applicationPredicate)
-                        .groupBy(qTenant.id)
-                        .orderBy(orderSpecifierArray)
-                        .limit(pageable.getPageSize())
-                        .offset(pageable.getOffset())
-                )
+        applicationBillingDtoFlux = applicationRepository.query(adminBillingQuery
+                        .andThen(adminBillingDtoSQLQuery -> adminBillingDtoSQLQuery
+                                .orderBy(orderSpecifierArray)
+                                .limit(pageable.getPageSize())
+                                .offset(pageable.getOffset())))
                 .all()
-                .flatMap(adminBillingDto -> Mono.just(AdminBillingDto.builder()
-                                .id(adminBillingDto.getId())
-                                .account(adminBillingDto.getAccount())
-                                .cost(adminBillingDto.getCost())
-                                .name(adminBillingDto.getName())
-                                .startAt(paginationOptionRequest.getOption().getStartAt())
-                                .endAt(paginationOptionRequest.getOption().getEndAt())
+                .flatMapSequential(adminBillingDto -> Mono.just(AdminBillingDto.builder()
+                        .id(adminBillingDto.getId())
+                        .account(adminBillingDto.getAccount())
+                        .cost(adminBillingDto.getCost())
+                        .name(adminBillingDto.getName())
+                        .startAt(paginationOptionRequest.getOption().getStartAt())
+                        .endAt(paginationOptionRequest.getOption().getEndAt())
                         .build()));
 
         // TODO: Redis 캐싱 넣기
         if (paginationOptionRequest.isFirstView()) {
             return applicationBillingDtoFlux.collectList()
-                    .flatMap(billingDtoList -> applicationSessionRepository.query(sqlQuery -> sqlQuery
-                                    .select(qTenant.id.countDistinct())
-                                    .from(qTenant)
-                                    .leftJoin(qApplication).on(tenantPredicate)
-                                    .leftJoin(qApplicationSession).on(applicationSessionPredicate)
-                                    .where(applicationPredicate)
-                            )
-                            .one()
+                    .flatMap(billingDtoList -> applicationSessionRepository.query(adminBillingQuery)
+                            .all()
+                            .count()
                             .flatMap(totalElementCount -> {
                                 long pageCount = (long) Math.ceil((double) totalElementCount / pageable.getPageSize());
                                 return Mono.just(PaginationInfoDto.<CollectionDto<AdminBillingDto>>builder()
@@ -222,7 +223,7 @@ public class BillingService {
                         .offset(pageable.getOffset())
                 )
                 .all()
-                .flatMap(applicationSession -> Mono.just(ApplicationSessionMapper.INSTANCE.INSTANCE.entityToBilling(applicationSession)));
+                .flatMapSequential(applicationSession -> Mono.just(ApplicationSessionMapper.INSTANCE.INSTANCE.entityToBilling(applicationSession)));
 
         // TODO: Redis 캐싱 넣기
         if (paginationOptionRequest.isFirstView()) {
