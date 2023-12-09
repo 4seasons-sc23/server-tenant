@@ -15,8 +15,10 @@ import com.instream.tenant.domain.tenant.domain.response.HostWithdrawalResponseD
 import com.instream.tenant.domain.tenant.infra.enums.TenantErrorCode;
 import com.instream.tenant.domain.tenant.repository.TenantRepository;
 import com.instream.tenant.domain.redis.model.factory.ReactiveRedisTemplateFactory;
+
 import java.time.LocalDateTime;
 import java.util.Objects;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -62,15 +64,15 @@ public class TenantService {
     }
 
     public Mono<TenantDto> signIn(TenantSignInRequest tenantSignInRequest) {
-        return tenantRepository.findByAccountAndPassword(tenantSignInRequest.account(), tenantSignInRequest.password())
+        return tenantRepository.findByAccountAndPassword(tenantSignInRequest.account(), passwordEncoder.encode(tenantSignInRequest.password()))
                 .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
-                .map(tenant -> TenantDto.builder()
+                .flatMap(tenant -> Mono.just(TenantDto.builder()
                         .id(tenant.getId())
                         .account(tenant.getAccount())
                         .name(tenant.getName())
                         .phoneNumber(tenant.getPhoneNumber())
                         .status(tenant.getStatus())
-                        .build());
+                        .build()));
     }
 
     public Mono<TenantDto> signUp(TenantCreateRequest tenantCreateRequest) {
@@ -79,7 +81,7 @@ public class TenantService {
                 .switchIfEmpty(Mono.defer(() -> tenantRepository.save(
                                         TenantEntity.builder()
                                                 .account(tenantCreateRequest.account())
-                                                .password(tenantCreateRequest.password())
+                                                .password(passwordEncoder.encode(tenantCreateRequest.password()))
                                                 .name(tenantCreateRequest.name())
                                                 .phoneNumber(tenantCreateRequest.phoneNumber())
                                                 .status(Status.USE)
@@ -101,75 +103,75 @@ public class TenantService {
 
     public Mono<FindAccountResponseDto> findAccountByPhoneNum(FindAccountRequestDto requestDto) {
         return tenantRepository.findByPhoneNumberAndStatus(requestDto.phoneNumber(), Status.USE)
-            .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
-            .flatMap(accountDto -> Mono.just(FindAccountResponseDto.builder()
-                .account(accountDto.getAccount())
-                .createdAt(accountDto.getCreatedAt())
-                .build()));
+                .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
+                .flatMap(accountDto -> Mono.just(FindAccountResponseDto.builder()
+                        .account(accountDto.getAccount())
+                        .createdAt(accountDto.getCreatedAt())
+                        .build()));
     }
 
     public Mono<Void> findPasswordByPhoneNum(FindPasswordRequestDto requestDto) {
         return tenantRepository.findByPhoneNumberAndStatus(requestDto.userPhoneNum(), Status.USE)
-            .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
-            .flatMap(tenantEntity -> {
-                tenantEntity.setPassword(requestDto.newPassword());
-                return tenantRepository.save(tenantEntity);
-            })
-            .then();
+                .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
+                .flatMap(tenantEntity -> {
+                    tenantEntity.setPassword(requestDto.newPassword());
+                    return tenantRepository.save(tenantEntity);
+                })
+                .then();
     }
 
     public Mono<Void> checkDuplicateAccount(String account) {
         return tenantRepository.findByAccount(account)
-            .flatMap(tenantEntity -> {
-                if(tenantEntity != null) {
-                    return Mono.error(new RestApiException(TenantErrorCode.EXIST_ACCOUNT));
-                }
-                return Mono.empty();
-            })
-            .then();
+                .flatMap(tenantEntity -> {
+                    if (tenantEntity != null) {
+                        return Mono.error(new RestApiException(TenantErrorCode.EXIST_ACCOUNT));
+                    }
+                    return Mono.empty();
+                })
+                .then();
     }
 
     public Mono<HostWithdrawalResponseDto> withdrawal(UUID hostId) {
         return tenantRepository.findByIdAndStatus(hostId, Status.USE)
-            .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
-            .flatMap(tenantEntity -> {
-                tenantEntity.setStatus(Status.DELETED);
-                tenantEntity.setDeletedAt(LocalDateTime.now());
-                return tenantRepository.save(tenantEntity)
-                    .flatMap(savedTenant -> Mono.just(HostWithdrawalResponseDto.builder()
-                        .hostId(savedTenant.getId())
-                        .status(savedTenant.getStatus())
-                        .deletedAt(savedTenant.getDeletedAt())
-                        .build()));
-            });
+                .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
+                .flatMap(tenantEntity -> {
+                    tenantEntity.setStatus(Status.DELETED);
+                    tenantEntity.setDeletedAt(LocalDateTime.now());
+                    return tenantRepository.save(tenantEntity)
+                            .flatMap(savedTenant -> Mono.just(HostWithdrawalResponseDto.builder()
+                                    .hostId(savedTenant.getId())
+                                    .status(savedTenant.getStatus())
+                                    .deletedAt(savedTenant.getDeletedAt())
+                                    .build()));
+                });
     }
 
     public Mono<Void> patchPassword(UUID hostId, PatchPasswordRequestDto requestDto) {
         return tenantRepository.findByIdAndStatus(hostId, Status.USE)
-            .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
-            .flatMap(tenantEntity -> {
-                if(!Objects.equals(tenantEntity.getPassword(), requestDto.currentPassword())) {
-                    return Mono.error(new RestApiException(TenantErrorCode.UNAUTHORIZED));
-                }
-                tenantEntity.setPassword(requestDto.newPassword());
-                return tenantRepository.save(tenantEntity);
-            })
-            .then();
+                .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
+                .flatMap(tenantEntity -> {
+                    if (!Objects.equals(tenantEntity.getPassword(), requestDto.currentPassword())) {
+                        return Mono.error(new RestApiException(TenantErrorCode.UNAUTHORIZED));
+                    }
+                    tenantEntity.setPassword(requestDto.newPassword());
+                    return tenantRepository.save(tenantEntity);
+                })
+                .then();
     }
 
     public Mono<TenantDto> patchHostName(UUID hostId, PatchTenantNameRequestDto requestDto) {
         return tenantRepository.findByIdAndStatus(hostId, Status.USE)
-            .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
-            .flatMap(tenantEntity -> {
-                tenantEntity.setName(requestDto.name());
-                return tenantRepository.save(tenantEntity);
-            })
-            .flatMap(savedTenant -> Mono.just(TenantDto.builder()
-                .id(savedTenant.getId())
-                .account(savedTenant.getAccount())
-                .name(savedTenant.getName())
-                .phoneNumber(savedTenant.getPhoneNumber())
-                .status(savedTenant.getStatus())
-                .build()));
+                .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
+                .flatMap(tenantEntity -> {
+                    tenantEntity.setName(requestDto.name());
+                    return tenantRepository.save(tenantEntity);
+                })
+                .flatMap(savedTenant -> Mono.just(TenantDto.builder()
+                        .id(savedTenant.getId())
+                        .account(savedTenant.getAccount())
+                        .name(savedTenant.getName())
+                        .phoneNumber(savedTenant.getPhoneNumber())
+                        .status(savedTenant.getStatus())
+                        .build()));
     }
 }
