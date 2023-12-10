@@ -87,7 +87,7 @@ public class MediaRouterConfig extends RouterConfig {
 
     private RouterFunction<ServerResponse> uploadHlsFiles(MediaHandler mediaHandler) {
         return route().POST(
-                        "/upload/hls/{quality}",
+                        "/{sessionId}/upload/hls/{quality}",
                         mediaHandler::uploadMedia,
                         this::buildUploadHlsFilesSwagger
                 )
@@ -243,6 +243,12 @@ public class MediaRouterConfig extends RouterConfig {
                         .name(InstreamHttpHeaders.API_KEY)
                         .description("API Key")
                         .in(ParameterIn.HEADER)
+                        .required(true)
+                        .example("80bd6328-76a7-11ee-b720-0242ac130003"))
+                .parameter(parameterBuilder()
+                        .name("sessionId")
+                        .description("현재 영상 세션 ID입니다.")
+                        .in(ParameterIn.PATH)
                         .required(true)
                         .example("80bd6328-76a7-11ee-b720-0242ac130003"))
                 .parameter(parameterBuilder()

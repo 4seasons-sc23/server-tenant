@@ -25,6 +25,7 @@ services:
       - RTMP_PORT=1935
     volumes:
       - /Users/jangseongho/Documents/developers/4seasons/nginx-rtmp/hls:/opt/data/hls
+      - /Users/jangseongho/Documents/developers/4seasons/nginx-rtmp/log/hls:/var/log/hls
     env_file:
       - .env
     networks:

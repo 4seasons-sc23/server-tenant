@@ -11,9 +11,7 @@ public record MediaUploadRequest(
 
         FilePart m3u8,
 
-        FilePart ts,
-
-        int quality
+        FilePart ts
 ) {
     @Builder
     public MediaUploadRequest {
