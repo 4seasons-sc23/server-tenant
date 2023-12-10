@@ -49,26 +49,21 @@ public class MediaService {
         this.minioService = minioService;
     }
 
-    public Mono<String> uploadMedia(MediaUploadRequest uploadRequest, String apiKey) {
-        return applicationRepository.findByApiKey(apiKey)
-                .flatMap(applicationEntity -> this.getSessionIdByApplicationId(applicationEntity.getId()))
-                .flatMap(sessionId -> {
-                    String savedPath = sessionId.toString();
-                    String m3u8ContentType = "application/vnd.apple.mpegurl";
-                    String tsContentType = "video/MP2T";
-                    String mainM3u8SavedPath = savedPath + "/index.m3u8";
-                    String m3u8SavedPath = savedPath + "/" + uploadRequest.quality() + "/index.m3u8";
-                    String tsSavedPath = savedPath + "/" + uploadRequest.quality() + "/" + uploadRequest.ts().filename();
-                    Mono<ObjectWriteResponse> uploadMainM3u8 = createTempFileFromMainM3u8Part(uploadRequest.m3u8Main(), savedPath, apiKey)
-                            .flatMap(file -> minioService.uploadFile(mainM3u8SavedPath, file, m3u8ContentType));
-                    Mono<ObjectWriteResponse> uploadM3u8 = createTempFileFromPart(uploadRequest.m3u8(), savedPath)
-                            .flatMap(file -> minioService.uploadFile(m3u8SavedPath, file, m3u8ContentType));
-                    Mono<ObjectWriteResponse> uploadTs = createTempFileFromPart(uploadRequest.ts(), savedPath)
-                            .flatMap(file -> minioService.uploadFile(tsSavedPath, file, tsContentType));
+    public Mono<String> uploadMedia(MediaUploadRequest uploadRequest, UUID sessionId, int quality) {
+        String savedPath = sessionId.toString();
+        String m3u8ContentType = "application/vnd.apple.mpegurl";
+        String tsContentType = "video/MP2T";
+        String mainM3u8SavedPath = savedPath + "/index.m3u8";
+        String m3u8SavedPath = savedPath + "/" + quality + "/index.m3u8";
+        String tsSavedPath = savedPath + "/" + quality + "/" + uploadRequest.ts().filename();
+        Mono<ObjectWriteResponse> uploadMainM3u8 = createTempFileFromMainM3u8Part(uploadRequest.m3u8Main(), savedPath)
+                .flatMap(file -> minioService.uploadFile(mainM3u8SavedPath, file, m3u8ContentType));
+        Mono<ObjectWriteResponse> uploadM3u8 = createTempFileFromPart(uploadRequest.m3u8(), savedPath)
+                .flatMap(file -> minioService.uploadFile(m3u8SavedPath, file, m3u8ContentType));
+        Mono<ObjectWriteResponse> uploadTs = createTempFileFromPart(uploadRequest.ts(), savedPath)
+                .flatMap(file -> minioService.uploadFile(tsSavedPath, file, tsContentType));
 
-                    return Mono.when(uploadMainM3u8, uploadM3u8, uploadTs);
-                })
-                .thenReturn("Upload media successfully");
+        return Mono.when(uploadMainM3u8, uploadM3u8, uploadTs).thenReturn("Upload media successfully");
     }
 
     public Mono<Void> deleteRemainHlsFiles(UUID sessionId) {
@@ -97,7 +92,7 @@ public class MediaService {
     }
 
     private Mono<File> createTempFileFromPart(FilePart filePart, String sessionId) {
-        if(filePart == null) {
+        if (filePart == null) {
             return Mono.empty();
         }
         return Mono.create(sink -> {
@@ -110,15 +105,15 @@ public class MediaService {
         });
     }
 
-    private Mono<File> createTempFileFromMainM3u8Part(FilePart filePart, String sessionId, String apiKey) {
-        if(filePart == null) {
+    private Mono<File> createTempFileFromMainM3u8Part(FilePart filePart, String sessionId) {
+        if (filePart == null) {
             return Mono.empty();
         }
         return Mono.create(sink -> {
             try {
                 File tempFile = createTempFile(sessionId, filePart.filename());
                 writePartToFile(filePart, tempFile)
-                        .flatMap(file -> replaceTextInFile(file, String.format("%s_", apiKey), String.format("/%s/%s/", bucketName, sessionId)))
+                        .flatMap(file -> replaceTextInFile(file, String.format("%s_", sessionId), String.format("/%s/%s/", bucketName, sessionId)))
                         .subscribe(sink::success, sink::error);
             } catch (IOException e) {
                 sink.error(e);

@@ -13,7 +13,9 @@ import com.instream.tenant.domain.media.service.MediaService;
 import com.instream.tenant.domain.minio.MinioService;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import io.swagger.v3.oas.models.servers.Server;
@@ -50,14 +52,24 @@ public class MediaHandler {
     public Mono<ServerResponse> startNginxRtmpStream(ServerRequest request) {
         request.queryParams().forEach((key, value) -> log.info("startNginxRtmpStream request {} {}", key, value));
         return NginxRtmpRequest.fromQueryParams(request.queryParams())
-                .flatMap(applicationService::startApplicationSession)
+                .flatMap(nginxRtmpRequest -> {
+                    Map<String, String> queryParams = nginxRtmpRequest.getQueryParams();
+                    UUID applicationId = UUID.fromString(Objects.requireNonNull(queryParams.get("id")));
+                    return applicationService.startApplicationSession(applicationId, nginxRtmpRequest.name());
+                })
+                .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
                 .flatMap(applicationSessionDto -> ServerResponse.created(URI.create("")).bodyValue(applicationSessionDto));
     }
 
     public Mono<ServerResponse> endNginxRtmpStream(ServerRequest request) {
         request.queryParams().forEach((key, value) -> log.info("endNginxRtmpStream request {} {}", key, value));
         return NginxRtmpRequest.fromQueryParams(request.queryParams())
-                .flatMap(applicationService::endApplicationSession)
+                .flatMap(nginxRtmpRequest -> {
+                    Map<String, String> queryParams = nginxRtmpRequest.getQueryParams();
+                    UUID applicationId = UUID.fromString(Objects.requireNonNull(queryParams.get("id")));
+                    return applicationService.endApplicationSession(applicationId, nginxRtmpRequest.name());
+                })
+                .onErrorMap(throwable -> new RestApiException(CommonHttpErrorCode.BAD_REQUEST))
                 .flatMap(applicationSessionDto -> mediaService.deleteRemainHlsFiles(applicationSessionDto.getId())
                         .then(ServerResponse.ok().bodyValue(applicationSessionDto)));
     }
@@ -71,23 +83,23 @@ public class MediaHandler {
             return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
         }
 
-        return request.body(BodyExtractors.toMultipartData())
-                .flatMap(stringPartMultiValueMap -> {
-                    Map<String, Part> partMap = stringPartMultiValueMap.toSingleValueMap();
-                    Part ts = partMap.get("ts");
+        return HandlerHelper.getUUIDFromPathVariable(request, "sessionId")
+                .flatMap(sessionId -> request.body(BodyExtractors.toMultipartData())
+                        .flatMap(stringPartMultiValueMap -> {
+                            Map<String, Part> partMap = stringPartMultiValueMap.toSingleValueMap();
+                            Part ts = partMap.get("ts");
 
-                    if (ts == null) {
-                        return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
-                    }
+                            if (ts == null) {
+                                return Mono.error(new RestApiException(CommonHttpErrorCode.BAD_REQUEST));
+                            }
 
-                    return Mono.just(MediaUploadRequest.builder()
-                            .m3u8Main((FilePart) partMap.get("m3u8Main"))
-                            .m3u8((FilePart) partMap.get("m3u8"))
-                            .ts((FilePart) ts)
-                            .quality(quality)
-                            .build());
-                })
-                .flatMap(uploadRequest -> mediaService.uploadMedia(uploadRequest, request.headers().firstHeader(InstreamHttpHeaders.API_KEY)))
-                .flatMap(result -> ok().bodyValue(result));
+                            return Mono.just(MediaUploadRequest.builder()
+                                    .m3u8Main((FilePart) partMap.get("m3u8Main"))
+                                    .m3u8((FilePart) partMap.get("m3u8"))
+                                    .ts((FilePart) ts)
+                                    .build());
+                        })
+                        .flatMap(uploadRequest -> mediaService.uploadMedia(uploadRequest, sessionId, quality))
+                        .flatMap(result -> ok().bodyValue(result)));
     }
 }

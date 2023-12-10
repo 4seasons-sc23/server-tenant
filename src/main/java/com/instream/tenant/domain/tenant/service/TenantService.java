@@ -79,15 +79,6 @@ public class TenantService {
 
                     return Mono.error(new RestApiException(TenantErrorCode.UNAUTHORIZED));
                 });
-//        return tenantRepository.findByAccountAndPassword(tenantSignInRequest.account(), passwordEncoder.encode(tenantSignInRequest.password()))
-//                .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
-//                .flatMap(tenant -> Mono.just(TenantDto.builder()
-//                        .id(tenant.getId())
-//                        .account(tenant.getAccount())
-//                        .name(tenant.getName())
-//                        .phoneNumber(tenant.getPhoneNumber())
-//                        .status(tenant.getStatus())
-//                        .build()));
     }
 
     public Mono<TenantDto> signUp(TenantCreateRequest tenantCreateRequest) {
