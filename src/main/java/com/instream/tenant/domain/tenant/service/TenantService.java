@@ -64,7 +64,7 @@ public class TenantService {
     }
 
     public Mono<TenantDto> signIn(TenantSignInRequest tenantSignInRequest) {
-        return tenantRepository.findByAccount(tenantSignInRequest.account())
+        return tenantRepository.findByAccountAndStatus(tenantSignInRequest.account(), Status.USE)
                 .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
                 .flatMap(tenant -> {
                     if (passwordEncoder.matches(tenantSignInRequest.password(), tenant.getPassword())) {
@@ -120,7 +120,7 @@ public class TenantService {
         return tenantRepository.findByPhoneNumberAndStatus(requestDto.userPhoneNum(), Status.USE)
                 .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
                 .flatMap(tenantEntity -> {
-                    tenantEntity.setPassword(requestDto.newPassword());
+                    tenantEntity.setPassword(passwordEncoder.encode(requestDto.newPassword()));
                     return tenantRepository.save(tenantEntity);
                 })
                 .then();
@@ -156,11 +156,11 @@ public class TenantService {
         return tenantRepository.findByIdAndStatus(hostId, Status.USE)
                 .switchIfEmpty(Mono.error(new RestApiException(TenantErrorCode.TENANT_NOT_FOUND)))
                 .flatMap(tenantEntity -> {
-                    if (!Objects.equals(tenantEntity.getPassword(), requestDto.currentPassword())) {
-                        return Mono.error(new RestApiException(TenantErrorCode.UNAUTHORIZED));
+                    if (passwordEncoder.matches(requestDto.currentPassword(), tenantEntity.getPassword())) {
+                        tenantEntity.setPassword(passwordEncoder.encode(requestDto.newPassword()));
+                        return tenantRepository.save(tenantEntity);
                     }
-                    tenantEntity.setPassword(requestDto.newPassword());
-                    return tenantRepository.save(tenantEntity);
+                    return Mono.error(new RestApiException(TenantErrorCode.UNAUTHORIZED));
                 })
                 .then();
     }
