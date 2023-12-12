@@ -1,15 +1,12 @@
-package com.instream.tenant.domain.sms.domain.dto.requests;
+package com.instream.tenant.domain.sms.domain.requests;
 
-import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class MessageDto {
-  private String to;
-  private String content;
+public record MessageDto(
+    String to,
+    String content
+) {
+  @Builder
+  public  MessageDto{}
 }

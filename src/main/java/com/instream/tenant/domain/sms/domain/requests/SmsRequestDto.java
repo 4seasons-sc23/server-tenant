@@ -1,22 +1,15 @@
-package com.instream.tenant.domain.sms.domain.dto.requests;
+package com.instream.tenant.domain.sms.domain.requests;
 
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class SmsRequestDto {
-  String type;
-  String contentType;
-  String countryCode;
-  String from;
-  String content;
-  List<MessageDto> messages;
+public record SmsRequestDto(
+    String type,
+    String contentType,
+    String countryCode,
+    String from,
+    String content,
+    List<MessageDto> messages
+) {
+  @Builder
+  public SmsRequestDto{}
 }

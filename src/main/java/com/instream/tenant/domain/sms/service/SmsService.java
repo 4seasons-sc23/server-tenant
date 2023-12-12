@@ -1,46 +1,41 @@
-package com.instream.tenant.domain.sms;
+package com.instream.tenant.domain.sms.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.instream.tenant.domain.error.model.exception.RestApiException;
-import com.instream.tenant.domain.sms.domain.dto.requests.MessageDto;
-import com.instream.tenant.domain.sms.domain.dto.requests.SmsRequestDto;
-import com.instream.tenant.domain.sms.domain.dto.requests.VerifyAuthNumberRequestDto;
-import com.instream.tenant.domain.sms.domain.dto.responses.SmsResponseDto;
-import com.instream.tenant.domain.sms.enums.SmsErrorCode;
+import com.instream.tenant.domain.sms.domain.requests.AuthNumberRequestDto;
+import com.instream.tenant.domain.sms.domain.requests.MessageDto;
+import com.instream.tenant.domain.sms.domain.requests.SmsRequestDto;
+import com.instream.tenant.domain.sms.domain.responses.SmsResponseDto;
+import com.instream.tenant.domain.sms.infra.enums.SmsErrorCode;
+import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.http.HttpEntity;
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
-@Slf4j
-@RequiredArgsConstructor
 @Service
 public class SmsService {
 
-    private final StringRedisTemplate stringRedisTemplate;
+    private ReactiveRedisTemplate<String, String> redisTemplate;
 
     private final String PREFIX = "instream-key: "; // redis 데이터 저장시 key 값
-
-    private final int LIMIT_TIME = 5 * 60; // 5min
 
     @Value("${naver-cloud-sms.accessKey}")
     private String accessKey;
@@ -54,7 +49,27 @@ public class SmsService {
     @Value("${naver-cloud-sms.senderPhone}")
     private String senderPhone;
 
-    public String makeSignature(Long time) throws NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeyException {
+    public SmsService(ReactiveRedisTemplate<String, String> redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
+
+    public Mono<Void> sendAuthNumber(AuthNumberRequestDto authNumberRequestDto, String authNum) {
+        return Mono.just(MessageDto.builder()
+                .to(authNumberRequestDto.userPhoneNum().replace("-", ""))
+                .content("[In-Stream] 본인 확인 인증번호 [" + authNum + "]" + "입니다.")
+                .build())
+            .flatMap(messageDto -> {
+                try {
+                    return this.sendSms(messageDto);
+                } catch (UnsupportedEncodingException | NoSuchAlgorithmException | InvalidKeyException e) {
+                    return Mono.error(new RuntimeException());
+                }
+            })
+            .flatMap(res -> this.createSmsCertification(authNumberRequestDto.userPhoneNum(), authNum))
+            .then();
+    }
+
+    public Mono<String> makeSignature(Long time) {
         String space = " ";
         String newLine = "\n";
         String method = "POST";
@@ -63,101 +78,105 @@ public class SmsService {
         String accessKey = this.accessKey;
         String secretKey = this.secretKey;
 
-        String message = new StringBuilder()
-            .append(method)
-            .append(space)
-            .append(url)
-            .append(newLine)
-            .append(timestamp)
-            .append(newLine)
-            .append(accessKey)
-            .toString();
+        String message = method
+            + space
+            + url
+            + newLine
+            + timestamp
+            + newLine
+            + accessKey;
 
-        SecretKeySpec signingKey = new SecretKeySpec(secretKey.getBytes("UTF-8"), "HmacSHA256");
-        Mac mac = Mac.getInstance("HmacSHA256");
-        mac.init(signingKey);
+        SecretKeySpec signingKey = new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
 
-        byte[] rawHmac = mac.doFinal(message.getBytes("UTF-8"));
-        String encodeBase64String = Base64.encodeBase64String(rawHmac);
+        return Mono.fromCallable(() -> {
+                Mac mac = Mac.getInstance("HmacSHA256");
+                mac.init(signingKey);
 
-        return encodeBase64String;
+                byte[] rawHmac = mac.doFinal(message.getBytes(StandardCharsets.UTF_8));
+                return Base64.getEncoder().encodeToString(rawHmac);
+            });
     }
 
     // sms 전송
-    public SmsResponseDto sendSms(MessageDto messageDto)
-        throws JsonProcessingException, RestClientException, URISyntaxException,
-        InvalidKeyException, NoSuchAlgorithmException, UnsupportedEncodingException {
+    public Mono<Void> sendSms(MessageDto messageDto)
+        throws UnsupportedEncodingException, NoSuchAlgorithmException, InvalidKeyException {
         Long time = System.currentTimeMillis();
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("x-ncp-apigw-timestamp", time.toString());
-        headers.set("x-ncp-iam-access-key", accessKey);
-        headers.set("x-ncp-apigw-signature-v2", makeSignature(time));
+        return makeSignature(time)
+            .flatMap(signature -> {
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                headers.set("x-ncp-apigw-timestamp", time.toString());
+                headers.set("x-ncp-iam-access-key", accessKey);
+                headers.set("x-ncp-apigw-signature-v2", signature);
+                List<MessageDto> messages = new ArrayList<>();
+                messages.add(messageDto);
 
-        List<MessageDto> messages = new ArrayList<>();
-        messages.add(messageDto);
+                SmsRequestDto request = SmsRequestDto.builder()
+                    .type("SMS")
+                    .contentType("COMM")
+                    .countryCode("82")
+                    .from(senderPhone)
+                    .content(messageDto.content())
+                    .messages(messages)
+                    .build();
 
-        SmsRequestDto request = SmsRequestDto.builder()
-            .type("SMS")
-            .contentType("COMM")
-            .countryCode("82")
-            .from(senderPhone)
-            .content(messageDto.getContent())
-            .messages(messages)
-            .build();
+                ObjectMapper objectMapper = new ObjectMapper();
+                String body;
+                try {
+                    body = objectMapper.writeValueAsString(request);
+                } catch (JsonProcessingException e) {
+                    return Mono.error(e);
+                }
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        String body = objectMapper.writeValueAsString(request);
-        HttpEntity<String> httpBody = new HttpEntity<>(body, headers);
-
-        RestTemplate restTemplate = new RestTemplate();
-        restTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
-        SmsResponseDto response = restTemplate.postForObject(
-            new URI("https://sens.apigw.ntruss.com/sms/v2/services/"+ serviceId +"/messages"), httpBody, SmsResponseDto.class);
-
-        return response;
+                return WebClient.builder()
+                    .clientConnector(new ReactorClientHttpConnector())
+                    .baseUrl(
+                        "https://sens.apigw.ntruss.com/sms/v2/services/" + serviceId + "/messages")
+                    .build()
+                    .post()
+                    .headers(httpHeaders -> httpHeaders.addAll(headers))
+                    .body(BodyInserters.fromValue(body))
+                    .retrieve()
+                    .bodyToMono(SmsResponseDto.class)
+                    .onErrorResume(throwable -> Mono.error(new RestApiException(SmsErrorCode.SMS_SEND_ERROR)));
+            })
+            .then();
     }
 
-    // sms 인증 번호 확인
-    public void verifySms(VerifyAuthNumberRequestDto requestDto) {
-        String[] authWhiteList = {"000-0000-0000", "111-1111-1111", "888-8888-8888", "999-9999-9999"};
-        List<String> AUTH_WHITE_LIST = new ArrayList<>(Arrays.asList(authWhiteList));
-
-        if(AUTH_WHITE_LIST.contains(requestDto.getUserPhoneNum())) {
-            return;
-        }
-
-        if(this.getSmsCertification(requestDto.getUserPhoneNum())==null){
-            throw new RestApiException(SmsErrorCode.AUTH_NUMBER_NOT_FOUND);
-        }
-
-        if(!(this.hashKey(requestDto.getUserPhoneNum()) &&
-            this.getSmsCertification(requestDto.getUserPhoneNum())
-                .equals(requestDto.getAuthNumber()))){
-            throw new RestApiException(SmsErrorCode.AUTH_NUMBER_NOT_MATCH);
-        }
-
-        this.removeSmsCertification(requestDto.getUserPhoneNum());
-    }
+//    // sms 인증 번호 확인
+//    public void verifySms(VerifyAuthNumberRequestDto requestDto) {
+//        if(this.getSmsCertification(requestDto.userPhoneNum())==null){
+//            throw new RestApiException(SmsErrorCode.AUTH_NUMBER_NOT_FOUND);
+//        }
+//
+//        if(!(this.hashKey(requestDto.userPhoneNum()) &&
+//            this.getSmsCertification(requestDto.userPhoneNum())
+//                .equals(requestDto.authNumber()))){
+//            throw new RestApiException(SmsErrorCode.AUTH_NUMBER_NOT_MATCH);
+//        }
+//
+//        this.removeSmsCertification(requestDto.userPhoneNum());
+//    }
 
     // redis 저장
-    public void createSmsCertification(String phone, String certificationNumber) {
-        stringRedisTemplate.opsForValue()
-            .set(PREFIX + phone, certificationNumber, Duration.ofSeconds(LIMIT_TIME));
+    private Mono<Void> createSmsCertification(String phone, String certificationNumber) {
+        return redisTemplate.opsForValue()
+            .set(PREFIX + phone, certificationNumber, Duration.ofSeconds(300))
+            .then();
     }
 
     // redis 조회
-    public String getSmsCertification(String phone) {
-        return stringRedisTemplate.opsForValue().get(PREFIX + phone);
+    public Mono<String> getSmsCertification(String phone) {
+        return redisTemplate.opsForValue().get(PREFIX + phone);
     }
 
     // redis 삭제
     public void removeSmsCertification(String phone) {
-        stringRedisTemplate.delete(PREFIX + phone);
+        redisTemplate.delete(PREFIX + phone);
     }
 
-    public boolean hashKey(String phone) {
-        return stringRedisTemplate.hasKey(PREFIX + phone);
+    public Mono<Boolean> hashKey(String phone) {
+        return redisTemplate.hasKey(PREFIX + phone);
     }
 }
