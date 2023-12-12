@@ -6,9 +6,9 @@ import com.instream.tenant.domain.error.model.exception.RestApiException;
 import com.instream.tenant.domain.sms.domain.requests.AuthNumberRequestDto;
 import com.instream.tenant.domain.sms.domain.requests.MessageDto;
 import com.instream.tenant.domain.sms.domain.requests.SmsRequestDto;
+import com.instream.tenant.domain.sms.domain.requests.VerifyAuthNumberRequestDto;
 import com.instream.tenant.domain.sms.domain.responses.SmsResponseDto;
 import com.instream.tenant.domain.sms.infra.enums.SmsErrorCode;
-import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
@@ -17,7 +17,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Value;
@@ -65,7 +64,7 @@ public class SmsService {
                     return Mono.error(new RuntimeException());
                 }
             })
-            .flatMap(res -> this.createSmsCertification(authNumberRequestDto.userPhoneNum(), authNum))
+            .then(this.createSmsCertification(authNumberRequestDto.userPhoneNum(), authNum))
             .then();
     }
 
@@ -144,8 +143,8 @@ public class SmsService {
             .then();
     }
 
-//    // sms 인증 번호 확인
-//    public void verifySms(VerifyAuthNumberRequestDto requestDto) {
+    // sms 인증 번호 확인
+//    public Mono<Void> verifySms(VerifyAuthNumberRequestDto requestDto) {
 //        if(this.getSmsCertification(requestDto.userPhoneNum())==null){
 //            throw new RestApiException(SmsErrorCode.AUTH_NUMBER_NOT_FOUND);
 //        }
@@ -159,10 +158,33 @@ public class SmsService {
 //        this.removeSmsCertification(requestDto.userPhoneNum());
 //    }
 
+    public Mono<Void> verifySms(VerifyAuthNumberRequestDto requestDto) {
+        return Mono.defer(() -> {
+            String userPhoneNum = requestDto.userPhoneNum();
+            Mono<String> savedCertificationMono = getSmsCertification(userPhoneNum);
+            Mono<Boolean> hashMatches = hashKey(userPhoneNum);
+
+            return savedCertificationMono
+                .switchIfEmpty(Mono.error(new RestApiException(SmsErrorCode.AUTH_NUMBER_NOT_FOUND)))
+                .zipWith(hashMatches)
+                .flatMap(tuple -> {
+                    String savedCertification = tuple.getT1();
+                    boolean hashMatchesValue = tuple.getT2();
+                    boolean authNumberMatches = savedCertification.equals(requestDto.authNumber());
+                    System.out.println(savedCertification + " " + requestDto.authNumber());
+                    if (hashMatchesValue && authNumberMatches) {
+                        return removeSmsCertification(userPhoneNum);
+                    } else {
+                        return Mono.error(new RestApiException(SmsErrorCode.AUTH_NUMBER_NOT_MATCH));
+                    }
+                });
+        });
+    }
+
     // redis 저장
     private Mono<Void> createSmsCertification(String phone, String certificationNumber) {
         return redisTemplate.opsForValue()
-            .set(PREFIX + phone, certificationNumber, Duration.ofSeconds(300))
+            .set(PREFIX + phone, certificationNumber, Duration.ofMinutes(5))
             .then();
     }
 
@@ -172,8 +194,9 @@ public class SmsService {
     }
 
     // redis 삭제
-    public void removeSmsCertification(String phone) {
-        redisTemplate.delete(PREFIX + phone);
+    public Mono<Void> removeSmsCertification(String phone) {
+        return redisTemplate.delete(PREFIX + phone)
+            .then();
     }
 
     public Mono<Boolean> hashKey(String phone) {
